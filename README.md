@@ -1,1 +1,1 @@
-# go-cactus
+Golang backend of Cactus AIO.
