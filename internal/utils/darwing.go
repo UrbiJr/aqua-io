@@ -52,20 +52,3 @@ func IsProcRunning(names ...string) (bool, error) {
 
 	return false, nil
 }
-
-// NewPlatformUtils returns a platform-independent interface to an
-// instance of darwinUtils.
-func NewPlatformUtils() PlatformUtils {
-	return &darwinUtils{&unixUtils{}}
-}
-
-// GetSerialNumber returns the serial number of the Darwin device.
-func (u *darwinUtils) GetSerialNumber() (string, error) {
-	serialNumber := C.GoString(C.SerialNumber())
-
-	if serialNumber == "" {
-		return "", ErrInvalidSerialNumber
-	}
-
-	return serialNumber, nil
-}
