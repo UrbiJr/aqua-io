@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"math/rand"
 	"time"
 
+	"github.com/cactus-aio/go-cactus/internal/cactus"
 	"github.com/cactus-aio/go-cactus/internal/user"
 	"github.com/cactus-aio/go-cactus/internal/utils"
 )
@@ -34,18 +34,6 @@ func main() {
 		"cactus-user",
 	)
 
-	greetings := []string{
-		"how can Cactus-AIO assist you today? :-)",
-		"how are you going to use Cactus-AIO today? :-)",
-		"ready to have some fun with Cactus-AIO?",
-		"Cactus-AIO is at your service :cactus-salute:",
-		"it's been a while.",
-		"time to make the success log go brrr.",
-		"everyday is a perfect day to run Cactus-AIO!",
-	}
-
-	log.Printf("Hello %s, %s", user.Username, greetings[rand.Intn(len(greetings))])
-
-	fmt.Printf("Press <ENTER> to exit...")
-	fmt.Scanln() // wait for Enter Key
+	cactus := cactus.NewCactus()
+	cactus.Run(user)
 }
