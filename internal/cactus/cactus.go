@@ -5,7 +5,6 @@ import (
 	"math/rand"
 
 	"github.com/cactus-aio/go-cactus/internal/user"
-	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -52,20 +51,15 @@ func (cactus *Cactus) Run(user *user.User) error {
 	}
 
 	msg := fmt.Sprintf("Hello %s, %s", user.Username, greetings[rand.Intn(len(greetings))])
-	list := tview.NewList().
-		AddItem("Sitelist", "display Cactus-AIO sitelist", '1', nil).
-		AddItem("Profiles", "manage your profiles", '2', nil).
-		AddItem("Settings", "edit Cactus-AIO settings", '3', nil).
-		AddItem("Quit", "close Cactus-AIO", '4', cactus.Quit)
-
-	var pages = tview.NewPages() // Allows us to easily switch between views
-	var flex = tview.NewFlex()   // Flexbox layout allows us to organize multiple widgets inside a view
-
-	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(msg), 0, 1, false).
-		AddItem(list, 0, 4, true).SetBorder(true)
-
-	pages.AddPage("Main Menu", flex, true, true)
+	entries := []MenuEntry{
+		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: nil},
+		{name: "Profiles", label: '2', description: "manage your profiles", selected: nil},
+		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
+		{name: "Quit", label: '4', description: "close Cactus-AIO", selected: cactus.Quit},
+	}
+	menu := cactus.UI.NewMainMenu(msg, entries) // create main view Menu
+	var pages = tview.NewPages()                // Allows us to easily switch between views
+	pages.AddPage("Main Menu", menu, true, true)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts
