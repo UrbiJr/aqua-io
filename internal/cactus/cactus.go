@@ -37,6 +37,8 @@ func (cactus *Cactus) Quit() {
 // Run initializes the app along with its layout
 func (cactus *Cactus) Run(user *user.User) error {
 
+	cactus.UI.pages = tview.NewPages() // Allows us to easily switch between views
+
 	// Listeners must be initialized before anything else
 	cactus.UI.SetListeners()
 
@@ -52,18 +54,20 @@ func (cactus *Cactus) Run(user *user.User) error {
 
 	msg := fmt.Sprintf("Hello %s, %s", user.Username, greetings[rand.Intn(len(greetings))])
 	entries := []MenuEntry{
-		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: nil},
+		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: cactus.UI.OnSitelistSelected},
 		{name: "Profiles", label: '2', description: "manage your profiles", selected: nil},
 		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
 		{name: "Quit", label: '4', description: "close Cactus-AIO", selected: cactus.Quit},
 	}
 	menu := cactus.UI.NewMainMenu(msg, entries) // create main view Menu
-	var pages = tview.NewPages()                // Allows us to easily switch between views
-	pages.AddPage("Main Menu", menu, true, true)
+	sitelist := cactus.NewSitelist()
+
+	cactus.UI.pages.AddPage("Main Menu", menu, true, true)
+	cactus.UI.pages.AddPage("Sitelist", sitelist, true, false)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts
-	if err := cactus.UI.tui.SetRoot(pages, true).EnableMouse(true).Run(); err != nil {
+	if err := cactus.UI.tui.SetRoot(cactus.UI.pages, true).EnableMouse(true).Run(); err != nil {
 		return err
 	}
 
