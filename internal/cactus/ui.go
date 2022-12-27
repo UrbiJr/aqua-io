@@ -1,6 +1,9 @@
 package cactus
 
 import (
+	"errors"
+	"strconv"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -28,17 +31,31 @@ type Menu struct {
 	entries []MenuEntry
 }
 
+// indexToRune is a utility function to cast an int index to rune type in order to use it as menu shortcut
+func indexToRune(index int) (rune, error) {
+	s2 := strconv.Itoa(index)
+	var b rune
+	if len(s2) > 1 {
+		return 0, errors.New("index cannot exceed 1 digit")
+	} else {
+		b = rune(s2[0])
+	}
+	return b, nil
+}
+
 // NewSitelist returns a view for the sitelist
 func (cactus *Cactus) NewSitelist() *tview.Flex {
 
 	list := tview.NewList()
 	i := 1
 	for _, entry := range cactus.SiteList {
-		list.AddItem(entry.Name.String(), "", rune(i), nil)
+		shortcut, _ := indexToRune(i)
+		list.AddItem(entry.Name.String(), "", shortcut, nil)
 		i += 1
 	}
 
-	list.AddItem("Go Back", "return to the previous page", rune(i), cactus.UI.OnGoBackSelected)
+	shortcut, _ := indexToRune(i)
+	list.AddItem("Go Back", "return to the previous page", shortcut, cactus.UI.OnGoBackSelected)
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
@@ -70,6 +87,7 @@ func (ui *UI) NewMainMenu(welcomeMessage string, entries []MenuEntry) *tview.Fle
 func (ui *UI) OnGoBackSelected() {
 
 	// switch selection based on current page
+	//utils.Info().Println(ui.pages.GetTitle())
 	switch currentPageTitle := ui.pages.GetTitle(); currentPageTitle {
 	case "Sitelist":
 		// if current page is Sitelist, go back to main menu

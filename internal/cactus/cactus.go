@@ -2,6 +2,7 @@ package cactus
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/cactus-aio/go-cactus/internal/user"
@@ -12,6 +13,7 @@ import (
 type Cactus struct {
 	*UI
 	SiteList []*SupportedSite
+	*log.Logger
 }
 
 // NewCactus returns a new instance of the app
