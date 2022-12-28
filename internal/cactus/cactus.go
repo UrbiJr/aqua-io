@@ -62,13 +62,16 @@ func (cactus *Cactus) Run() error {
 		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
 		{name: "Quit", label: 'q', description: "close Cactus-AIO", selected: cactus.Quit},
 	}
-	menu := cactus.UI.NewMainMenu(msg, entries) // create main view Menu
-	sitelist := cactus.NewSitelist()
-	profiles := cactus.NewProfiles()
+	cactus.MainMenuView = cactus.NewMainMenuView(msg, entries) // create main view Menu
+	cactus.SitelistView = cactus.NewSitelistView()
+	cactus.ProfilesView = cactus.NewProfilesView()
+	cactus.NewProfileView = cactus.NewNewProfileView()
+	cactus.AddProfileForm()
 
-	cactus.UI.pages.AddPage("Main Menu", menu, true, true)
-	cactus.UI.pages.AddPage("Sitelist", sitelist, true, false)
-	cactus.UI.pages.AddPage("Profiles", profiles, true, false)
+	cactus.UI.pages.AddPage("Main Menu", cactus.MainMenuView, true, true)
+	cactus.UI.pages.AddPage("Sitelist", cactus.SitelistView, true, false)
+	cactus.UI.pages.AddPage("Profiles", cactus.ProfilesView.View, true, false)
+	cactus.UI.pages.AddPage("New Profile", cactus.NewProfileView.View, true, false)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts
