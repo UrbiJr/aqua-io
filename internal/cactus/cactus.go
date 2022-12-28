@@ -14,6 +14,7 @@ type Cactus struct {
 	*UI
 	SiteList []*SupportedSite
 	*log.Logger
+	User *user.User
 }
 
 // NewCactus returns a new instance of the app
@@ -37,7 +38,7 @@ func (cactus *Cactus) Quit() {
 }
 
 // Run initializes the app along with its layout
-func (cactus *Cactus) Run(user *user.User) error {
+func (cactus *Cactus) Run() error {
 
 	cactus.UI.pages = tview.NewPages() // Allows us to easily switch between views
 
@@ -54,18 +55,20 @@ func (cactus *Cactus) Run(user *user.User) error {
 		"everyday is a perfect day to run Cactus-AIO!",
 	}
 
-	msg := fmt.Sprintf("Hello %s, %s", user.Username, greetings[rand.Intn(len(greetings))])
+	msg := fmt.Sprintf("Hello %s, %s", cactus.User.Username, greetings[rand.Intn(len(greetings))])
 	entries := []MenuEntry{
-		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: cactus.UI.OnSitelistSelected},
-		{name: "Profiles", label: '2', description: "manage your profiles", selected: nil},
+		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: cactus.OnSitelistSelected},
+		{name: "Profiles", label: '2', description: "manage your profiles", selected: cactus.OnProfilesSelected},
 		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
-		{name: "Quit", label: '4', description: "close Cactus-AIO", selected: cactus.Quit},
+		{name: "Quit", label: 'q', description: "close Cactus-AIO", selected: cactus.Quit},
 	}
 	menu := cactus.UI.NewMainMenu(msg, entries) // create main view Menu
 	sitelist := cactus.NewSitelist()
+	profiles := cactus.NewProfiles()
 
 	cactus.UI.pages.AddPage("Main Menu", menu, true, true)
 	cactus.UI.pages.AddPage("Sitelist", sitelist, true, false)
+	cactus.UI.pages.AddPage("Profiles", profiles, true, false)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts

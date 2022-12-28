@@ -2,6 +2,7 @@ package cactus
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/gdamore/tcell/v2"
@@ -43,6 +44,28 @@ func indexToRune(index int) (rune, error) {
 	return b, nil
 }
 
+// NewSitelist returns a view for the profiles management
+func (cactus *Cactus) NewProfiles() *tview.Flex {
+
+	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
+	list := tview.NewList()
+	for _, entry := range cactus.User.Profiles {
+		// set 0 as shortcut for no binding
+		list.AddItem(entry.Title, fmt.Sprintf("edit %s profile", entry.Title), 0, nil)
+	}
+	list.AddItem("Go Back", "return to the previous page", 'b', cactus.UI.OnGoBackSelected)
+
+	helpInfo := tview.NewTextView().SetText("Press (D) to delete, (R) to rename, <ENTER> to edit a profile")
+
+	flex.SetDirection(tview.FlexRow).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Profiles"), 0, 1, false).
+		AddItem(list, 0, 4, true).
+		AddItem(helpInfo, 0, 4, false).
+		SetBorder(true)
+
+	return flex
+}
+
 // NewSitelist returns a view for the sitelist
 func (cactus *Cactus) NewSitelist() *tview.Flex {
 
@@ -54,14 +77,14 @@ func (cactus *Cactus) NewSitelist() *tview.Flex {
 		i += 1
 	}
 
-	shortcut, _ := indexToRune(i)
-	list.AddItem("Go Back", "return to the previous page", shortcut, cactus.UI.OnGoBackSelected)
+	list.AddItem("Go Back", "return to the previous page", 'b', cactus.UI.OnGoBackSelected)
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
 	flex.SetDirection(tview.FlexRow).
 		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Sitelist"), 0, 1, false).
-		AddItem(list, 0, 4, true).SetBorder(true)
+		AddItem(list, 0, 4, true).
+		SetBorder(true)
 
 	return flex
 }
@@ -78,7 +101,8 @@ func (ui *UI) NewMainMenu(welcomeMessage string, entries []MenuEntry) *tview.Fle
 
 	flex.SetDirection(tview.FlexRow).
 		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(welcomeMessage), 0, 1, false).
-		AddItem(list, 0, 4, true).SetBorder(true)
+		AddItem(list, 0, 4, true).
+		SetBorder(true)
 
 	return flex
 }
@@ -87,13 +111,19 @@ func (ui *UI) NewMainMenu(welcomeMessage string, entries []MenuEntry) *tview.Fle
 func (ui *UI) OnGoBackSelected() {
 
 	// switch selection based on current page
-	//utils.Info().Println(ui.pages.GetTitle())
-	switch currentPageTitle := ui.pages.GetTitle(); currentPageTitle {
-	case "Sitelist":
+	switch currentPageTitle, _ := ui.pages.GetFrontPage(); currentPageTitle {
+	case "Sitelist", "Profiles":
 		// if current page is Sitelist, go back to main menu
 		ui.pages.SwitchToPage("Main Menu")
 	}
 
+}
+
+// OnProfilesSelected should be called when a user choose Profiles entry on main menu
+func (ui *UI) OnProfilesSelected() {
+
+	// switch current view to Sitelist
+	ui.pages.SwitchToPage("Profiles")
 }
 
 // OnSitelistSelected should be called when a user choose Sitelist entry on main menu

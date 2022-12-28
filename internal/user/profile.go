@@ -1,5 +1,21 @@
 package user
 
+import (
+	"encoding/json"
+	"errors"
+	"io/ioutil"
+	"os"
+)
+
+func init() {
+	if _, err := os.Stat("profiles.json"); errors.Is(err, os.ErrNotExist) {
+		// file does not exist
+		profiles := []Profile{}
+		file, _ := json.MarshalIndent(profiles, "", " ")
+		_ = ioutil.WriteFile("profiles.json", file, 0644)
+	}
+}
+
 // Profile contains information specific to a single account of a particular site i.e. BSTN
 type Profile struct {
 	Title        string `json:"title"`
@@ -18,4 +34,29 @@ type Profile struct {
 	CardMonth    string `json:"card_month"`
 	CardYear     string `json:"card_year"`
 	CardCvv      string `json:"card_cvv"`
+}
+
+func ReadProfiles() []Profile {
+	jsonFile, err := os.Open("profiles.json")
+	if err != nil {
+		return []Profile{}
+	}
+	defer jsonFile.Close()
+
+	// read our opened jsonFile as a byte array.
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var profiles []Profile
+	err = json.Unmarshal(byteValue, &profiles)
+	if err != nil {
+		return []Profile{}
+	}
+
+	return profiles
+
+}
+
+func WriteProfiles(profiles []Profile) {
+	file, _ := json.MarshalIndent(profiles, "", " ")
+	_ = ioutil.WriteFile("profiles.json", file, 0644)
 }

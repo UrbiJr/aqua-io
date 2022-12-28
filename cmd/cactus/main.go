@@ -47,6 +47,7 @@ func main() {
 	)
 
 	cactus := cactus.NewCactus()
+	cactus.User = user
 
-	cactus.Run(user)
+	cactus.Run()
 }
