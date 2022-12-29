@@ -1,1 +1,46 @@
 package cactus
+
+import (
+	"fmt"
+
+	"github.com/rivo/tview"
+)
+
+// ErrorView contains information about the view for the custom error messages
+type ErrorView struct {
+	Title    string
+	PrevPage string // title of the page which showed the error view
+	Modal    *tview.Modal
+	View     *tview.Flex
+}
+
+// newModal returns an empty modal
+func newModal() *tview.Modal {
+
+	modal := tview.NewModal().
+		AddButtons([]string{"Ok"})
+
+	return modal
+}
+
+// ShowError displays the custom error
+func (cactus *Cactus) ShowError(prevPage string, err error) {
+	cactus.ErrorView.Modal.
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			cactus.pages.SwitchToPage(prevPage)
+		})
+	cactus.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
+	cactus.pages.SwitchToPage(cactus.ErrorView.Title)
+}
+
+// NewErrorView returns a view for the custom error messages
+func (cactus *Cactus) NewErrorView() *ErrorView {
+
+	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
+	modal := newModal()
+
+	flex.SetDirection(tview.FlexRow).
+		AddItem(modal, 0, 4, true)
+
+	return &ErrorView{Title: "Error", PrevPage: "Main Menu", Modal: modal, View: flex}
+}

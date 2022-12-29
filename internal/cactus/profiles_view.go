@@ -7,6 +7,7 @@ import (
 
 // ProfileView contains information about the "Profile" view
 type ProfileView struct {
+	Title         string
 	ProfilesTable *tview.Table
 	View          *tview.Flex
 }
@@ -50,7 +51,7 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 
 	footerForm := tview.NewForm()
 	footerForm.AddButton("Create New", func() {
-		cactus.pages.SwitchToPage("New Profile")
+		cactus.pages.SwitchToPage(cactus.NewProfileView.Title)
 	})
 	footerForm.AddButton("Go Back", func() {
 		cactus.UI.OnGoBackSelected()
@@ -65,7 +66,7 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 				AddItem(footerForm, 0, 4, true), 0, 1, true).
 		SetBorder(true)
 
-	return &ProfileView{View: flex, ProfilesTable: table}
+	return &ProfileView{Title: "Profiles", View: flex, ProfilesTable: table}
 }
 
 // RefreshProfileView refresh the list of profiles

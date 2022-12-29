@@ -9,8 +9,9 @@ import (
 
 // NewProfileView contains information about the "New Profile" view
 type NewProfileView struct {
-	Form *tview.Form
-	View *tview.Flex
+	Title string
+	Form  *tview.Form
+	View  *tview.Flex
 }
 
 // NewNewProfileView returns a view for the profile creation
@@ -24,7 +25,7 @@ func (cactus *Cactus) NewNewProfileView() *NewProfileView {
 		AddItem(form, 0, 4, true).
 		SetBorder(true)
 
-	return &NewProfileView{View: flex, Form: form}
+	return &NewProfileView{Title: "New Profile", View: flex, Form: form}
 }
 
 func (cactus *Cactus) AddProfileForm() {
@@ -71,8 +72,8 @@ func (cactus *Cactus) AddProfileForm() {
 		countryCode, err := utils.GetCountryCode(country)
 		if err == nil {
 			profile.CountryCode = countryCode
-			cactus.pages.AddPage("State selection", cactus.NewStateSelectionView(countryCode, &profile), true, false)
-			cactus.pages.SwitchToPage("State selection")
+			cactus.RefreshStateSelectionView(countryCode, &profile)
+			cactus.pages.SwitchToPage(cactus.StateSelectionView.Title)
 		}
 	})
 
@@ -95,14 +96,15 @@ func (cactus *Cactus) AddProfileForm() {
 	cactus.NewProfileView.Form.AddButton("Save", func() {
 		err := cactus.SaveProfile(profile)
 		if err != nil {
-			// show error modal
+			cactus.ShowError(cactus.NewProfileView.Title, err)
+		} else {
+			cactus.RefreshProfileView()
+			cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
 		}
-		cactus.RefreshProfileView()
-		cactus.pages.SwitchToPage("Profiles")
 	})
 
 	cactus.NewProfileView.Form.AddButton("Cancel", func() {
-		cactus.pages.SwitchToPage("Profiles")
+		cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
 	})
 
 }

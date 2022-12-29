@@ -5,8 +5,14 @@ import (
 	"github.com/rivo/tview"
 )
 
+// SitelistView contains information about the "Sitelist" view
+type SitelistView struct {
+	Title string
+	View  *tview.Flex
+}
+
 // NewSitelistView returns a view for the sitelist
-func (cactus *Cactus) NewSitelistView() *tview.Flex {
+func (cactus *Cactus) NewSitelistView() *SitelistView {
 
 	list := tview.NewList()
 	i := 1
@@ -25,5 +31,5 @@ func (cactus *Cactus) NewSitelistView() *tview.Flex {
 		AddItem(list, 0, 4, true).
 		SetBorder(true)
 
-	return flex
+	return &SitelistView{Title: "Sitelist", View: flex}
 }

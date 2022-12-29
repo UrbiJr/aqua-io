@@ -10,13 +10,14 @@ import (
 
 // UI contains information about the user interface
 type UI struct {
-	tui             *tview.Application
-	pages           *tview.Pages
-	MainMenuView    *tview.Flex
-	SitelistView    *tview.Flex
-	ProfilesView    *ProfileView
-	SelectStateView *tview.Flex
-	NewProfileView  *NewProfileView
+	tui                *tview.Application
+	pages              *tview.Pages
+	MainMenuView       *MainMenuView
+	SitelistView       *SitelistView
+	ProfilesView       *ProfileView
+	StateSelectionView *StateSelectionView
+	NewProfileView     *NewProfileView
+	ErrorView          *ErrorView
 }
 
 // OnGoBackSelected should be called when a user choose to go to the previous view
@@ -26,7 +27,7 @@ func (ui *UI) OnGoBackSelected() {
 	switch currentPageTitle, _ := ui.pages.GetFrontPage(); currentPageTitle {
 	case "Sitelist", "Profiles":
 		// if current page is Sitelist, go back to main menu
-		ui.pages.SwitchToPage("Main Menu")
+		ui.pages.SwitchToPage(ui.MainMenuView.Title)
 	}
 
 }
@@ -35,14 +36,14 @@ func (ui *UI) OnGoBackSelected() {
 func (ui *UI) OnProfilesSelected() {
 
 	// switch current view to Sitelist
-	ui.pages.SwitchToPage("Profiles")
+	ui.pages.SwitchToPage(ui.ProfilesView.Title)
 }
 
 // OnSitelistSelected should be called when a user choose Sitelist entry on main menu
 func (ui *UI) OnSitelistSelected() {
 
 	// switch current view to Sitelist
-	ui.pages.SwitchToPage("Sitelist")
+	ui.pages.SwitchToPage(ui.SitelistView.Title)
 }
 
 // NewUI initializes a tview and assigns it to the returned UI object
@@ -77,16 +78,21 @@ func (cactus *Cactus) InitUI() error {
 		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
 		{name: "Quit", label: 'q', description: "close Cactus-AIO", selected: cactus.Quit},
 	}
+
+	cactus.ErrorView = cactus.NewErrorView()
 	cactus.MainMenuView = cactus.NewMainMenuView(msg, entries) // create main view Menu
 	cactus.SitelistView = cactus.NewSitelistView()
 	cactus.ProfilesView = cactus.NewProfilesView()
 	cactus.NewProfileView = cactus.NewNewProfileView()
+	cactus.StateSelectionView = cactus.NewStateSelectionView()
 	cactus.AddProfileForm()
 
-	cactus.UI.pages.AddPage("Main Menu", cactus.MainMenuView, true, true)
-	cactus.UI.pages.AddPage("Sitelist", cactus.SitelistView, true, false)
-	cactus.UI.pages.AddPage("Profiles", cactus.ProfilesView.View, true, false)
-	cactus.UI.pages.AddPage("New Profile", cactus.NewProfileView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.MainMenuView.Title, cactus.MainMenuView.View, true, true)
+	cactus.UI.pages.AddPage(cactus.SitelistView.Title, cactus.SitelistView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.ProfilesView.Title, cactus.ProfilesView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.NewProfileView.Title, cactus.NewProfileView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.StateSelectionView.Title, cactus.StateSelectionView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.ErrorView.Title, cactus.ErrorView.View, true, false)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts
@@ -105,7 +111,7 @@ func (ui *UI) SetListeners() {
 			switch pressedKey := event.Rune(); pressedKey {
 			case 97: // user presses 'a' key
 				// switch current view to Sitelist
-				ui.pages.SwitchToPage("New Profile")
+				ui.pages.SwitchToPage(ui.NewProfileView.Title)
 			case 100: // user presses 'd' key
 			case 114: // user presses 'r' key
 			}

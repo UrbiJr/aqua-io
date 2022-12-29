@@ -20,6 +20,12 @@ func indexToRune(index int) (rune, error) {
 	return b, nil
 }
 
+// MainMenuView contains information about the "Main Menu" view
+type MainMenuView struct {
+	Title string
+	View  *tview.Flex
+}
+
 // MenuEntry contains information for each entry of a menu.
 // name is the entry name to display
 // description is a secondary text
@@ -38,7 +44,7 @@ type Menu struct {
 }
 
 // NewMainMenuView initializes the menu for the main view
-func (ui *UI) NewMainMenuView(welcomeMessage string, entries []MenuEntry) *tview.Flex {
+func (ui *UI) NewMainMenuView(welcomeMessage string, entries []MenuEntry) *MainMenuView {
 
 	list := tview.NewList()
 	for _, entry := range entries {
@@ -52,5 +58,5 @@ func (ui *UI) NewMainMenuView(welcomeMessage string, entries []MenuEntry) *tview
 		AddItem(list, 0, 4, true).
 		SetBorder(true)
 
-	return flex
+	return &MainMenuView{Title: "Main Menu", View: flex}
 }
