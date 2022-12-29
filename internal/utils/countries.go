@@ -758,3 +758,17 @@ func GetStates(countryCode string) ([]string, error) {
 
 	return []string{}, errors.New("failed to get states for " + countryCode)
 }
+
+// GetCountryCode converts a full country name and returns a country code
+func GetStateCode(countryCode string, stateName string) (string, error) {
+
+	if states, ok := StatesCountries[countryCode]; ok {
+		for _, state := range states {
+			if stateCode, ok := state[stateName]; ok {
+				return stateCode, nil
+			}
+		}
+	}
+
+	return "", errors.New("failed to get state code for " + stateName)
+}

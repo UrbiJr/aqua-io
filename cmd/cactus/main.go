@@ -39,7 +39,7 @@ func main() {
 
 	//utils.Log("Booting up...")
 
-	user := user.NewUser(
+	loggedUser := user.NewUser(
 		"LICENSE-KEY",
 		"example@gmail.com",
 		"",
@@ -47,7 +47,8 @@ func main() {
 	)
 
 	cactus := cactus.NewCactus()
-	cactus.User = user
+	cactus.User = loggedUser
+	cactus.User.Profiles = user.ReadProfiles()
 
 	cactus.Run()
 }

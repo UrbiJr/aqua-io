@@ -2,7 +2,6 @@ package cactus
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/cactus-aio/go-cactus/internal/user"
@@ -24,8 +23,8 @@ type UI struct {
 
 // ProfileView contains information about the "Profile" view
 type ProfileView struct {
-	ProfilesList *tview.List
-	View         *tview.Flex
+	ProfilesTable *tview.Table
+	View          *tview.Flex
 }
 
 // NewProfileView contains information about the "New Profile" view
@@ -79,11 +78,11 @@ func (cactus *Cactus) AddProfileForm() {
 		profile.LastName = lastName
 	})
 
-	cactus.NewProfileView.Form.AddInputField("Address Line 1", "", 20, nil, func(addressLine1 string) {
+	cactus.NewProfileView.Form.AddInputField("Address Line 1", "", 30, nil, func(addressLine1 string) {
 		profile.AddressLine1 = addressLine1
 	})
 
-	cactus.NewProfileView.Form.AddInputField("Address Line 2", "", 20, nil, func(addressLine2 string) {
+	cactus.NewProfileView.Form.AddInputField("Address Line 2", "", 30, nil, func(addressLine2 string) {
 		profile.AddressLine2 = addressLine2
 	})
 
@@ -95,11 +94,11 @@ func (cactus *Cactus) AddProfileForm() {
 		profile.Postcode = postcode
 	})
 
-	cactus.NewProfileView.Form.AddInputField("Email", "", 20, nil, func(email string) {
+	cactus.NewProfileView.Form.AddInputField("Email", "", 30, nil, func(email string) {
 		profile.Email = email
 	})
 
-	cactus.NewProfileView.Form.AddInputField("Phone", "", 20, nil, func(phone string) {
+	cactus.NewProfileView.Form.AddInputField("Phone", "", 30, nil, func(phone string) {
 		profile.Phone = phone
 	})
 
@@ -112,9 +111,27 @@ func (cactus *Cactus) AddProfileForm() {
 		}
 	})
 
+	cactus.NewProfileView.Form.AddInputField("Card number", "", 20, nil, func(cardNumber string) {
+		profile.CardNumber = cardNumber
+	})
+
+	cactus.NewProfileView.Form.AddDropDown("Card month", utils.CardMonths(), 0, func(month string, index int) {
+		profile.CardMonth = month
+	})
+
+	cactus.NewProfileView.Form.AddDropDown("Card year", utils.CardYears(), 0, func(year string, index int) {
+		profile.CardYear = year
+	})
+
+	cactus.NewProfileView.Form.AddInputField("CVV", "", 5, nil, func(cvv string) {
+		profile.CardCvv = cvv
+	})
+
 	cactus.NewProfileView.Form.AddButton("Save", func() {
-		utils.Info(profile.State)
-		cactus.User.Profiles = append(cactus.User.Profiles, profile)
+		err := cactus.SaveProfile(profile)
+		if err != nil {
+			// show error dialog
+		}
 		cactus.RefreshProfileView()
 		cactus.pages.SwitchToPage("Profiles")
 	})
@@ -137,7 +154,10 @@ func (cactus *Cactus) NewSelectStateView(countryCode string, profile *user.Profi
 	}
 
 	form.AddDropDown("States", states, 0, func(state string, index int) {
-		profile.State = state
+		stateCode, err := utils.GetStateCode(countryCode, state)
+		if err == nil {
+			profile.State = stateCode
+		}
 	})
 
 	form.AddButton("Save", func() {
@@ -168,38 +188,95 @@ func (cactus *Cactus) NewNewProfileView() *NewProfileView {
 
 // RefreshProfileView refresh the list of profiles
 func (cactus *Cactus) RefreshProfileView() {
-	cactus.ProfilesView.ProfilesList.Clear()
-	for _, entry := range cactus.User.Profiles {
-		// set 0 as shortcut for no binding
-		cactus.ProfilesView.ProfilesList.AddItem(entry.Title, fmt.Sprintf("edit %s profile", entry.Title), 0, nil)
+	cactus.ProfilesView.ProfilesTable.Clear()
+
+	for i, profile := range cactus.User.Profiles {
+		// table cell containing profile name
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 0, tview.NewTableCell(profile.Title).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Rename button"
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("Rename").
+			SetClickedFunc(nil).
+			SetTextColor(tcell.ColorYellow).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Edit button"
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("Edit").
+			SetClickedFunc(nil).
+			SetTextColor(tcell.ColorYellow).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Delete button"
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("Delete").
+			SetClickedFunc(
+				func() bool {
+					cactus.DeleteProfile(profile.Title)
+					cactus.RefreshProfileView()
+					return true
+				},
+			).
+			SetTextColor(tcell.ColorRed).
+			SetAlign(tview.AlignCenter))
 	}
-	cactus.ProfilesView.ProfilesList.AddItem("Go Back", "return to the previous page", 'b', cactus.UI.OnGoBackSelected)
+
 }
 
 // NewSitelistView returns a view for the profiles management
 func (cactus *Cactus) NewProfilesView() *ProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
-	profilesList := tview.NewList()
-	for _, entry := range cactus.User.Profiles {
-		// set 0 as shortcut for no binding
-		profilesList.AddItem(entry.Title, fmt.Sprintf("edit %s profile", entry.Title), 0, nil)
-	}
-	profilesList.AddItem("Go Back", "return to the previous page", 'b', cactus.UI.OnGoBackSelected)
+	table := tview.NewTable().
+		SetBorders(true)
 
-	helpInfo1 := tview.NewTextView().SetText("Press (a) to add a new Profile").SetTextAlign(tview.AlignLeft)
-	helpInfo2 := tview.NewTextView().SetText("Press (d) to delete, (r) to rename, <ENTER> to edit a profile").SetTextAlign(tview.AlignRight)
+	for i, profile := range cactus.User.Profiles {
+		// table cell containing profile name
+		table.SetCell(i, 0, tview.NewTableCell(profile.Title).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Rename button"
+		table.SetCell(i, 1, tview.NewTableCell("Rename").
+			SetClickedFunc(nil).
+			SetTextColor(tcell.ColorYellow).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Edit button"
+		table.SetCell(i, 2, tview.NewTableCell("Edit").
+			SetClickedFunc(nil).
+			SetTextColor(tcell.ColorYellow).
+			SetAlign(tview.AlignCenter))
+
+		// table cell containing "Delete button"
+		table.SetCell(i, 3, tview.NewTableCell("Delete").
+			SetClickedFunc(
+				func() bool {
+					cactus.DeleteProfile(profile.Title)
+					cactus.RefreshProfileView()
+					return true
+				},
+			).
+			SetTextColor(tcell.ColorRed).
+			SetAlign(tview.AlignCenter))
+	}
+
+	footerForm := tview.NewForm()
+	footerForm.AddButton("Create New", func() {
+		cactus.pages.SwitchToPage("New Profile")
+	})
+	footerForm.AddButton("Go Back", func() {
+		cactus.UI.OnGoBackSelected()
+	})
 
 	flex.SetDirection(tview.FlexRow).
 		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Profiles"), 0, 1, false).
-		AddItem(profilesList, 0, 4, true).
+		AddItem(table, 0, 4, false).
 		AddItem(
-			tview.NewGrid().SetRows(3, 3).
-				AddItem(helpInfo1, 1, 0, 1, 1, 0, 0, false).
-				AddItem(helpInfo2, 1, 1, 1, 1, 0, 0, false), 0, 4, false).
+			tview.NewFlex().
+				SetDirection(tview.FlexRow).
+				AddItem(footerForm, 0, 4, true), 0, 1, true).
 		SetBorder(true)
 
-	return &ProfileView{View: flex, ProfilesList: profilesList}
+	return &ProfileView{View: flex, ProfilesTable: table}
 }
 
 // NewSitelistView returns a view for the sitelist

@@ -22,7 +22,7 @@ type Profile struct {
 	Email        string `json:"email"`
 	FirstName    string `json:"first_name"`
 	LastName     string `json:"last_name"`
-	FullName     string
+	FullName     string `json:"full_name"`
 	AddressLine1 string `json:"address_line_1"`
 	AddressLine2 string `json:"address_line_2"`
 	City         string `json:"city"`
