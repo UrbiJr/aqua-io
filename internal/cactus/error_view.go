@@ -24,10 +24,12 @@ func newModal() *tview.Modal {
 }
 
 // ShowError displays the custom error
-func (cactus *Cactus) ShowError(prevPage string, err error) {
+func (cactus *Cactus) ShowError(currentPage string, err error) {
 	cactus.ErrorView.Modal.
+		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			cactus.pages.SwitchToPage(prevPage)
+			// hide this page and go back to the previous page
+			cactus.pages.SwitchToPage(currentPage)
 		})
 	cactus.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
 	cactus.pages.SwitchToPage(cactus.ErrorView.Title)

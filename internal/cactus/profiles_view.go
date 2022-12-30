@@ -32,7 +32,13 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 
 		// table cell containing "Edit button"
 		table.SetCell(i, 2, tview.NewTableCell("Edit").
-			SetClickedFunc(nil).
+			SetClickedFunc(
+				func() bool {
+					cactus.EditProfileForm(profile)
+					cactus.pages.SwitchToPage(cactus.EditProfileView.Title)
+					return true
+				},
+			).
 			SetTextColor(tcell.ColorYellow).
 			SetAlign(tview.AlignCenter))
 

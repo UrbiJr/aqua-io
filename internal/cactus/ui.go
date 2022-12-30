@@ -17,6 +17,7 @@ type UI struct {
 	ProfilesView       *ProfileView
 	StateSelectionView *StateSelectionView
 	NewProfileView     *NewProfileView
+	EditProfileView    *EditProfileView
 	ErrorView          *ErrorView
 }
 
@@ -84,6 +85,7 @@ func (cactus *Cactus) InitUI() error {
 	cactus.SitelistView = cactus.NewSitelistView()
 	cactus.ProfilesView = cactus.NewProfilesView()
 	cactus.NewProfileView = cactus.NewNewProfileView()
+	cactus.EditProfileView = cactus.NewEditProfileView()
 	cactus.StateSelectionView = cactus.NewStateSelectionView()
 	cactus.AddProfileForm()
 
@@ -92,6 +94,7 @@ func (cactus *Cactus) InitUI() error {
 	cactus.UI.pages.AddPage(cactus.ProfilesView.Title, cactus.ProfilesView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.NewProfileView.Title, cactus.NewProfileView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.StateSelectionView.Title, cactus.StateSelectionView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.EditProfileView.Title, cactus.EditProfileView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.ErrorView.Title, cactus.ErrorView.View, true, false)
 
 	// Enable mouse detection
@@ -110,8 +113,6 @@ func (ui *UI) SetListeners() {
 		case "Profiles":
 			switch pressedKey := event.Rune(); pressedKey {
 			case 97: // user presses 'a' key
-				// switch current view to Sitelist
-				ui.pages.SwitchToPage(ui.NewProfileView.Title)
 			case 100: // user presses 'd' key
 			case 114: // user presses 'r' key
 			}

@@ -22,7 +22,7 @@ func (cactus *Cactus) NewNewProfileView() *NewProfileView {
 
 	flex.SetDirection(tview.FlexRow).
 		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("New Profile"), 0, 1, false).
-		AddItem(form, 0, 4, true).
+		AddItem(form, 0, 8, true).
 		SetBorder(true)
 
 	return &NewProfileView{Title: "New Profile", View: flex, Form: form}

@@ -47,6 +47,17 @@ func (cactus *Cactus) SaveProfile(profile user.Profile) error {
 	return nil
 }
 
+// UpdateProfile updates an existing profile and writes the updated profile list to file
+func (cactus *Cactus) UpdateProfile(profile user.Profile) error {
+	for _, p := range cactus.User.Profiles {
+		if p.Title == profile.Title {
+			p = profile
+		}
+	}
+	user.WriteProfiles(cactus.User.Profiles)
+	return nil
+}
+
 // DeleteProfile removes profile from user profiles list and writes the updated list to file
 func (cactus *Cactus) DeleteProfile(profileTitle string) error {
 	for i, p := range cactus.User.Profiles {

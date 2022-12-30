@@ -17,6 +17,7 @@ type StateSelectionView struct {
 // RefreshStateSelectionView fills the state selection form with the states of the specified country
 func (cactus *Cactus) RefreshStateSelectionView(countryCode string, profile *user.Profile) {
 	cactus.StateSelectionView.Form.Clear(true)
+	var stateCode string
 
 	states, err := utils.GetStates(countryCode)
 	if err != nil {
@@ -24,13 +25,15 @@ func (cactus *Cactus) RefreshStateSelectionView(countryCode string, profile *use
 	}
 
 	cactus.StateSelectionView.Form.AddDropDown("States", states, 0, func(state string, index int) {
-		stateCode, err := utils.GetStateCode(countryCode, state)
-		if err == nil {
-			profile.State = stateCode
-		}
+		stateCode, err = utils.GetStateCode(countryCode, state)
 	})
 
 	cactus.StateSelectionView.Form.AddButton("Save", func() {
+		profile.State = stateCode
+		cactus.pages.SwitchToPage(cactus.NewProfileView.Title)
+	})
+
+	cactus.StateSelectionView.Form.AddButton("Cancel", func() {
 		cactus.pages.SwitchToPage(cactus.NewProfileView.Title)
 	})
 }
