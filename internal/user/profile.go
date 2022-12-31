@@ -36,6 +36,7 @@ type Profile struct {
 	CardCvv      string `json:"card_cvv"`
 }
 
+// ReadProfiles reads profiles.json and returns read data as []Profile
 func ReadProfiles() []Profile {
 	jsonFile, err := os.Open("profiles.json")
 	if err != nil {
@@ -56,6 +57,7 @@ func ReadProfiles() []Profile {
 
 }
 
+// WriteProfiles writes profiles to profiles.json
 func WriteProfiles(profiles []Profile) {
 	file, _ := json.MarshalIndent(profiles, "", " ")
 	_ = ioutil.WriteFile("profiles.json", file, 0644)

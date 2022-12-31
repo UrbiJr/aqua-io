@@ -39,12 +39,15 @@ func main() {
 
 	//utils.Log("Booting up...")
 
+	settings := user.ReadSettings()
+
+	// logged in
 	loggedUser := user.NewUser(
-		"LICENSE-KEY",
 		"example@gmail.com",
 		"",
 		"cactus-user",
 	)
+	loggedUser.Settings = settings
 
 	cactus := cactus.NewCactus()
 	cactus.User = loggedUser
