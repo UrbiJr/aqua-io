@@ -78,7 +78,7 @@ func (cactus *Cactus) EditProfileForm(profile user.Profile) {
 		countryCode, err := utils.GetCountryCode(country)
 		if err == nil {
 			profile.CountryCode = countryCode
-			cactus.RefreshStateSelectionView(countryCode, &profile)
+			cactus.RefreshStateSelectionView(cactus.EditProfileView.Title, countryCode, &profile)
 			cactus.pages.SwitchToPage(cactus.StateSelectionView.Title)
 		}
 	})
