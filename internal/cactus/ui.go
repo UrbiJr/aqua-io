@@ -19,6 +19,7 @@ type UI struct {
 	NewProfileView     *NewProfileView
 	EditProfileView    *EditProfileView
 	ErrorView          *ErrorView
+	ConfirmView        *ConfirmView
 }
 
 // OnGoBackSelected should be called when a user choose to go to the previous view
@@ -81,6 +82,7 @@ func (cactus *Cactus) InitUI() error {
 	}
 
 	cactus.ErrorView = cactus.NewErrorView()
+	cactus.ConfirmView = cactus.NewConfirmView()
 	cactus.MainMenuView = cactus.NewMainMenuView(msg, entries) // create main view Menu
 	cactus.SitelistView = cactus.NewSitelistView()
 	cactus.ProfilesView = cactus.NewProfilesView()
@@ -96,6 +98,7 @@ func (cactus *Cactus) InitUI() error {
 	cactus.UI.pages.AddPage(cactus.StateSelectionView.Title, cactus.StateSelectionView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.EditProfileView.Title, cactus.EditProfileView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.ErrorView.Title, cactus.ErrorView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.ConfirmView.Title, cactus.ConfirmView.View, true, false)
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts

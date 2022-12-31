@@ -15,7 +15,7 @@ type ErrorView struct {
 }
 
 // newModal returns an empty modal
-func newModal() *tview.Modal {
+func newErrorModal() *tview.Modal {
 
 	modal := tview.NewModal().
 		AddButtons([]string{"Ok"})
@@ -39,7 +39,7 @@ func (cactus *Cactus) ShowError(currentPage string, err error) {
 func (cactus *Cactus) NewErrorView() *ErrorView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
-	modal := newModal()
+	modal := newErrorModal()
 
 	flex.SetDirection(tview.FlexRow).
 		AddItem(modal, 0, 4, true)

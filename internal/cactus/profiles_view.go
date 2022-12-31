@@ -1,6 +1,8 @@
 package cactus
 
 import (
+	"fmt"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -17,7 +19,8 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	table := tview.NewTable().
-		SetBorders(true)
+		SetBorders(true).
+		SetBordersColor(tcell.ColorGrey)
 
 	for i, profile := range cactus.User.Profiles {
 		// table cell containing profile name
@@ -46,8 +49,17 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 		table.SetCell(i, 3, tview.NewTableCell("Delete").
 			SetClickedFunc(
 				func() bool {
-					cactus.DeleteProfile(profile.Title)
-					cactus.RefreshProfileView()
+					cactus.ShowConfirm(
+						func() {
+							cactus.DeleteProfile(profile.Title)
+							cactus.RefreshProfileView()
+							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+						},
+						func() {
+							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+						},
+						fmt.Sprintf("Are you sure you want to delete profile \"%s\"?", profile.Title),
+					)
 					return true
 				},
 			).
@@ -100,8 +112,17 @@ func (cactus *Cactus) RefreshProfileView() {
 		cactus.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("Delete").
 			SetClickedFunc(
 				func() bool {
-					cactus.DeleteProfile(profile.Title)
-					cactus.RefreshProfileView()
+					cactus.ShowConfirm(
+						func() {
+							cactus.DeleteProfile(profile.Title)
+							cactus.RefreshProfileView()
+							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+						},
+						func() {
+							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+						},
+						fmt.Sprintf("Are you sure you want to delete profile \"%s\"?", profile.Title),
+					)
 					return true
 				},
 			).
