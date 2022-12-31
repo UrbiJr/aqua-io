@@ -8,15 +8,21 @@ import (
 )
 
 type Settings struct {
-	LicenseKey string `json:"license_key"`
-	Webhook    string `json:"webhook"`
-	Delay      string `json:"delay"`
+	LicenseKey string            `json:"license_key"`
+	Webhook    string            `json:"webhook"`
+	Delay      string            `json:"delay"`
+	APIKeys    map[string]string `json:"api_keys"`
 }
 
 func init() {
 	if _, err := os.Stat("settings.json"); errors.Is(err, os.ErrNotExist) {
 		// file does not exist
-		settings := Settings{}
+		settings := Settings{
+			APIKeys: map[string]string{},
+		}
+		settings.APIKeys["2captcha"] = ""
+		settings.APIKeys["capmonster"] = ""
+		settings.APIKeys["anticaptcha"] = ""
 		file, _ := json.MarshalIndent(settings, "", " ")
 		_ = ioutil.WriteFile("settings.json", file, 0644)
 	}

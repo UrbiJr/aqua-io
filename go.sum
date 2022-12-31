@@ -1,3 +1,9 @@
+github.com/2captcha/2captcha-go v1.0.1 h1:BN7r++JGUrs6wDJE3KMCSqckecoKV635XXo7Bcwsypk=
+github.com/2captcha/2captcha-go v1.0.1/go.mod h1:hYOq+KVOq/0zAG6OTYW7Y313qDkHv58CcaOyjdBQSco=
+github.com/UrbiJr/anticaptcha v1.0.2-0.20211026091049-8fd7144266fb h1:NmCdxK6O0ZvCg8qnnKWXU5sjH5ua8QzUTL6CgpVQS3I=
+github.com/UrbiJr/anticaptcha v1.0.2-0.20211026091049-8fd7144266fb/go.mod h1:1k2tuv23w9IG9ev2r/vkHa0rVRII+8uAjpZCV1Cz/Qw=
+github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186 h1:rAmbAEfwqG6BYdxryzvs31cvuVTvaHWKBthxl5nQ1Ps=
+github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186/go.mod h1:1k2tuv23w9IG9ev2r/vkHa0rVRII+8uAjpZCV1Cz/Qw=
 github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082 h1:3RgcPZrUWhrxqhtDkuRmDTRVXGkxrVMZtJMic7cEtGA=
 github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082/go.mod h1:jKPLGXGRR3v90kZOLs/kUMffoEot8IrRDGmmzI3kOtg=
 github.com/gdamore/encoding v1.0.0 h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdko=
