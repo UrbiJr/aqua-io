@@ -53,7 +53,13 @@ func (cactus *Cactus) RefreshProfileView() {
 
 		// table cell containing "Rename button"
 		cactus.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("Rename").
-			SetClickedFunc(nil).
+			SetClickedFunc(
+				func() bool {
+					cactus.RenameProfileForm(profile)
+					cactus.pages.SwitchToPage(cactus.EditProfileView.Title)
+					return true
+				},
+			).
 			SetTextColor(tcell.ColorYellow).
 			SetAlign(tview.AlignCenter))
 

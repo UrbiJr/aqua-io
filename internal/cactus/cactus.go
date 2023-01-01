@@ -52,11 +52,32 @@ func (cactus *Cactus) SaveProfile(profile user.Profile) error {
 
 // UpdateProfile updates an existing profile and writes the updated profile list to file
 func (cactus *Cactus) UpdateProfile(profile user.Profile) error {
-	for _, p := range cactus.User.Profiles {
+	idx := -1
+	for i, p := range cactus.User.Profiles {
 		if p.Title == profile.Title {
-			p = profile
+			idx = i
 		}
 	}
+	if idx == -1 {
+		return errors.New("match not found")
+	}
+	cactus.User.Profiles[idx] = profile
+	user.WriteProfiles(cactus.User.Profiles)
+	return nil
+}
+
+// UpdateProfileTitle updates an existing profile title and writes the updated profile list to file
+func (cactus *Cactus) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
+	idx := -1
+	for i, p := range cactus.User.Profiles {
+		if p.Title == oldtitle {
+			idx = i
+		}
+	}
+	if idx == -1 {
+		return errors.New("match not found")
+	}
+	cactus.User.Profiles[idx].Title = profile.Title
 	user.WriteProfiles(cactus.User.Profiles)
 	return nil
 }

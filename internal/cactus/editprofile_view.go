@@ -114,3 +114,28 @@ func (cactus *Cactus) EditProfileForm(profile user.Profile) {
 	})
 
 }
+
+func (cactus *Cactus) RenameProfileForm(profile user.Profile) {
+
+	oldTitle := profile.Title
+	cactus.EditProfileView.Form.Clear(true)
+
+	cactus.EditProfileView.Form.AddInputField("New Title", profile.Title, 20, nil, func(title string) {
+		profile.Title = title
+	})
+
+	cactus.EditProfileView.Form.AddButton("Save", func() {
+		err := cactus.UpdateProfileTitle(oldTitle, profile)
+		if err != nil {
+			cactus.ShowError(cactus.EditProfileView.Title, err)
+		} else {
+			cactus.RefreshProfileView()
+			cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+		}
+	})
+
+	cactus.EditProfileView.Form.AddButton("Cancel", func() {
+		cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+	})
+
+}
