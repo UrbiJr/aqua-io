@@ -22,51 +22,6 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 		SetBorders(true).
 		SetBordersColor(tcell.ColorGrey)
 
-	for i, profile := range cactus.User.Profiles {
-		// table cell containing profile name
-		table.SetCell(i, 0, tview.NewTableCell(profile.Title).
-			SetAlign(tview.AlignCenter))
-
-		// table cell containing "Rename button"
-		table.SetCell(i, 1, tview.NewTableCell("Rename").
-			SetClickedFunc(nil).
-			SetTextColor(tcell.ColorYellow).
-			SetAlign(tview.AlignCenter))
-
-		// table cell containing "Edit button"
-		table.SetCell(i, 2, tview.NewTableCell("Edit").
-			SetClickedFunc(
-				func() bool {
-					cactus.EditProfileForm(profile)
-					cactus.pages.SwitchToPage(cactus.EditProfileView.Title)
-					return true
-				},
-			).
-			SetTextColor(tcell.ColorYellow).
-			SetAlign(tview.AlignCenter))
-
-		// table cell containing "Delete button"
-		table.SetCell(i, 3, tview.NewTableCell("Delete").
-			SetClickedFunc(
-				func() bool {
-					cactus.ShowConfirm(
-						func() {
-							cactus.DeleteProfile(profile.Title)
-							cactus.RefreshProfileView()
-							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
-						},
-						func() {
-							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
-						},
-						fmt.Sprintf("Are you sure you want to delete profile \"%s\"?", profile.Title),
-					)
-					return true
-				},
-			).
-			SetTextColor(tcell.ColorRed).
-			SetAlign(tview.AlignCenter))
-	}
-
 	footerForm := tview.NewForm()
 	footerForm.AddButton("Create New", func() {
 		cactus.pages.SwitchToPage(cactus.NewProfileView.Title)

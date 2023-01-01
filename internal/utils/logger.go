@@ -10,6 +10,7 @@ import (
 )
 
 type Logger struct {
+	File   *os.File
 	logger *log.Logger
 }
 
@@ -22,7 +23,12 @@ func init() {
 	if err != nil {
 		log.Panic(err)
 	}
+	defaultLogger.File = getFilePath
 	defaultLogger.logger = log.New(getFilePath, "CACTUS-AIO: ", log.LstdFlags)
+}
+
+func QuitLogger() {
+	defaultLogger.File.Close()
 }
 
 func setLogFile() (*os.File, error) {

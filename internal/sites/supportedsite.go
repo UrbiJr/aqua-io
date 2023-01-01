@@ -1,4 +1,4 @@
-package cactus
+package sites
 
 type Store string
 type SiteCategory int

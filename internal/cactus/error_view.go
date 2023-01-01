@@ -35,6 +35,18 @@ func (cactus *Cactus) ShowError(currentPage string, err error) {
 	cactus.pages.SwitchToPage(cactus.ErrorView.Title)
 }
 
+// ShowErrorAndExit displays the custom error and closes the app
+func (cactus *Cactus) ShowErrorAndExit(err error) {
+	cactus.ErrorView.Modal.
+		// set function when OK button (any button) gets pressed
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			// hide this page and go back to the previous page
+			cactus.Quit()
+		})
+	cactus.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
+	cactus.pages.SwitchToPage(cactus.ErrorView.Title)
+}
+
 // NewErrorView returns a view for the custom error messages
 func (cactus *Cactus) NewErrorView() *ErrorView {
 

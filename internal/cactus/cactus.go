@@ -4,22 +4,24 @@ import (
 	"errors"
 	"log"
 
+	"github.com/cactus-aio/go-cactus/internal/sites"
 	"github.com/cactus-aio/go-cactus/internal/user"
+	"github.com/cactus-aio/go-cactus/internal/utils"
 )
 
 // Cactus is the container of the main app, it contains the main attributes
 type Cactus struct {
 	*UI
-	SiteList []*SupportedSite
+	SiteList []*sites.SupportedSite
 	*log.Logger
 	User *user.User
 }
 
 // NewCactus returns a new instance of the app
 func NewCactus() *Cactus {
-	sitelist := []*SupportedSite{
-		{Name: Nike, Category: SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
-		{Name: Schuh, Category: SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
+	sitelist := []*sites.SupportedSite{
+		{Name: sites.Nike, Category: sites.SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
+		{Name: sites.Schuh, Category: sites.SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
 	}
 
 	cactus := &Cactus{
@@ -32,6 +34,7 @@ func NewCactus() *Cactus {
 
 // Quit exits the app gracefully
 func (cactus *Cactus) Quit() {
+	utils.QuitLogger()
 	cactus.UI.tui.Stop()
 }
 
@@ -69,12 +72,4 @@ func (cactus *Cactus) DeleteProfile(profileTitle string) error {
 		}
 	}
 	return errors.New("cannot find a profile with this title")
-}
-
-// Run initializes the app along with its layout
-func (cactus *Cactus) Run() error {
-
-	err := cactus.InitUI()
-
-	return err
 }

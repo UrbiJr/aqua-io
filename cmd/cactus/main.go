@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"log"
 	"math/rand"
@@ -37,9 +38,15 @@ func init() {
 // app entry point
 func main() {
 
-	//utils.Log("Booting up...")
+	//utils.Info("Booting up...")
 
-	settings := user.ReadSettings()
+	cactus := cactus.NewCactus()
+	cactus.DrawUI()
+
+	settings, err := user.ReadSettings()
+	if err != nil {
+		cactus.ShowErrorAndExit(errors.New("settings file is corrupted or contains malformed JSON. You may rename it and start the app again to bypass this error"))
+	}
 
 	// logged in
 	loggedUser := user.NewUser(
@@ -47,11 +54,16 @@ func main() {
 		"",
 		"cactus-user",
 	)
-	loggedUser.Settings = settings
 
-	cactus := cactus.NewCactus()
 	cactus.User = loggedUser
-	cactus.User.Profiles = user.ReadProfiles()
+	cactus.User.Settings = settings
+	cactus.User.Profiles, err = user.ReadProfiles()
+	if err != nil {
+		cactus.ShowErrorAndExit(errors.New("profiles file is corrupted or contains malformed JSON. You may rename it and start the app again to bypass this error"))
+	}
+
+	// fill "Profiles" view with user profiles list
+	cactus.RefreshProfileView()
 
 	cactus.Run()
 }

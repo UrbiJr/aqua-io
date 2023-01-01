@@ -1,9 +1,6 @@
 package cactus
 
 import (
-	"fmt"
-	"math/rand"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -56,24 +53,14 @@ func NewUI() *UI {
 	return ui
 }
 
-func (cactus *Cactus) InitUI() error {
+// DrawUI instantiates all the needed pages and makes the UI layout, but does not display it. For that, call Run()
+func (cactus *Cactus) DrawUI() {
 
 	cactus.UI.pages = tview.NewPages() // Allows us to easily switch between views
 
 	// Listeners must be initialized before anything else
-	cactus.UI.SetListeners()
+	cactus.SetListeners()
 
-	greetings := []string{
-		"how can Cactus-AIO assist you today? :-)",
-		"how are you going to use Cactus-AIO today? :-)",
-		"ready to have some fun with Cactus-AIO?",
-		"Cactus-AIO is at your service :cactus-salute:",
-		"it's been a while.",
-		"time to make the success log go brrr.",
-		"everyday is a perfect day to run Cactus-AIO!",
-	}
-
-	msg := fmt.Sprintf("Hello %s, %s", cactus.User.Username, greetings[rand.Intn(len(greetings))])
 	entries := []MenuEntry{
 		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: cactus.OnSitelistSelected},
 		{name: "Profiles", label: '2', description: "manage your profiles", selected: cactus.OnProfilesSelected},
@@ -83,7 +70,7 @@ func (cactus *Cactus) InitUI() error {
 
 	cactus.ErrorView = cactus.NewErrorView()
 	cactus.ConfirmView = cactus.NewConfirmView()
-	cactus.MainMenuView = cactus.NewMainMenuView(msg, entries) // create main view Menu
+	cactus.MainMenuView = cactus.NewMainMenuView(entries) // create main view Menu
 	cactus.SitelistView = cactus.NewSitelistView()
 	cactus.ProfilesView = cactus.NewProfilesView()
 	cactus.NewProfileView = cactus.NewNewProfileView()
@@ -91,28 +78,42 @@ func (cactus *Cactus) InitUI() error {
 	cactus.StateSelectionView = cactus.NewStateSelectionView()
 	cactus.AddProfileForm()
 
+	cactus.UI.pages.AddPage(cactus.ErrorView.Title, cactus.ErrorView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.ConfirmView.Title, cactus.ConfirmView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.MainMenuView.Title, cactus.MainMenuView.View, true, true)
 	cactus.UI.pages.AddPage(cactus.SitelistView.Title, cactus.SitelistView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.ProfilesView.Title, cactus.ProfilesView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.NewProfileView.Title, cactus.NewProfileView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.StateSelectionView.Title, cactus.StateSelectionView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.EditProfileView.Title, cactus.EditProfileView.View, true, false)
-	cactus.UI.pages.AddPage(cactus.ErrorView.Title, cactus.ErrorView.View, true, false)
-	cactus.UI.pages.AddPage(cactus.ConfirmView.Title, cactus.ConfirmView.View, true, false)
+}
+
+/*
+Run displays the UI. This method should be called as last, as it's blocking.
+In particular, the Run function of tview.Application starts the application and takes care of handling user interface events, such as rendering and handling user input. Thus, once the application is started with Run, subsequent code will not execute until the application is stopped, such as by calling the Stop function or exiting the application window.
+
+If you want to run other code after starting the application, you'll need to do it asynchronously, such as using a goroutine
+*/
+func (ui *UI) Run() error {
 
 	// Enable mouse detection
 	// The SetRoot function tells the tview app which widget to display when the application starts
-	if err := cactus.UI.tui.SetRoot(cactus.UI.pages, true).EnableMouse(true).Run(); err != nil {
+	if err := ui.tui.SetRoot(ui.pages, true).EnableMouse(true).Run(); err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func (ui *UI) SetListeners() {
-	ui.tui.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+func (cactus *Cactus) SetListeners() {
+	cactus.tui.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+
+		// user pressed CTRL-C
+		if event.Key() == tcell.KeyCtrlC {
+			cactus.Quit()
+		}
+
 		// switch selection based on current page
-		switch currentPageTitle, _ := ui.pages.GetFrontPage(); currentPageTitle {
+		switch currentPageTitle, _ := cactus.pages.GetFrontPage(); currentPageTitle {
 		case "Profiles":
 			switch pressedKey := event.Rune(); pressedKey {
 			case 97: // user presses 'a' key

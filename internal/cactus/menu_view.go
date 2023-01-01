@@ -37,14 +37,8 @@ type MenuEntry struct {
 	selected    func()
 }
 
-// Menu contains information about a Cactus-AIO ui menu
-type Menu struct {
-	name    string
-	entries []MenuEntry
-}
-
 // NewMainMenuView initializes the menu for the main view
-func (ui *UI) NewMainMenuView(welcomeMessage string, entries []MenuEntry) *MainMenuView {
+func (ui *UI) NewMainMenuView(entries []MenuEntry) *MainMenuView {
 
 	list := tview.NewList()
 	for _, entry := range entries {
@@ -54,7 +48,7 @@ func (ui *UI) NewMainMenuView(welcomeMessage string, entries []MenuEntry) *MainM
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(welcomeMessage), 0, 1, false).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Main Menu"), 0, 1, false).
 		AddItem(list, 0, 4, true).
 		SetBorder(true)
 
