@@ -17,7 +17,7 @@ type Logger struct {
 // And just go global.
 var defaultLogger *Logger
 
-func init() {
+func NewLogger() {
 	defaultLogger = new(Logger)
 	getFilePath, err := setLogFile()
 	if err != nil {

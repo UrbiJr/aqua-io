@@ -28,6 +28,8 @@ func init() {
 		log.Println(err)
 	}
 
+	utils.NewLogger()
+
 	if utils.DebugEnabled {
 		utils.Info("Debug logging enabled")
 	}
