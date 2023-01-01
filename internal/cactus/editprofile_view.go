@@ -32,6 +32,7 @@ func (cactus *Cactus) NewEditProfileView() *EditProfileView {
 	return &EditProfileView{Title: "Edit Profile", Header: header, View: flex, Form: form}
 }
 
+// EditProfileForm draws a form to edit a profile in the current view
 func (cactus *Cactus) EditProfileForm(profile user.Profile) {
 
 	cactus.EditProfileView.Header.SetText(fmt.Sprintf("Editing profile \"%s\"", profile.Title))
@@ -115,6 +116,7 @@ func (cactus *Cactus) EditProfileForm(profile user.Profile) {
 
 }
 
+// RenameProfileForm draws a form to rename a profile in the current view
 func (cactus *Cactus) RenameProfileForm(profile user.Profile) {
 
 	oldTitle := profile.Title

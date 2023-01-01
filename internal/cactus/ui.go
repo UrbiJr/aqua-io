@@ -15,6 +15,7 @@ type UI struct {
 	StateSelectionView *StateSelectionView
 	NewProfileView     *NewProfileView
 	EditProfileView    *EditProfileView
+	SettingsView       *SettingsView
 	ErrorView          *ErrorView
 	ConfirmView        *ConfirmView
 }
@@ -36,6 +37,14 @@ func (ui *UI) OnProfilesSelected() {
 
 	// switch current view to Sitelist
 	ui.pages.SwitchToPage(ui.ProfilesView.Title)
+}
+
+// OnSettingsSelected should be called when a user choose Settings entry on main menu
+func (cactus *Cactus) OnSettingsSelected() {
+
+	// switch current view to Sitelist
+	cactus.EditSettingsForm()
+	cactus.UI.pages.SwitchToPage(cactus.SettingsView.Title)
 }
 
 // OnSitelistSelected should be called when a user choose Sitelist entry on main menu
@@ -64,7 +73,7 @@ func (cactus *Cactus) DrawUI() {
 	entries := []MenuEntry{
 		{name: "Sitelist", label: '1', description: "display Cactus-AIO sitelist", selected: cactus.OnSitelistSelected},
 		{name: "Profiles", label: '2', description: "manage your profiles", selected: cactus.OnProfilesSelected},
-		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: nil},
+		{name: "Settings", label: '3', description: "edit Cactus-AIO settings", selected: cactus.OnSettingsSelected},
 		{name: "Quit", label: 'q', description: "close Cactus-AIO", selected: cactus.Quit},
 	}
 
@@ -75,6 +84,7 @@ func (cactus *Cactus) DrawUI() {
 	cactus.ProfilesView = cactus.NewProfilesView()
 	cactus.NewProfileView = cactus.NewNewProfileView()
 	cactus.EditProfileView = cactus.NewEditProfileView()
+	cactus.SettingsView = cactus.NewSettingsView()
 	cactus.StateSelectionView = cactus.NewStateSelectionView()
 	cactus.AddProfileForm()
 
@@ -86,6 +96,7 @@ func (cactus *Cactus) DrawUI() {
 	cactus.UI.pages.AddPage(cactus.NewProfileView.Title, cactus.NewProfileView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.StateSelectionView.Title, cactus.StateSelectionView.View, true, false)
 	cactus.UI.pages.AddPage(cactus.EditProfileView.Title, cactus.EditProfileView.View, true, false)
+	cactus.UI.pages.AddPage(cactus.SettingsView.Title, cactus.SettingsView.View, true, false)
 }
 
 /*

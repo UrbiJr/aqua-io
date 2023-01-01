@@ -94,7 +94,7 @@ func (cactus *Cactus) AddProfileForm() {
 	})
 
 	cactus.NewProfileView.Form.AddButton("Save", func() {
-		err := cactus.SaveProfile(profile)
+		err := cactus.AddProfile(profile)
 		if err != nil {
 			cactus.ShowError(cactus.NewProfileView.Title, err)
 		} else {

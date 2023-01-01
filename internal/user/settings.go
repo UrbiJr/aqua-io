@@ -10,13 +10,13 @@ import (
 
 type SiteSettings struct {
 	Captcha string `json:"captcha"`
-	Delay   string `json:"delay"`
+	Delay   int    `json:"delay"`
 }
 
 type Settings struct {
 	LicenseKey    string                  `json:"license_key"`
 	Webhook       string                  `json:"webhook"`
-	Delay         string                  `json:"delay"`
+	Delay         int                     `json:"delay"`
 	APIKeys       map[string]string       `json:"api_keys"`
 	SitesSettings map[string]SiteSettings `json:"site_settings"`
 }

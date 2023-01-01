@@ -38,8 +38,8 @@ func (cactus *Cactus) Quit() {
 	cactus.UI.tui.Stop()
 }
 
-// SaveProfile appends profile to user profiles list and writes the updated list to file
-func (cactus *Cactus) SaveProfile(profile user.Profile) error {
+// AddProfile appends profile to user profiles list and writes the updated list to file
+func (cactus *Cactus) AddProfile(profile user.Profile) error {
 	for _, p := range cactus.User.Profiles {
 		if p.Title == profile.Title {
 			return errors.New("a profile with this title is already existent")
