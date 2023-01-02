@@ -48,8 +48,8 @@ func (ui *UI) NewMainMenuView(entries []MenuEntry) *MainMenuView {
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Main Menu"), 0, 1, false).
-		AddItem(list, 0, 4, true).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("📋 Main Menu"), 0, 1, false).
+		AddItem(list, 0, 8, true).
 		SetBorder(true)
 
 	return &MainMenuView{Title: "Main Menu", View: flex}

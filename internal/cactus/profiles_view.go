@@ -31,7 +31,7 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 	})
 
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Profiles"), 0, 1, false).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("👥 Profiles"), 0, 1, false).
 		AddItem(table, 0, 4, false).
 		AddItem(
 			tview.NewFlex().
@@ -49,10 +49,12 @@ func (cactus *Cactus) RefreshProfileView() {
 	for i, profile := range cactus.User.Profiles {
 		// table cell containing profile name
 		cactus.ProfilesView.ProfilesTable.SetCell(i, 0, tview.NewTableCell(profile.Title).
+			SetExpansion(2).
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Rename button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("Rename").
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("✏️ Rename").
+			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
 					cactus.RenameProfileForm(profile)
@@ -64,7 +66,8 @@ func (cactus *Cactus) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Edit button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("Edit").
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("📝 Edit").
+			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
 					cactus.EditProfileForm(profile)
@@ -76,7 +79,8 @@ func (cactus *Cactus) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Delete button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("Delete").
+		cactus.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("❌ Delete").
+			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
 					cactus.ShowConfirm(

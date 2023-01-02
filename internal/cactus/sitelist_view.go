@@ -27,7 +27,7 @@ func (cactus *Cactus) NewSitelistView() *SitelistView {
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Sitelist"), 0, 1, false).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("🤖 Sitelist"), 0, 1, false).
 		AddItem(list, 0, 4, true).
 		SetBorder(true)
 

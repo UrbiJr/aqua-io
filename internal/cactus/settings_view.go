@@ -29,7 +29,7 @@ func (cactus *Cactus) NewSettingsView() *SettingsView {
 // EditSiteSettingsForm draws a form to edit a site settings
 func (cactus *Cactus) EditSiteSettingsForm(site string) {
 
-	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(fmt.Sprintf("Editing %s settings", site))
+	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(fmt.Sprintf("⚙️ %s settings", site))
 	form := tview.NewForm()
 
 	var siteSettings user.SiteSettings
@@ -63,7 +63,7 @@ func (cactus *Cactus) EditSiteSettingsForm(site string) {
 // EditSettingsForm draws a form to edit settings in the current view
 func (cactus *Cactus) EditSettingsForm() {
 
-	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("Edit settings")
+	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("⚙️ Settings")
 	form := tview.NewForm()
 	footer := tview.NewTextView().SetTextColor(tcell.ColorDarkGreen)
 

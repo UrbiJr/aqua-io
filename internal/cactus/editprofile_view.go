@@ -35,8 +35,8 @@ func (cactus *Cactus) NewEditProfileView() *EditProfileView {
 // EditProfileForm draws a form to edit a profile in the current view
 func (cactus *Cactus) EditProfileForm(profile user.Profile) {
 
-	cactus.EditProfileView.Header.SetText(fmt.Sprintf("Editing profile \"%s\"", profile.Title))
 	cactus.EditProfileView.Form.Clear(true)
+	cactus.EditProfileView.Header.SetText("👤 " + fmt.Sprintf("Editing profile \"%s\"", profile.Title))
 
 	cactus.EditProfileView.Form.AddInputField("First Name", profile.FirstName, 20, nil, func(firstName string) {
 		profile.FirstName = firstName
@@ -121,6 +121,7 @@ func (cactus *Cactus) RenameProfileForm(profile user.Profile) {
 
 	oldTitle := profile.Title
 	cactus.EditProfileView.Form.Clear(true)
+	cactus.EditProfileView.Header.SetText("👤 Rename profile")
 
 	cactus.EditProfileView.Form.AddInputField("New Title", profile.Title, 20, nil, func(title string) {
 		profile.Title = title
