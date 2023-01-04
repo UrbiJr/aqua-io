@@ -11,11 +11,12 @@ type UI struct {
 	pages              *tview.Pages
 	MainMenuView       *MainMenuView
 	TaskCreationView   *TaskCreationView
-	ProfilesView       *ProfileView
+	ProfilesView       *ProfilesView
 	StateSelectionView *StateSelectionView
 	NewProfileView     *NewProfileView
 	EditProfileView    *EditProfileView
 	SettingsView       *SettingsView
+	ProxiesView        *ProxiesView
 	ErrorView          *ErrorView
 	ConfirmView        *ConfirmView
 }
@@ -25,7 +26,7 @@ func (ui *UI) OnGoBackSelected() {
 
 	// switch selection based on current page
 	switch currentPageTitle, _ := ui.pages.GetFrontPage(); currentPageTitle {
-	case "Task Creation", "Profiles":
+	case "Task Creation", "Profiles", "Proxies":
 		// if current page is Task Creation, go back to main menu
 		ui.pages.SwitchToPage(ui.MainMenuView.Title)
 	}
@@ -37,6 +38,13 @@ func (ui *UI) OnProfilesSelected() {
 
 	// switch current view to Task Creation
 	ui.pages.SwitchToPage(ui.ProfilesView.Title)
+}
+
+// OnProxiesSelected should be called when a user choose Proxies entry on main menu
+func (ui *UI) OnProxiesSelected() {
+
+	// switch current view to Task Creation
+	ui.pages.SwitchToPage(ui.ProxiesView.Title)
 }
 
 // OnSettingsSelected should be called when a user choose Settings entry on main menu
@@ -71,9 +79,10 @@ func (nyx *Nyx) DrawUI() {
 	nyx.SetListeners()
 
 	entries := []MenuEntry{
-		{name: "Task Creation", label: '1', description: "create new tasks", selected: nyx.OnTaskCreationSelected},
+		{name: "Tasks", label: '1', description: "manage and create new tasks", selected: nil},
 		{name: "Profiles", label: '2', description: "manage your profiles", selected: nyx.OnProfilesSelected},
-		{name: "Settings", label: '3', description: "edit Nyx settings", selected: nyx.OnSettingsSelected},
+		{name: "Proxies", label: '3', description: "manage your proxy profiles", selected: nyx.OnProxiesSelected},
+		{name: "Settings", label: '4', description: "edit Nyx settings", selected: nyx.OnSettingsSelected},
 		{name: "Quit", label: 'q', description: "close Nyx", selected: nyx.Quit},
 	}
 
@@ -86,6 +95,7 @@ func (nyx *Nyx) DrawUI() {
 	nyx.EditProfileView = nyx.NewEditProfileView()
 	nyx.SettingsView = nyx.NewSettingsView()
 	nyx.StateSelectionView = nyx.NewStateSelectionView()
+	nyx.ProxiesView = nyx.NewProxiesView()
 	nyx.AddProfileForm()
 
 	nyx.UI.pages.AddPage(nyx.ErrorView.Title, nyx.ErrorView.View, true, false)
@@ -97,6 +107,7 @@ func (nyx *Nyx) DrawUI() {
 	nyx.UI.pages.AddPage(nyx.StateSelectionView.Title, nyx.StateSelectionView.View, true, false)
 	nyx.UI.pages.AddPage(nyx.EditProfileView.Title, nyx.EditProfileView.View, true, false)
 	nyx.UI.pages.AddPage(nyx.SettingsView.Title, nyx.SettingsView.View, true, false)
+	nyx.UI.pages.AddPage(nyx.ProxiesView.Title, nyx.ProxiesView.View, true, false)
 }
 
 /*

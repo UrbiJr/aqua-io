@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/UrbiJr/go-cactus/internal/nyx"
@@ -21,18 +22,26 @@ func init() {
 	debug := *debugArg
 	utils.SetDebug(debug)
 
-	// create missing directories
-	path := "tmp/logs"
-	err := os.MkdirAll(path, os.ModePerm)
+	var appDataLogsDir string
+
+	// Ottieni il percorso della cartella "AppData" per l'utente corrente su Windows.
+	appDataDir, err := os.UserCacheDir()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	// Crea il percorso della sottocartella "NyxAIO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Roaming\NyxAIO\logs
+	appDataLogsDir = filepath.Join(appDataDir, "NyxAIO", "logs")
+
+	err = os.MkdirAll(appDataLogsDir, os.ModePerm)
 	if err != nil {
 		log.Println(err)
 	}
 
 	utils.NewLogger()
 
-	if utils.DebugEnabled {
-		utils.Info("Debug logging enabled")
-	}
+	utils.Debug("debug logging enabled")
 
 	go utils.BlockNetworkSniffing()
 }
@@ -47,7 +56,7 @@ func main() {
 
 	settings, err := user.ReadSettings()
 	if err != nil {
-		nyx.ShowErrorAndExit(errors.New("settings file is corrupted or contains malformed JSON. You may rename it and start the app again to bypass this error"))
+		nyx.ShowErrorAndExit(errors.New("settings file is corrupted or contains malformed JSON. You may rename it or delete it and start the app again"))
 	}
 
 	// logged in
@@ -61,12 +70,25 @@ func main() {
 	nyx.User.Settings = settings
 	nyx.User.Profiles, err = user.ReadProfiles()
 	if err != nil {
-		nyx.ShowErrorAndExit(errors.New("profiles file is corrupted or contains malformed JSON. You may rename it and start the app again to bypass this error"))
+		nyx.ShowErrorAndExit(errors.New("profiles file is corrupted or contains malformed JSON. You may rename it or delete it and start the app again"))
 	}
 
-	// fill "Profiles" view with user profiles list
-	nyx.RefreshProfileView()
+	nyx.User.ProxyProfiles, err = user.ReadProxies()
+	if err != nil {
+		nyx.ShowErrorAndExit(errors.New("proxies file is corrupted or contains malformed JSON. You may rename it or delete it and start the app again"))
+	}
 
+	// draw user profiles list to "Profiles" view
+	nyx.RefreshProfilesView()
+
+	// if user has at least 1 proxy profile
+	if len(nyx.User.ProxyProfiles) > 0 {
+		// draw the elements affected to "Proxies" view
+		nyx.RefreshProxiesView(0)
+	} else {
+		// otherwise draw only the remaining elements
+		nyx.RefreshProxiesView(-1)
+	}
 	/*
 		greetings := []string{
 			"how can Nyx assist you today? :-)",

@@ -2,11 +2,12 @@ package user
 
 // User is a type associated with users of this software.
 type User struct {
-	Email    string
-	Username string
-	UID      string
-	Settings *Settings
-	Profiles []Profile
+	Email         string
+	Username      string
+	UID           string
+	Settings      *Settings
+	Profiles      []Profile
+	ProxyProfiles []ProxyProfile
 }
 
 // NewUser creates an instance of the User class

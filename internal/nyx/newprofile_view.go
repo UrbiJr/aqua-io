@@ -98,7 +98,7 @@ func (nyx *Nyx) AddProfileForm() {
 		if err != nil {
 			nyx.ShowError(nyx.NewProfileView.Title, err)
 		} else {
-			nyx.RefreshProfileView()
+			nyx.RefreshProfilesView()
 			nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 		}
 	})

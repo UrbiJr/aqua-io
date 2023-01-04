@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 )
@@ -34,9 +35,19 @@ func QuitLogger() {
 func setLogFile() (*os.File, error) {
 
 	var LOG_FILE string
+	var path string
+
+	path, err := os.UserCacheDir()
+	if err != nil {
+		return nil, err
+	}
+
+	// Crea il percorso della sottocartella "NyxAIO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Roaming\NyxAIO\logs
+	path = filepath.Join(path, "NyxAIO", "logs")
 
 	// read all logs files
-	files, err := ioutil.ReadDir("tmp/logs/")
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +62,13 @@ func setLogFile() (*os.File, error) {
 		if (files[len(files)-1].Size() / 1000) >= 4000 {
 			// if yes, create a new log file
 			t := time.Now()
-			LOG_FILE = fmt.Sprintf("tmp/logs/%s.log", t.Format("02-01-2006 15h04m05s"))
+			LOG_FILE = fmt.Sprintf("%s/%s.log", path, t.Format("02-01-2006 15h04m05s"))
 		} else {
-			LOG_FILE = fmt.Sprintf("tmp/logs/%s", files[len(files)-1].Name())
+			LOG_FILE = fmt.Sprintf("%s/%s", path, files[len(files)-1].Name())
 		}
 	} else {
 		t := time.Now()
-		LOG_FILE = fmt.Sprintf("tmp/logs/%s.log", t.Format("02-01-2006 15h04m05s"))
+		LOG_FILE = fmt.Sprintf("%s/%s.log", path, t.Format("02-01-2006 15h04m05s"))
 	}
 
 	// open log file
@@ -67,6 +78,12 @@ func setLogFile() (*os.File, error) {
 	}
 
 	return logFile, nil
+}
+
+func Debug(v ...any) {
+	if DebugEnabled {
+		defaultLogger.logger.Println("DEBUG: " + fmt.Sprint(v...))
+	}
 }
 
 func Info(v ...any) {

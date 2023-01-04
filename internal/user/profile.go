@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 )
 
 // Profile contains information specific to a single account of a particular site i.e. BSTN
@@ -30,13 +31,19 @@ type Profile struct {
 func ReadProfiles() ([]Profile, error) {
 
 	var profiles []Profile
-	jsonFile, err := os.Open("profiles.json")
+	path, err := os.UserCacheDir()
+	if err != nil {
+		return nil, err
+	}
+	// windows: C:\Users\<user>\AppData\Local\Roaming\NyxAIO\profiles.json
+	path = filepath.Join(path, "NyxAIO", "profiles.json")
+	jsonFile, err := os.Open(path)
 
 	if err != nil {
 		// file does not exist
 		profiles = []Profile{}
 		file, _ := json.MarshalIndent(profiles, "", " ")
-		_ = ioutil.WriteFile("profiles.json", file, 0644)
+		_ = ioutil.WriteFile(path, file, 0644)
 		return profiles, nil
 	}
 
@@ -57,6 +64,12 @@ func ReadProfiles() ([]Profile, error) {
 
 // WriteProfiles writes profiles to profiles.json
 func WriteProfiles(profiles []Profile) {
+	path, err := os.UserCacheDir()
+	if err != nil {
+		return
+	}
+	// windows: C:\Users\<user>\AppData\Local\Roaming\NyxAIO\profiles.json
+	path = filepath.Join(path, "NyxAIO", "profiles.json")
 	file, _ := json.MarshalIndent(profiles, "", " ")
-	_ = ioutil.WriteFile("profiles.json", file, 0644)
+	_ = ioutil.WriteFile(path, file, 0644)
 }

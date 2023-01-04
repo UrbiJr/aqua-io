@@ -105,7 +105,7 @@ func (nyx *Nyx) EditProfileForm(profile user.Profile) {
 		if err != nil {
 			nyx.ShowError(nyx.EditProfileView.Title, err)
 		} else {
-			nyx.RefreshProfileView()
+			nyx.RefreshProfilesView()
 			nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 		}
 	})
@@ -132,7 +132,7 @@ func (nyx *Nyx) RenameProfileForm(profile user.Profile) {
 		if err != nil {
 			nyx.ShowError(nyx.EditProfileView.Title, err)
 		} else {
-			nyx.RefreshProfileView()
+			nyx.RefreshProfilesView()
 			nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 		}
 	})

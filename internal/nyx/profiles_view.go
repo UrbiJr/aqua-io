@@ -7,15 +7,15 @@ import (
 	"github.com/rivo/tview"
 )
 
-// ProfileView contains information about the "Profile" view
-type ProfileView struct {
-	Title         string
-	ProfilesTable *tview.Table
-	View          *tview.Flex
+// ProfilesView contains information about the "Profile" view
+type ProfilesView struct {
+	Title string
+	*tview.Table
+	View *tview.Flex
 }
 
-// NewTaskCreationView returns a view for the profiles management
-func (nyx *Nyx) NewProfilesView() *ProfileView {
+// NewProfilesView returns a view for the profiles management
+func (nyx *Nyx) NewProfilesView() *ProfilesView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	table := tview.NewTable().
@@ -39,21 +39,20 @@ func (nyx *Nyx) NewProfilesView() *ProfileView {
 				AddItem(footerForm, 0, 4, true), 0, 1, true).
 		SetBorder(true)
 
-	return &ProfileView{Title: "Profiles", View: flex, ProfilesTable: table}
+	return &ProfilesView{Title: "Profiles", View: flex, Table: table}
 }
 
-// RefreshProfileView refresh the list of profiles
-func (nyx *Nyx) RefreshProfileView() {
-	nyx.ProfilesView.ProfilesTable.Clear()
-
+// RefreshProfilesView refresh the list of profiles
+func (nyx *Nyx) RefreshProfilesView() {
+	nyx.ProfilesView.Table.Clear()
 	for i, profile := range nyx.User.Profiles {
 		// table cell containing profile name
-		nyx.ProfilesView.ProfilesTable.SetCell(i, 0, tview.NewTableCell(profile.Title).
+		nyx.ProfilesView.Table.SetCell(i, 0, tview.NewTableCell(profile.Title).
 			SetExpansion(2).
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Rename button"
-		nyx.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("✏️ Rename").
+		nyx.ProfilesView.Table.SetCell(i, 1, tview.NewTableCell("✏️ Rename").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
@@ -66,7 +65,7 @@ func (nyx *Nyx) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Edit button"
-		nyx.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("📝 Edit").
+		nyx.ProfilesView.Table.SetCell(i, 2, tview.NewTableCell("📝 Edit").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
@@ -79,14 +78,14 @@ func (nyx *Nyx) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Delete button"
-		nyx.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("❌ Delete").
+		nyx.ProfilesView.Table.SetCell(i, 3, tview.NewTableCell("❌ Delete").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
 					nyx.ShowConfirm(
 						func() {
 							nyx.DeleteProfile(profile.Title)
-							nyx.RefreshProfileView()
+							nyx.RefreshProfilesView()
 							nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 						},
 						func() {
