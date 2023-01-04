@@ -1,4 +1,4 @@
-module github.com/cactus-aio/go-cactus
+module github.com/UrbiJr/go-cactus
 
 go 1.19
 

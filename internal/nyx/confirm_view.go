@@ -1,4 +1,4 @@
-package cactus
+package nyx
 
 import (
 	"github.com/rivo/tview"
@@ -30,8 +30,8 @@ ShowConfirm displays the confirm message with Yes/No buttons
 yesFunc gets called if user presses Yes button
 noFunc gets called if user presses No button
 */
-func (cactus *Cactus) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButtonFunc, confirmMessage string) {
-	cactus.ConfirmView.Modal.
+func (nyx *Nyx) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButtonFunc, confirmMessage string) {
+	nyx.ConfirmView.Modal.
 		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			// hide this page and go back to the previous page
@@ -42,12 +42,12 @@ func (cactus *Cactus) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButto
 			}
 
 		})
-	cactus.ConfirmView.Modal.SetText(confirmMessage)
-	cactus.pages.SwitchToPage(cactus.ConfirmView.Title)
+	nyx.ConfirmView.Modal.SetText(confirmMessage)
+	nyx.pages.SwitchToPage(nyx.ConfirmView.Title)
 }
 
 // NewConfirmView returns a view to confirm a user choice
-func (cactus *Cactus) NewConfirmView() *ConfirmView {
+func (nyx *Nyx) NewConfirmView() *ConfirmView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	modal := newConfirmModal()

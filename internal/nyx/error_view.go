@@ -1,4 +1,4 @@
-package cactus
+package nyx
 
 import (
 	"fmt"
@@ -24,31 +24,31 @@ func newErrorModal() *tview.Modal {
 }
 
 // ShowError displays the custom error
-func (cactus *Cactus) ShowError(currentPage string, err error) {
-	cactus.ErrorView.Modal.
+func (nyx *Nyx) ShowError(currentPage string, err error) {
+	nyx.ErrorView.Modal.
 		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			// hide this page and go back to the previous page
-			cactus.pages.SwitchToPage(currentPage)
+			nyx.pages.SwitchToPage(currentPage)
 		})
-	cactus.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
-	cactus.pages.SwitchToPage(cactus.ErrorView.Title)
+	nyx.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
+	nyx.pages.SwitchToPage(nyx.ErrorView.Title)
 }
 
 // ShowErrorAndExit displays the custom error and closes the app
-func (cactus *Cactus) ShowErrorAndExit(err error) {
-	cactus.ErrorView.Modal.
+func (nyx *Nyx) ShowErrorAndExit(err error) {
+	nyx.ErrorView.Modal.
 		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
 			// hide this page and go back to the previous page
-			cactus.Quit()
+			nyx.Quit()
 		})
-	cactus.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
-	cactus.pages.SwitchToPage(cactus.ErrorView.Title)
+	nyx.ErrorView.Modal.SetText(fmt.Sprintf("Error: %s", err.Error()))
+	nyx.pages.SwitchToPage(nyx.ErrorView.Title)
 }
 
 // NewErrorView returns a view for the custom error messages
-func (cactus *Cactus) NewErrorView() *ErrorView {
+func (nyx *Nyx) NewErrorView() *ErrorView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	modal := newErrorModal()

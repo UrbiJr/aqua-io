@@ -1,1 +1,1 @@
-Golang backend of Cactus AIO.
+Golang backend of Nyx AIO.

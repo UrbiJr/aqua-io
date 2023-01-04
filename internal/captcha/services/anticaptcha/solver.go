@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/UrbiJr/anticaptcha"
-	"github.com/cactus-aio/go-cactus/internal/captcha/base"
+	"github.com/UrbiJr/go-cactus/internal/captcha/base"
 )
 
 var manager = AntiCaptchaManager{}

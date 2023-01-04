@@ -3,10 +3,10 @@ package captcha
 import (
 	"fmt"
 
-	"github.com/cactus-aio/go-cactus/internal/captcha/base"
-	twocaptcha "github.com/cactus-aio/go-cactus/internal/captcha/services/2captcha"
-	"github.com/cactus-aio/go-cactus/internal/captcha/services/anticaptcha"
-	"github.com/cactus-aio/go-cactus/internal/captcha/services/capmonster"
+	"github.com/UrbiJr/go-cactus/internal/captcha/base"
+	twocaptcha "github.com/UrbiJr/go-cactus/internal/captcha/services/2captcha"
+	"github.com/UrbiJr/go-cactus/internal/captcha/services/anticaptcha"
+	"github.com/UrbiJr/go-cactus/internal/captcha/services/capmonster"
 )
 
 type (

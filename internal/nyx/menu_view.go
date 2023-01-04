@@ -1,4 +1,4 @@
-package cactus
+package nyx
 
 import (
 	"errors"

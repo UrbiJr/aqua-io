@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/cactus-aio/go-cactus/internal/sites"
+	"github.com/UrbiJr/go-cactus/internal/sites"
 )
 
 type SiteSettings struct {
@@ -30,8 +30,7 @@ func ReadSettings() (*Settings, error) {
 		settings := Settings{
 			APIKeys: map[string]string{},
 			SitesSettings: map[string]SiteSettings{
-				sites.Nike.String():  {},
-				sites.Schuh.String(): {},
+				sites.Kickz.String(): {},
 			},
 		}
 		settings.APIKeys["2captcha"] = ""

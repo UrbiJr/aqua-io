@@ -1,4 +1,4 @@
-package cactus
+package nyx
 
 import (
 	"fmt"
@@ -14,8 +14,8 @@ type ProfileView struct {
 	View          *tview.Flex
 }
 
-// NewSitelistView returns a view for the profiles management
-func (cactus *Cactus) NewProfilesView() *ProfileView {
+// NewTaskCreationView returns a view for the profiles management
+func (nyx *Nyx) NewProfilesView() *ProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	table := tview.NewTable().
@@ -24,10 +24,10 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 
 	footerForm := tview.NewForm()
 	footerForm.AddButton("Create New", func() {
-		cactus.pages.SwitchToPage(cactus.NewProfileView.Title)
+		nyx.pages.SwitchToPage(nyx.NewProfileView.Title)
 	})
 	footerForm.AddButton("Go Back", func() {
-		cactus.UI.OnGoBackSelected()
+		nyx.UI.OnGoBackSelected()
 	})
 
 	flex.SetDirection(tview.FlexRow).
@@ -43,22 +43,22 @@ func (cactus *Cactus) NewProfilesView() *ProfileView {
 }
 
 // RefreshProfileView refresh the list of profiles
-func (cactus *Cactus) RefreshProfileView() {
-	cactus.ProfilesView.ProfilesTable.Clear()
+func (nyx *Nyx) RefreshProfileView() {
+	nyx.ProfilesView.ProfilesTable.Clear()
 
-	for i, profile := range cactus.User.Profiles {
+	for i, profile := range nyx.User.Profiles {
 		// table cell containing profile name
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 0, tview.NewTableCell(profile.Title).
+		nyx.ProfilesView.ProfilesTable.SetCell(i, 0, tview.NewTableCell(profile.Title).
 			SetExpansion(2).
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Rename button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("✏️ Rename").
+		nyx.ProfilesView.ProfilesTable.SetCell(i, 1, tview.NewTableCell("✏️ Rename").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
-					cactus.RenameProfileForm(profile)
-					cactus.pages.SwitchToPage(cactus.EditProfileView.Title)
+					nyx.RenameProfileForm(profile)
+					nyx.pages.SwitchToPage(nyx.EditProfileView.Title)
 					return true
 				},
 			).
@@ -66,12 +66,12 @@ func (cactus *Cactus) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Edit button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("📝 Edit").
+		nyx.ProfilesView.ProfilesTable.SetCell(i, 2, tview.NewTableCell("📝 Edit").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
-					cactus.EditProfileForm(profile)
-					cactus.pages.SwitchToPage(cactus.EditProfileView.Title)
+					nyx.EditProfileForm(profile)
+					nyx.pages.SwitchToPage(nyx.EditProfileView.Title)
 					return true
 				},
 			).
@@ -79,18 +79,18 @@ func (cactus *Cactus) RefreshProfileView() {
 			SetAlign(tview.AlignCenter))
 
 		// table cell containing "Delete button"
-		cactus.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("❌ Delete").
+		nyx.ProfilesView.ProfilesTable.SetCell(i, 3, tview.NewTableCell("❌ Delete").
 			SetExpansion(2).
 			SetClickedFunc(
 				func() bool {
-					cactus.ShowConfirm(
+					nyx.ShowConfirm(
 						func() {
-							cactus.DeleteProfile(profile.Title)
-							cactus.RefreshProfileView()
-							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+							nyx.DeleteProfile(profile.Title)
+							nyx.RefreshProfileView()
+							nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 						},
 						func() {
-							cactus.pages.SwitchToPage(cactus.ProfilesView.Title)
+							nyx.pages.SwitchToPage(nyx.ProfilesView.Title)
 						},
 						fmt.Sprintf("Are you sure you want to delete profile \"%s\"?", profile.Title),
 					)

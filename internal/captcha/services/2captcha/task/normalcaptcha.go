@@ -3,7 +3,7 @@ package task
 import (
 	"encoding/base64"
 
-	"github.com/cactus-aio/go-cactus/internal/captcha/base"
+	"github.com/UrbiJr/go-cactus/internal/captcha/base"
 )
 
 // NormalCaptchaTaskParams defines parameters used to solve Normal Captchas. Normal Captcha is an image that contains distored but human-readable text.

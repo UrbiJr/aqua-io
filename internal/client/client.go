@@ -1,8 +1,8 @@
 package client
 
 import (
+	"github.com/UrbiJr/go-cactus/internal/captcha"
 	tls_client "github.com/bogdanfinn/tls-client"
-	"github.com/cactus-aio/go-cactus/internal/captcha"
 )
 
 // Client is used by packages that use/implement inernal/bot.Bot.

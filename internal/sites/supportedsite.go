@@ -8,8 +8,7 @@ const (
 
 	// Main Modules:
 
-	Nike  Store = "Nike"
-	Schuh Store = "Schuh"
+	Kickz Store = "Kickz"
 )
 
 func (s Store) String() string {

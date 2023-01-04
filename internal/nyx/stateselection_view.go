@@ -1,8 +1,8 @@
-package cactus
+package nyx
 
 import (
-	"github.com/cactus-aio/go-cactus/internal/user"
-	"github.com/cactus-aio/go-cactus/internal/utils"
+	"github.com/UrbiJr/go-cactus/internal/user"
+	"github.com/UrbiJr/go-cactus/internal/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -15,31 +15,31 @@ type StateSelectionView struct {
 }
 
 // RefreshStateSelectionView fills the state selection form with the states of the specified country
-func (cactus *Cactus) RefreshStateSelectionView(currentPage string, countryCode string, profile *user.Profile) {
-	cactus.StateSelectionView.Form.Clear(true)
+func (nyx *Nyx) RefreshStateSelectionView(currentPage string, countryCode string, profile *user.Profile) {
+	nyx.StateSelectionView.Form.Clear(true)
 	var stateCode string
 
 	states, err := utils.GetStates(countryCode)
 	if err != nil {
-		cactus.pages.SwitchToPage(currentPage)
+		nyx.pages.SwitchToPage(currentPage)
 	}
 
-	cactus.StateSelectionView.Form.AddDropDown("States", states, 0, func(state string, index int) {
+	nyx.StateSelectionView.Form.AddDropDown("States", states, 0, func(state string, index int) {
 		stateCode, err = utils.GetStateCode(countryCode, state)
 	})
 
-	cactus.StateSelectionView.Form.AddButton("Save", func() {
+	nyx.StateSelectionView.Form.AddButton("Save", func() {
 		profile.State = stateCode
-		cactus.pages.SwitchToPage(currentPage)
+		nyx.pages.SwitchToPage(currentPage)
 	})
 
-	cactus.StateSelectionView.Form.AddButton("Cancel", func() {
-		cactus.pages.SwitchToPage(currentPage)
+	nyx.StateSelectionView.Form.AddButton("Cancel", func() {
+		nyx.pages.SwitchToPage(currentPage)
 	})
 }
 
 // NewStateSelectionView returns a view for the state selection by country
-func (cactus *Cactus) NewStateSelectionView() *StateSelectionView {
+func (nyx *Nyx) NewStateSelectionView() *StateSelectionView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	form := tview.NewForm()
