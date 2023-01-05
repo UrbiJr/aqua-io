@@ -35,6 +35,7 @@ func (nyx *Nyx) RefreshProxiesView(proxyProfileIdx int) {
 	proxyProfilesTable.SetCell(0, 0, tview.NewTableCell("➕ Create New").
 		//SetExpansion(2).
 		SetClickedFunc(func() bool {
+			nyx.pages.SwitchToPage(nyx.NewProxyProfileView.Title)
 			return true
 		}).
 		SetAlign(tview.AlignLeft))
@@ -57,7 +58,9 @@ func (nyx *Nyx) RefreshProxiesView(proxyProfileIdx int) {
 	})
 	leftContainer.SetDirection(tview.FlexRow).
 		AddItem(proxyProfilesTable, 0, 4, false).
-		AddItem(navigationForm, 0, 1, false)
+		AddItem(navigationForm, 0, 1, false).
+		SetBorder(true).
+		SetBorderPadding(1, 1, 0, 0)
 
 	if proxyProfileIdx != -1 {
 		for i, proxy := range nyx.User.ProxyProfiles[proxyProfileIdx].Proxies {
@@ -96,7 +99,7 @@ func (nyx *Nyx) RefreshProxiesView(proxyProfileIdx int) {
 	} else {
 		nyx.ProxiesView.View.
 			AddItem(leftContainer, 0, 1, false).
-			AddItem(tview.NewFlex().SetDirection(tview.FlexRow), 0, 3, false)
+			AddItem(tview.NewFlex().SetDirection(tview.FlexRow).SetBorder(true), 0, 3, false)
 	}
 
 }

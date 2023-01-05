@@ -34,7 +34,7 @@ func NewClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptio
 	}
 
 	if clientOptions.proxy != "" {
-		proxyUrl, err := ValidateProxyFormat(clientOptions.proxy)
+		proxyUrl, err := ValidateProxyFormatToUrl(clientOptions.proxy)
 		if err == nil {
 			options = append(options, tls_client.WithProxyUrl(proxyUrl.String()))
 		}

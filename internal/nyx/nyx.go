@@ -37,6 +37,14 @@ func (nyx *Nyx) Quit() {
 	nyx.UI.tui.Stop()
 }
 
+// AddProxyProfile appends profile to user profiles list and writes the updated list to file
+func (nyx *Nyx) AddProxyProfile(profile user.ProxyProfile) error {
+	profile.Id = utils.RandString(12, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	nyx.User.ProxyProfiles = append(nyx.User.ProxyProfiles, profile)
+	user.WriteProxies(nyx.User.ProxyProfiles)
+	return nil
+}
+
 // AddProfile appends profile to user profiles list and writes the updated list to file
 func (nyx *Nyx) AddProfile(profile user.Profile) error {
 	for _, p := range nyx.User.Profiles {

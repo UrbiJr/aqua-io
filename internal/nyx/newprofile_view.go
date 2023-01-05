@@ -21,7 +21,7 @@ func (nyx *Nyx) NewNewProfileView() *NewProfileView {
 	form := tview.NewForm()
 
 	flex.SetDirection(tview.FlexRow).
-		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("New Profile"), 0, 1, false).
+		AddItem(tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("👤 New Profile"), 0, 1, false).
 		AddItem(form, 0, 8, true).
 		SetBorder(true)
 

@@ -7,18 +7,19 @@ import (
 
 // UI contains information about the user interface
 type UI struct {
-	tui                *tview.Application
-	pages              *tview.Pages
-	MainMenuView       *MainMenuView
-	TaskCreationView   *TaskCreationView
-	ProfilesView       *ProfilesView
-	StateSelectionView *StateSelectionView
-	NewProfileView     *NewProfileView
-	EditProfileView    *EditProfileView
-	SettingsView       *SettingsView
-	ProxiesView        *ProxiesView
-	ErrorView          *ErrorView
-	ConfirmView        *ConfirmView
+	tui                 *tview.Application
+	pages               *tview.Pages
+	MainMenuView        *MainMenuView
+	TaskCreationView    *TaskCreationView
+	ProfilesView        *ProfilesView
+	StateSelectionView  *StateSelectionView
+	NewProfileView      *NewProfileView
+	EditProfileView     *EditProfileView
+	SettingsView        *SettingsView
+	ProxiesView         *ProxiesView
+	NewProxyProfileView *NewProxyProfileView
+	ErrorView           *ErrorView
+	ConfirmView         *ConfirmView
 }
 
 // OnGoBackSelected should be called when a user choose to go to the previous view
@@ -96,7 +97,9 @@ func (nyx *Nyx) DrawUI() {
 	nyx.SettingsView = nyx.NewSettingsView()
 	nyx.StateSelectionView = nyx.NewStateSelectionView()
 	nyx.ProxiesView = nyx.NewProxiesView()
+	nyx.NewProxyProfileView = nyx.NewNewProxyProfileView()
 	nyx.AddProfileForm()
+	nyx.AddProxyProfileForm()
 
 	nyx.UI.pages.AddPage(nyx.ErrorView.Title, nyx.ErrorView.View, true, false)
 	nyx.UI.pages.AddPage(nyx.ConfirmView.Title, nyx.ConfirmView.View, true, false)
@@ -108,6 +111,7 @@ func (nyx *Nyx) DrawUI() {
 	nyx.UI.pages.AddPage(nyx.EditProfileView.Title, nyx.EditProfileView.View, true, false)
 	nyx.UI.pages.AddPage(nyx.SettingsView.Title, nyx.SettingsView.View, true, false)
 	nyx.UI.pages.AddPage(nyx.ProxiesView.Title, nyx.ProxiesView.View, true, false)
+	nyx.UI.pages.AddPage(nyx.NewProxyProfileView.Title, nyx.NewProxyProfileView.View, true, false)
 }
 
 /*
