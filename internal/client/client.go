@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/UrbiJr/go-cactus/internal/captcha"
+	"github.com/UrbiJr/nyx/internal/captcha"
 	tls_client "github.com/bogdanfinn/tls-client"
 )
 

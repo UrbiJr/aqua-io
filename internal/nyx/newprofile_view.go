@@ -1,8 +1,8 @@
 package nyx
 
 import (
-	"github.com/UrbiJr/go-cactus/internal/user"
-	"github.com/UrbiJr/go-cactus/internal/utils"
+	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/nyx/internal/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -15,7 +15,7 @@ type NewProfileView struct {
 }
 
 // NewNewProfileView returns a view for the profile creation
-func (nyx *Nyx) NewNewProfileView() *NewProfileView {
+func (nyx *Config) NewNewProfileView() *NewProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	form := tview.NewForm()
@@ -28,7 +28,7 @@ func (nyx *Nyx) NewNewProfileView() *NewProfileView {
 	return &NewProfileView{Title: "New Profile", View: flex, Form: form}
 }
 
-func (nyx *Nyx) AddProfileForm() {
+func (nyx *Config) AddProfileForm() {
 
 	var profile user.Profile
 

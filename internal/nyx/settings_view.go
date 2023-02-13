@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/UrbiJr/go-cactus/internal/user"
+	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -16,7 +16,7 @@ type SettingsView struct {
 }
 
 // NewSettingsView returns a view for the profile creation
-func (nyx *Nyx) NewSettingsView() *SettingsView {
+func (nyx *Config) NewSettingsView() *SettingsView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
@@ -27,7 +27,7 @@ func (nyx *Nyx) NewSettingsView() *SettingsView {
 }
 
 // EditSiteSettingsForm draws a form to edit a site settings
-func (nyx *Nyx) EditSiteSettingsForm(site string) {
+func (nyx *Config) EditSiteSettingsForm(site string) {
 
 	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText(fmt.Sprintf("⚙️ %s settings", site))
 	form := tview.NewForm()
@@ -61,7 +61,7 @@ func (nyx *Nyx) EditSiteSettingsForm(site string) {
 }
 
 // EditSettingsForm draws a form to edit settings in the current view
-func (nyx *Nyx) EditSettingsForm() {
+func (nyx *Config) EditSettingsForm() {
 
 	header := tview.NewTextView().SetTextColor(tcell.ColorGreen).SetText("⚙️ Settings")
 	form := tview.NewForm()

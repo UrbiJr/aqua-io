@@ -24,7 +24,7 @@ func newErrorModal() *tview.Modal {
 }
 
 // ShowError displays the custom error
-func (nyx *Nyx) ShowError(currentPage string, err error) {
+func (nyx *Config) ShowError(currentPage string, err error) {
 	nyx.ErrorView.Modal.
 		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
@@ -36,7 +36,7 @@ func (nyx *Nyx) ShowError(currentPage string, err error) {
 }
 
 // ShowErrorAndExit displays the custom error and closes the app
-func (nyx *Nyx) ShowErrorAndExit(err error) {
+func (nyx *Config) ShowErrorAndExit(err error) {
 	nyx.ErrorView.Modal.
 		// set function when OK button (any button) gets pressed
 		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
@@ -48,7 +48,7 @@ func (nyx *Nyx) ShowErrorAndExit(err error) {
 }
 
 // NewErrorView returns a view for the custom error messages
-func (nyx *Nyx) NewErrorView() *ErrorView {
+func (nyx *Config) NewErrorView() *ErrorView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	modal := newErrorModal()

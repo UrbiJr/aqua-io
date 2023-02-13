@@ -4,8 +4,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/UrbiJr/go-cactus/internal/client"
-	"github.com/UrbiJr/go-cactus/internal/user"
+	"github.com/UrbiJr/nyx/internal/client"
+	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -18,7 +18,7 @@ type NewProxyProfileView struct {
 }
 
 // NewNewProxyProfileView returns a view for the profile creation
-func (nyx *Nyx) NewNewProxyProfileView() *NewProxyProfileView {
+func (nyx *Config) NewNewProxyProfileView() *NewProxyProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	form := tview.NewForm()
@@ -31,7 +31,7 @@ func (nyx *Nyx) NewNewProxyProfileView() *NewProxyProfileView {
 	return &NewProxyProfileView{Title: "New Proxy Profile", View: flex, Form: form}
 }
 
-func (nyx *Nyx) AddProxyProfileForm() {
+func (nyx *Config) AddProxyProfileForm() {
 
 	var proxyProfile user.ProxyProfile
 

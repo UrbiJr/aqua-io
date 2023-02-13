@@ -10,26 +10,22 @@ import (
 	"time"
 )
 
-type Logger struct {
+type AppLogger struct {
 	File   *os.File
 	logger *log.Logger
 }
 
-// And just go global.
-var defaultLogger *Logger
-
-func NewLogger() {
-	defaultLogger = new(Logger)
+func (appLogger *AppLogger) SetupLogger() {
 	getFilePath, err := setLogFile()
 	if err != nil {
 		log.Panic(err)
 	}
-	defaultLogger.File = getFilePath
-	defaultLogger.logger = log.New(getFilePath, "CACTUS-AIO: ", log.LstdFlags)
+	appLogger.File = getFilePath
+	appLogger.logger = log.New(getFilePath, "NyxAIO: ", log.LstdFlags)
 }
 
-func QuitLogger() {
-	defaultLogger.File.Close()
+func (appLogger *AppLogger) QuitLogger() {
+	appLogger.File.Close()
 }
 
 func setLogFile() (*os.File, error) {
@@ -80,40 +76,40 @@ func setLogFile() (*os.File, error) {
 	return logFile, nil
 }
 
-func Debug(v ...any) {
+func (appLogger *AppLogger) Debug(v ...any) {
 	if DebugEnabled {
-		defaultLogger.logger.Println("DEBUG: " + fmt.Sprint(v...))
+		appLogger.logger.Println("DEBUG: " + fmt.Sprint(v...))
 	}
 }
 
-func Info(v ...any) {
-	defaultLogger.logger.Println("INFO: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Info(v ...any) {
+	appLogger.logger.Println("INFO: " + fmt.Sprint(v...))
 }
 
-func Infof(format string, v ...any) {
-	defaultLogger.logger.Printf("INFO: "+format, v...)
+func (appLogger *AppLogger) Infof(format string, v ...any) {
+	appLogger.logger.Printf("INFO: "+format, v...)
 }
 
-func Warning(v ...any) {
-	defaultLogger.logger.Println("WARNING: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Warning(v ...any) {
+	appLogger.logger.Println("WARNING: " + fmt.Sprint(v...))
 }
 
-func Warningf(format string, v ...any) {
-	defaultLogger.logger.Printf("WARNING: "+format, v...)
+func (appLogger *AppLogger) Warningf(format string, v ...any) {
+	appLogger.logger.Printf("WARNING: "+format, v...)
 }
 
-func Error(v ...any) {
-	defaultLogger.logger.Println("ERROR: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Error(v ...any) {
+	appLogger.logger.Println("ERROR: " + fmt.Sprint(v...))
 }
 
-func Errorf(format string, v ...any) {
-	defaultLogger.logger.Printf("ERROR: "+format, v...)
+func (appLogger *AppLogger) Errorf(format string, v ...any) {
+	appLogger.logger.Printf("ERROR: "+format, v...)
 }
 
-func Fatal(v ...any) {
-	defaultLogger.logger.Println("FATAL: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Fatal(v ...any) {
+	appLogger.logger.Println("FATAL: " + fmt.Sprint(v...))
 }
 
-func Fatalf(format string, v ...any) {
-	defaultLogger.logger.Printf("FATAL: "+format, v...)
+func (appLogger *AppLogger) Fatalf(format string, v ...any) {
+	appLogger.logger.Printf("FATAL: "+format, v...)
 }

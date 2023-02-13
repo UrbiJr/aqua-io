@@ -15,7 +15,7 @@ type ProfilesView struct {
 }
 
 // NewProfilesView returns a view for the profiles management
-func (nyx *Nyx) NewProfilesView() *ProfilesView {
+func (nyx *Config) NewProfilesView() *ProfilesView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	table := tview.NewTable().
@@ -43,7 +43,7 @@ func (nyx *Nyx) NewProfilesView() *ProfilesView {
 }
 
 // RefreshProfilesView refresh the list of profiles
-func (nyx *Nyx) RefreshProfilesView() {
+func (nyx *Config) RefreshProfilesView() {
 	nyx.ProfilesView.Table.Clear()
 	for i, profile := range nyx.User.Profiles {
 		// table cell containing profile name

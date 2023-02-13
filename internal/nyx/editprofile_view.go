@@ -3,8 +3,8 @@ package nyx
 import (
 	"fmt"
 
-	"github.com/UrbiJr/go-cactus/internal/user"
-	"github.com/UrbiJr/go-cactus/internal/utils"
+	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/nyx/internal/utils"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -18,7 +18,7 @@ type EditProfileView struct {
 }
 
 // NewEditProfileView returns a view for the profile creation
-func (nyx *Nyx) NewEditProfileView() *EditProfileView {
+func (nyx *Config) NewEditProfileView() *EditProfileView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	form := tview.NewForm()
@@ -33,7 +33,7 @@ func (nyx *Nyx) NewEditProfileView() *EditProfileView {
 }
 
 // EditProfileForm draws a form to edit a profile in the current view
-func (nyx *Nyx) EditProfileForm(profile user.Profile) {
+func (nyx *Config) EditProfileForm(profile user.Profile) {
 
 	nyx.EditProfileView.Form.Clear(true)
 	nyx.EditProfileView.Header.SetText("👤 " + fmt.Sprintf("Editing profile \"%s\"", profile.Title))
@@ -117,7 +117,7 @@ func (nyx *Nyx) EditProfileForm(profile user.Profile) {
 }
 
 // RenameProfileForm draws a form to rename a profile in the current view
-func (nyx *Nyx) RenameProfileForm(profile user.Profile) {
+func (nyx *Config) RenameProfileForm(profile user.Profile) {
 
 	oldTitle := profile.Title
 	nyx.EditProfileView.Form.Clear(true)

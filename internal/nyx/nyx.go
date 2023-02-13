@@ -2,29 +2,31 @@ package nyx
 
 import (
 	"errors"
-	"log"
 
-	"github.com/UrbiJr/go-cactus/internal/sites"
-	"github.com/UrbiJr/go-cactus/internal/user"
-	"github.com/UrbiJr/go-cactus/internal/utils"
+	"fyne.io/fyne"
+	"github.com/UrbiJr/nyx/internal/client"
+	"github.com/UrbiJr/nyx/internal/sites"
+	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/nyx/internal/utils"
 )
 
-// Nyx is the container of the main app, it contains the main attributes
-type Nyx struct {
-	*UI
-	SiteList []*sites.SupportedSite
-	*log.Logger
-	User *user.User
+// Config is the container of the main app, it contains the main attributes
+type Config struct {
+	App        fyne.App
+	MainWindow fyne.Window
+	SiteList   []*sites.SupportedSite
+	Logger     *utils.AppLogger
+	User       *user.User
+	TLSClient  *client.Client
 }
 
 // NewNyx returns a new instance of the app
-func NewNyx() *Nyx {
+func NewNyx() *Config {
 	sitelist := []*sites.SupportedSite{
 		{Name: sites.Kickz, Category: sites.SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
 	}
 
-	nyx := &Nyx{
-		UI:       NewUI(),
+	nyx := &Config{
 		SiteList: sitelist,
 	}
 
@@ -32,13 +34,12 @@ func NewNyx() *Nyx {
 }
 
 // Quit exits the app gracefully
-func (nyx *Nyx) Quit() {
-	utils.QuitLogger()
-	nyx.UI.tui.Stop()
+func (nyx *Config) Quit() {
+	nyx.Logger.QuitLogger()
 }
 
 // AddProxyProfile appends profile to user profiles list and writes the updated list to file
-func (nyx *Nyx) AddProxyProfile(profile user.ProxyProfile) error {
+func (nyx *Config) AddProxyProfile(profile user.ProxyProfile) error {
 	profile.Id = utils.RandString(12, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	nyx.User.ProxyProfiles = append(nyx.User.ProxyProfiles, profile)
 	user.WriteProxies(nyx.User.ProxyProfiles)
@@ -46,7 +47,7 @@ func (nyx *Nyx) AddProxyProfile(profile user.ProxyProfile) error {
 }
 
 // AddProfile appends profile to user profiles list and writes the updated list to file
-func (nyx *Nyx) AddProfile(profile user.Profile) error {
+func (nyx *Config) AddProfile(profile user.Profile) error {
 	for _, p := range nyx.User.Profiles {
 		if p.Title == profile.Title {
 			return errors.New("a profile with this title is already existent")
@@ -58,7 +59,7 @@ func (nyx *Nyx) AddProfile(profile user.Profile) error {
 }
 
 // UpdateProfile updates an existing profile and writes the updated profile list to file
-func (nyx *Nyx) UpdateProfile(profile user.Profile) error {
+func (nyx *Config) UpdateProfile(profile user.Profile) error {
 	idx := -1
 	for i, p := range nyx.User.Profiles {
 		if p.Title == profile.Title {
@@ -74,7 +75,7 @@ func (nyx *Nyx) UpdateProfile(profile user.Profile) error {
 }
 
 // UpdateProfileTitle updates an existing profile title and writes the updated profile list to file
-func (nyx *Nyx) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
+func (nyx *Config) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
 	idx := -1
 	for i, p := range nyx.User.Profiles {
 		if p.Title == oldtitle {
@@ -90,7 +91,7 @@ func (nyx *Nyx) UpdateProfileTitle(oldtitle string, profile user.Profile) error 
 }
 
 // DeleteProfile removes profile from user profiles list and writes the updated list to file
-func (nyx *Nyx) DeleteProfile(profileTitle string) error {
+func (nyx *Config) DeleteProfile(profileTitle string) error {
 	for i, p := range nyx.User.Profiles {
 		if p.Title == profileTitle {
 			// remove from slice and preserve order
