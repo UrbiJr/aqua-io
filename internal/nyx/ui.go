@@ -39,18 +39,18 @@ func (nyx *Config) MakeMobileUI() {
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
 func (nyx *Config) MakeDesktopUI() {
 
+	// get app tabs content
+	homeTabContent := nyx.homeTab()
+
 	// add application tabs (home, tasks, proxies, billing, settings)
 	tabs := container.NewAppTabs(
-		container.NewTabItemWithIcon("Home", theme.HomeIcon(), canvas.NewText("Home content goes here", nil)),
+		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent),
 		container.NewTabItemWithIcon("Tasks", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
 		container.NewTabItemWithIcon("Proxies", nyx.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
 		container.NewTabItemWithIcon("Billing", nyx.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Billing content goes here", nil)),
 		container.NewTabItemWithIcon("Settings", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
-	tabs.MinSize()
-
-	// populate app tabs
 
 	// populate window
 	toolbar := nyx.getToolbar()

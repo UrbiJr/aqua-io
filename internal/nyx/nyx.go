@@ -12,12 +12,13 @@ import (
 
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
-	App        fyne.App
-	MainWindow fyne.Window
-	SiteList   []*sites.SupportedSite
-	Logger     *utils.AppLogger
-	User       *user.User
-	TLSClient  *client.Client
+	App                     fyne.App
+	MainWindow              fyne.Window
+	CheckoutsChartContainer *fyne.Container
+	SiteList                []*sites.SupportedSite
+	Logger                  *utils.AppLogger
+	User                    *user.User
+	TLSClient               *client.Client
 }
 
 // NewNyx returns a new instance of the app
