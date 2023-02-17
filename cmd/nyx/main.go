@@ -6,11 +6,13 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
 	"github.com/UrbiJr/nyx/internal/nyx"
+	"github.com/UrbiJr/nyx/internal/resources"
 	"github.com/UrbiJr/nyx/internal/utils"
 )
 
@@ -51,6 +53,8 @@ func main() {
 
 	// create a fyne application
 	fyneApp := app.NewWithID("com.nyx-aio.nyxapp.preferences")
+	// set custom theme
+	fyneApp.Settings().SetTheme(&resources.NyxTheme{})
 	nyx.App = fyneApp
 	//nyx.TLSClient = client.NewClient()
 
@@ -65,15 +69,30 @@ func main() {
 
 	// create the login page
 
+	// get logged user
+
 	// create and size a fyne window
 	win := fyneApp.NewWindow("Nyx AIO")
 	nyx.MainWindow = win
-	win.Resize(fyne.NewSize(900, 500))
-	win.SetFixedSize(true)
-	win.SetMaster()
+	os := runtime.GOOS
+	switch os {
+	case "windows":
+		win.Resize(fyne.NewSize(1200, 600))
+		win.SetFixedSize(true)
+		win.SetMaster()
+		nyx.MakeDesktopUI()
+	case "darwin":
+		win.Resize(fyne.NewSize(1200, 600))
+		win.SetFixedSize(true)
+		win.SetMaster()
+		nyx.MakeDesktopUI()
+	default:
+		win.Resize(fyne.NewSize(415, 890))
+		win.SetFixedSize(true)
+		win.SetMaster()
+		nyx.MakeMobileUI()
+	}
 
-	nyx.MakeUI()
-
-	// show and run the application
+	// show and run the application (blocking function)
 	win.ShowAndRun()
 }

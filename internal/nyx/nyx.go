@@ -3,7 +3,7 @@ package nyx
 import (
 	"errors"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 	"github.com/UrbiJr/nyx/internal/client"
 	"github.com/UrbiJr/nyx/internal/sites"
 	"github.com/UrbiJr/nyx/internal/user"

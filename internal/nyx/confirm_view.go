@@ -31,19 +31,7 @@ yesFunc gets called if user presses Yes button
 noFunc gets called if user presses No button
 */
 func (nyx *Config) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButtonFunc, confirmMessage string) {
-	nyx.ConfirmView.Modal.
-		// set function when OK button (any button) gets pressed
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			// hide this page and go back to the previous page
-			if buttonLabel == "Yes" {
-				yesFunc()
-			} else if buttonLabel == "No" {
-				noFunc()
-			}
 
-		})
-	nyx.ConfirmView.Modal.SetText(confirmMessage)
-	nyx.pages.SwitchToPage(nyx.ConfirmView.Title)
 }
 
 // NewConfirmView returns a view to confirm a user choice
