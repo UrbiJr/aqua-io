@@ -14,18 +14,18 @@ type EditProfileView struct {
 }
 
 // NewEditProfileView returns a view for the profile creation
-func (nyx *Config) NewEditProfileView() *EditProfileView {
+func (app *Config) NewEditProfileView() *EditProfileView {
 
 	return nil
 }
 
 // EditProfileForm draws a form to edit a profile in the current view
-func (nyx *Config) EditProfileForm(profile user.Profile) {
+func (app *Config) EditProfileForm(profile user.Profile) {
 
 }
 
 // RenameProfileForm draws a form to rename a profile in the current view
-func (nyx *Config) RenameProfileForm(profile user.Profile) {
+func (app *Config) RenameProfileForm(profile user.Profile) {
 
 	//oldTitle := profile.Title
 

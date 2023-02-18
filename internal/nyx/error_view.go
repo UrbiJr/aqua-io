@@ -22,15 +22,15 @@ func newErrorModal() *tview.Modal {
 }
 
 // ShowError displays the custom error
-func (nyx *Config) ShowError(currentPage string, err error) {
+func (app *Config) ShowError(currentPage string, err error) {
 }
 
 // ShowErrorAndExit displays the custom error and closes the app
-func (nyx *Config) ShowErrorAndExit(err error) {
+func (app *Config) ShowErrorAndExit(err error) {
 }
 
 // NewErrorView returns a view for the custom error messages
-func (nyx *Config) NewErrorView() *ErrorView {
+func (app *Config) NewErrorView() *ErrorView {
 
 	return nil
 }

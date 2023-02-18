@@ -13,12 +13,12 @@ type StateSelectionView struct {
 }
 
 // RefreshStateSelectionView fills the state selection form with the states of the specified country
-func (nyx *Config) RefreshStateSelectionView(currentPage string, countryCode string, profile *user.Profile) {
+func (app *Config) RefreshStateSelectionView(currentPage string, countryCode string, profile *user.Profile) {
 
 }
 
 // NewStateSelectionView returns a view for the state selection by country
-func (nyx *Config) NewStateSelectionView() *StateSelectionView {
+func (app *Config) NewStateSelectionView() *StateSelectionView {
 
 	return nil
 }

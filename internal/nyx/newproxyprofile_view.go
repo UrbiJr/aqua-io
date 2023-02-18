@@ -12,11 +12,11 @@ type NewProxyProfileView struct {
 }
 
 // NewNewProxyProfileView returns a view for the profile creation
-func (nyx *Config) NewNewProxyProfileView() *NewProxyProfileView {
+func (app *Config) NewNewProxyProfileView() *NewProxyProfileView {
 
 	return nil
 }
 
-func (nyx *Config) AddProxyProfileForm() {
+func (app *Config) AddProxyProfileForm() {
 
 }

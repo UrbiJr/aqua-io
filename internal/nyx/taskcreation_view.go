@@ -11,7 +11,7 @@ type TaskCreationView struct {
 }
 
 // NewTaskCreationView returns a view for the sitelist
-func (nyx *Config) NewTaskCreationView() *TaskCreationView {
+func (app *Config) NewTaskCreationView() *TaskCreationView {
 
 	return nil
 }

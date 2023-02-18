@@ -12,15 +12,15 @@ type ProfilesView struct {
 }
 
 // NewProfilesView returns a view for the profiles management
-func (nyx *Config) NewProfilesView() *ProfilesView {
+func (app *Config) NewProfilesView() *ProfilesView {
 
 	return nil
 }
 
 // RefreshProfilesView refresh the list of profiles
-func (nyx *Config) RefreshProfilesView() {
+func (app *Config) RefreshProfilesView() {
 	/*
-		for i, profile := range nyx.User.Profiles {
+		for i, profile := range app.User.Profiles {
 			// table cell containing profile name
 
 		}

@@ -30,12 +30,12 @@ ShowConfirm displays the confirm message with Yes/No buttons
 yesFunc gets called if user presses Yes button
 noFunc gets called if user presses No button
 */
-func (nyx *Config) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButtonFunc, confirmMessage string) {
+func (app *Config) ShowConfirm(yesFunc ConfirmButtonFunc, noFunc ConfirmButtonFunc, confirmMessage string) {
 
 }
 
 // NewConfirmView returns a view to confirm a user choice
-func (nyx *Config) NewConfirmView() *ConfirmView {
+func (app *Config) NewConfirmView() *ConfirmView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 	modal := newConfirmModal()

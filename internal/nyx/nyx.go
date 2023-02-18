@@ -2,6 +2,7 @@ package nyx
 
 import (
 	"errors"
+	"net/http"
 
 	"fyne.io/fyne/v2"
 	"github.com/UrbiJr/nyx/internal/client"
@@ -18,6 +19,7 @@ type Config struct {
 	SiteList                []*sites.SupportedSite
 	Logger                  *utils.AppLogger
 	User                    *user.User
+	HTTPClient              *http.Client
 	TLSClient               *client.Client
 }
 
@@ -35,34 +37,34 @@ func NewNyx() *Config {
 }
 
 // Quit exits the app gracefully
-func (nyx *Config) Quit() {
-	nyx.Logger.QuitLogger()
+func (app *Config) Quit() {
+	app.Logger.QuitLogger()
 }
 
 // AddProxyProfile appends profile to user profiles list and writes the updated list to file
-func (nyx *Config) AddProxyProfile(profile user.ProxyProfile) error {
+func (app *Config) AddProxyProfile(profile user.ProxyProfile) error {
 	profile.Id = utils.RandString(12, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	nyx.User.ProxyProfiles = append(nyx.User.ProxyProfiles, profile)
-	user.WriteProxies(nyx.User.ProxyProfiles)
+	app.User.ProxyProfiles = append(app.User.ProxyProfiles, profile)
+	user.WriteProxies(app.User.ProxyProfiles)
 	return nil
 }
 
 // AddProfile appends profile to user profiles list and writes the updated list to file
-func (nyx *Config) AddProfile(profile user.Profile) error {
-	for _, p := range nyx.User.Profiles {
+func (app *Config) AddProfile(profile user.Profile) error {
+	for _, p := range app.User.Profiles {
 		if p.Title == profile.Title {
 			return errors.New("a profile with this title is already existent")
 		}
 	}
-	nyx.User.Profiles = append(nyx.User.Profiles, profile)
-	user.WriteProfiles(nyx.User.Profiles)
+	app.User.Profiles = append(app.User.Profiles, profile)
+	user.WriteProfiles(app.User.Profiles)
 	return nil
 }
 
 // UpdateProfile updates an existing profile and writes the updated profile list to file
-func (nyx *Config) UpdateProfile(profile user.Profile) error {
+func (app *Config) UpdateProfile(profile user.Profile) error {
 	idx := -1
-	for i, p := range nyx.User.Profiles {
+	for i, p := range app.User.Profiles {
 		if p.Title == profile.Title {
 			idx = i
 		}
@@ -70,15 +72,15 @@ func (nyx *Config) UpdateProfile(profile user.Profile) error {
 	if idx == -1 {
 		return errors.New("match not found")
 	}
-	nyx.User.Profiles[idx] = profile
-	user.WriteProfiles(nyx.User.Profiles)
+	app.User.Profiles[idx] = profile
+	user.WriteProfiles(app.User.Profiles)
 	return nil
 }
 
 // UpdateProfileTitle updates an existing profile title and writes the updated profile list to file
-func (nyx *Config) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
+func (app *Config) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
 	idx := -1
-	for i, p := range nyx.User.Profiles {
+	for i, p := range app.User.Profiles {
 		if p.Title == oldtitle {
 			idx = i
 		}
@@ -86,18 +88,18 @@ func (nyx *Config) UpdateProfileTitle(oldtitle string, profile user.Profile) err
 	if idx == -1 {
 		return errors.New("match not found")
 	}
-	nyx.User.Profiles[idx].Title = profile.Title
-	user.WriteProfiles(nyx.User.Profiles)
+	app.User.Profiles[idx].Title = profile.Title
+	user.WriteProfiles(app.User.Profiles)
 	return nil
 }
 
 // DeleteProfile removes profile from user profiles list and writes the updated list to file
-func (nyx *Config) DeleteProfile(profileTitle string) error {
-	for i, p := range nyx.User.Profiles {
+func (app *Config) DeleteProfile(profileTitle string) error {
+	for i, p := range app.User.Profiles {
 		if p.Title == profileTitle {
 			// remove from slice and preserve order
-			nyx.User.Profiles = append(nyx.User.Profiles[:i], nyx.User.Profiles[i+1:]...)
-			user.WriteProfiles(nyx.User.Profiles)
+			app.User.Profiles = append(app.User.Profiles[:i], app.User.Profiles[i+1:]...)
+			user.WriteProfiles(app.User.Profiles)
 			return nil
 		}
 	}

@@ -11,7 +11,7 @@ type ProxiesView struct {
 }
 
 // NewTaskCreationView returns a view for the profiles management
-func (nyx *Config) NewProxiesView() *ProxiesView {
+func (app *Config) NewProxiesView() *ProxiesView {
 
 	var flex = tview.NewFlex() // Flexbox layout allows us to organize multiple widgets inside a view
 
@@ -22,10 +22,10 @@ func (nyx *Config) NewProxiesView() *ProxiesView {
 }
 
 // RefreshProxiesView refreshes this view with updated proxy profiles and the current selection, if any
-func (nyx *Config) RefreshProxiesView(proxyProfileIdx int) {
+func (app *Config) RefreshProxiesView(proxyProfileIdx int) {
 
 	/*
-		for i, proxyProfile := range nyx.User.ProxyProfiles {
+		for i, proxyProfile := range app.User.ProxyProfiles {
 
 		}
 	*/

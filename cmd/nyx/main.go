@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -56,6 +57,7 @@ func main() {
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.NyxTheme{})
 	nyx.App = fyneApp
+	nyx.HTTPClient = &http.Client{}
 	//nyx.TLSClient = client.NewClient()
 
 	// create our loggers
@@ -77,12 +79,14 @@ func main() {
 	os := runtime.GOOS
 	switch os {
 	case "windows":
-		win.Resize(fyne.NewSize(1200, 600))
+		win.Resize(fyne.NewSize(1280, 720))
+		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
 		nyx.MakeDesktopUI()
 	case "darwin":
-		win.Resize(fyne.NewSize(1200, 600))
+		win.Resize(fyne.NewSize(1280, 720))
+		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
 		nyx.MakeDesktopUI()

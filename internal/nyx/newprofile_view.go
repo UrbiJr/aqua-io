@@ -12,12 +12,12 @@ type NewProfileView struct {
 }
 
 // NewNewProfileView returns a view for the profile creation
-func (nyx *Config) NewNewProfileView() *NewProfileView {
+func (app *Config) NewNewProfileView() *NewProfileView {
 
 	return nil
 }
 
-func (nyx *Config) AddProfileForm() {
+func (app *Config) AddProfileForm() {
 
 	//var profile user.Profile
 

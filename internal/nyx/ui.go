@@ -14,14 +14,14 @@ type UI struct {
 }
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
-func (nyx *Config) MakeMobileUI() {
+func (app *Config) MakeMobileUI() {
 
 	// add application tabs (home, tasks, proxies, billing, settings)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("          ", theme.HomeIcon(), canvas.NewText("Home content goes here", nil)),
 		container.NewTabItemWithIcon("          ", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
-		container.NewTabItemWithIcon("          ", nyx.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
-		container.NewTabItemWithIcon("          ", nyx.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Billing content goes here", nil)),
+		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
+		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Billing content goes here", nil)),
 		container.NewTabItemWithIcon("          ", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
 	)
 	// show tabs at the bottom of the window
@@ -32,46 +32,46 @@ func (nyx *Config) MakeMobileUI() {
 	// populate window
 	finalContent := container.NewVBox(tabs)
 
-	nyx.MainWindow.SetContent(finalContent)
+	app.MainWindow.SetContent(finalContent)
 
 }
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
-func (nyx *Config) MakeDesktopUI() {
+func (app *Config) MakeDesktopUI() {
 
 	// get app tabs content
-	homeTabContent := nyx.homeTab()
+	homeTabContent := app.homeTab()
 
 	// add application tabs (home, tasks, proxies, billing, settings)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent),
 		container.NewTabItemWithIcon("Tasks", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
-		container.NewTabItemWithIcon("Proxies", nyx.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
-		container.NewTabItemWithIcon("Billing", nyx.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Billing content goes here", nil)),
+		container.NewTabItemWithIcon("Proxies", app.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
+		container.NewTabItemWithIcon("Billing", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Billing content goes here", nil)),
 		container.NewTabItemWithIcon("Settings", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
 	// populate window
-	toolbar := nyx.getToolbar()
+	toolbar := app.getToolbar()
 	finalContent := container.NewWithoutLayout(tabs, toolbar)
 
 	// resize and position widgets
-	tabs.Resize(fyne.NewSize(1200, 600))
+	tabs.Resize(fyne.NewSize(1280, 720))
 	toolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
-	toolbar.Move(fyne.NewPos(1100, 0))
+	toolbar.Move(fyne.NewPos(1180, 0))
 
-	nyx.MainWindow.SetContent(finalContent)
+	app.MainWindow.SetContent(finalContent)
 
 }
 
-func (nyx *Config) getToolbar() *widget.Toolbar {
+func (app *Config) getToolbar() *widget.Toolbar {
 	toolbar := widget.NewToolbar(
 		widget.NewToolbarSpacer(),
 		widget.NewToolbarAction(theme.AccountIcon(), func() {
 		}),
-		widget.NewToolbarAction(nyx.App.Settings().Theme().Icon(resources.IconNameBell), func() {
+		widget.NewToolbarAction(app.App.Settings().Theme().Icon(resources.IconNameBell), func() {
 		}),
 		widget.NewToolbarSpacer(),
 	)

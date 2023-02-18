@@ -1,45 +1,140 @@
 package nyx
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"image"
+	"image/png"
+	"io"
 	"log"
+	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/UrbiJr/nyx/internal/resources"
+	"github.com/UrbiJr/nyx/internal/utils"
 	chart "github.com/wcharczuk/go-chart/v2"
 )
 
-func (nyx *Config) homeTab() *fyne.Container {
+func (app *Config) homeTab() *fyne.Container {
 	// fill default checkout data
-	data := []float64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	data := []float64{15, 5, 0, 6, 78, 2, 0, 10, 0, 20, 5, 14}
 	// get the checkouts chart
-	checkoutsChart := nyx.getCheckoutsChart(data)
+	checkoutsChart := app.getCheckoutsChart(data)
 	// wrap checkoutschart in a VBox
 	checkoutsChartContainer := container.NewVBox(checkoutsChart)
 	// assign it to our config to refresh it easily
-	nyx.CheckoutsChartContainer = checkoutsChartContainer
+	app.CheckoutsChartContainer = checkoutsChartContainer
 
 	// get the checkout feed
-	checkoutFeed := nyx.getCheckoutFeed()
+	checkoutFeed := app.getCheckoutFeed()
+	checkoutFeedTitle := canvas.NewText("Checkout Feed", nil)
 
 	// get the releases feed
+	releasesFeed := app.getReleasesFeed()
 
 	// define the homeTabContainer
-	homeTabContainer := container.NewWithoutLayout(checkoutsChartContainer, checkoutFeed)
+	homeTabContainer := container.NewWithoutLayout(checkoutsChartContainer, checkoutFeedTitle, checkoutFeed, releasesFeed)
 
 	// resize and move the homeTab elements
 	checkoutsChart.Move(fyne.NewPos(10, 10))
-	checkoutsChart.Resize(fyne.NewSize(800, 313))
-	checkoutFeed.Move(fyne.NewPos(810, 10))
+	checkoutsChart.Resize(fyne.NewSize(850, 313))
+	checkoutFeedTitle.Move(fyne.NewPos(900, 10))
+	checkoutFeedTitle.Resize(fyne.NewSize(100, 50))
+	checkoutFeed.Move(fyne.NewPos(900, 70))
 	checkoutFeed.Resize(fyne.NewSize(360, 520))
+	releasesFeed.Move(fyne.NewPos(10, 333))
+	releasesFeed.Resize(fyne.NewSize(800, 310))
 
 	return homeTabContainer
 }
 
-func (nyx *Config) getCheckoutFeed() *widget.List {
+func (app *Config) downloadFile(URL, fileName string) error {
+	// get the response bytes from calling a url
+	response, err := app.HTTPClient.Get(URL)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 200 {
+		return errors.New("received wrong response code when downloading image")
+	}
+
+	b, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	img, _, err := image.Decode(bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	out, err := os.Create(fmt.Sprintf("./%s", fileName))
+	if err != nil {
+		return err
+	}
+
+	err = png.Encode(out, img)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (app *Config) makeReleaseList() []*widget.Card {
+	var cards []*widget.Card
+	var canvasImage *canvas.Image
+
+	releases := app.fetchReleases()
+	for i, release := range releases {
+		card := widget.NewCard(
+			release.Title,
+			release.Date,
+			widget.NewHyperlink("Check StockX", release.StockXLink),
+		)
+		if utils.DoesFileExist(fmt.Sprintf("%d-release.png", i)) {
+			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.png", i))
+		} else {
+			// TODO: check why displaying stockx images slows app down
+			err := app.downloadFile(release.ImageURL.String(), fmt.Sprintf("%d-release.png", i))
+			if err != nil {
+				// return bundled error image
+				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
+			} else {
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.png", i))
+			}
+		}
+		canvasImage.SetMinSize(fyne.NewSize(100, 100))
+		canvasImage.FillMode = canvas.ImageFillContain
+		card.SetImage(canvasImage)
+		cards = append(cards, card)
+	}
+
+	return cards
+}
+
+func (app *Config) getReleasesFeed() *fyne.Container {
+
+	hList := app.makeReleaseList()
+	cardsWrapper := container.NewHBox()
+	for _, x := range hList {
+		cardsWrapper.Add(x)
+	}
+	hScroll := container.NewHScroll(cardsWrapper)
+
+	releasesContainer := container.NewVBox(canvas.NewText("Releases", nil), hScroll)
+
+	return releasesContainer
+}
+
+func (app *Config) getCheckoutFeed() *widget.List {
 	// Generate random elements
 	var listItems []string
 	for i := 0; i < 30; i++ {
@@ -64,7 +159,7 @@ func (nyx *Config) getCheckoutFeed() *widget.List {
 	return list
 }
 
-func (nyx *Config) getCheckoutsChart(data []float64) *canvas.Image {
+func (app *Config) getCheckoutsChart(data []float64) *canvas.Image {
 
 	// the x ticks are generated automatically,
 	// the x and y ranges are established automatically,
@@ -107,12 +202,13 @@ func (nyx *Config) getCheckoutsChart(data []float64) *canvas.Image {
 
 	img, err := collector.Image()
 	if err != nil {
-		nyx.Logger.Error(err)
+		app.Logger.Error(err)
 		log.Panic()
 	}
 
 	canvasImage := canvas.NewImageFromImage(img)
-	canvasImage.SetMinSize(fyne.NewSize(800, 313))
+	canvasImage.SetMinSize(fyne.NewSize(850, 313))
+	canvasImage.FillMode = canvas.ImageFillOriginal
 
 	return canvasImage
 }
