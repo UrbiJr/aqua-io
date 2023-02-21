@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"github.com/UrbiJr/nyx/internal/nyx"
 	"github.com/UrbiJr/nyx/internal/resources"
+	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/UrbiJr/nyx/internal/utils"
 )
 
@@ -72,6 +73,10 @@ func main() {
 	// create the login page
 
 	// get logged user
+	nyx.User = &user.User{
+		Email:    "urbijr@nyx-robotics.eu",
+		Username: "urbijr",
+	}
 
 	// create and size a fyne window
 	win := fyneApp.NewWindow("Nyx AIO")

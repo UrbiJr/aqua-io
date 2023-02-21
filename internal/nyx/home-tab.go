@@ -17,7 +17,7 @@ import (
 	chart "github.com/wcharczuk/go-chart/v2"
 )
 
-func (app *Config) homeTab() *fyne.Container {
+func (app *Config) homeTab(greetingMsg string) *fyne.Container {
 	// fill default checkout data
 	data := []float64{15, 5, 0, 6, 78, 2, 0, 10, 0, 20, 5, 14}
 	// get the checkouts chart
@@ -30,21 +30,28 @@ func (app *Config) homeTab() *fyne.Container {
 	// get the checkout feed
 	checkoutFeed := app.getCheckoutFeed()
 	checkoutFeedTitle := canvas.NewText("Checkout Feed", nil)
+	greetingMsgTitle := canvas.NewText(greetingMsg, nil)
 
 	// get the releases feed
 	releasesFeed := app.getReleasesFeed()
 
 	// define the homeTabContainer
-	homeTabContainer := container.NewWithoutLayout(checkoutsChartContainer, checkoutFeedTitle, checkoutFeed, releasesFeed)
+	homeTabContainer := container.NewWithoutLayout(greetingMsgTitle, checkoutFeedTitle, checkoutFeed, checkoutsChartContainer, releasesFeed)
 
 	// resize and move the homeTab elements
-	checkoutsChart.Move(fyne.NewPos(10, 10))
-	checkoutsChart.Resize(fyne.NewSize(850, 313))
-	checkoutFeedTitle.Move(fyne.NewPos(900, 10))
+	greetingMsgTitle.Move(fyne.NewPos(10, 10))
+	greetingMsgTitle.Resize(fyne.NewSize(100, 50))
+
+	checkoutFeedTitle.Move(fyne.NewPos(10, 60))
 	checkoutFeedTitle.Resize(fyne.NewSize(100, 50))
-	checkoutFeed.Move(fyne.NewPos(900, 70))
-	checkoutFeed.Resize(fyne.NewSize(360, 520))
-	releasesFeed.Move(fyne.NewPos(10, 333))
+
+	checkoutFeed.Move(fyne.NewPos(10, 120))
+	checkoutFeed.Resize(fyne.NewSize(360, 500))
+
+	checkoutsChartContainer.Move(fyne.NewPos(380, 10))
+	checkoutsChartContainer.Resize(fyne.NewSize(850, 313))
+
+	releasesFeed.Move(fyne.NewPos(400, 333))
 	releasesFeed.Resize(fyne.NewSize(800, 310))
 
 	return homeTabContainer

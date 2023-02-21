@@ -1,6 +1,9 @@
 package nyx
 
 import (
+	"fmt"
+	"math/rand"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -39,8 +42,19 @@ func (app *Config) MakeMobileUI() {
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
 func (app *Config) MakeDesktopUI() {
 
+	greetings := []string{
+		"how can Nyx assist you today? :-)",
+		"how are you going to use Nyx today? :-)",
+		"ready to have some fun with Nyx?",
+		"Nyx is at your service :nyx-salute:",
+		"it's been a while.",
+		"time to make the checkout feed go brrr.",
+		"everyday is a perfect day to run Nyx!",
+	}
+	msg := fmt.Sprintf("Hello %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
+
 	// get app tabs content
-	homeTabContent := app.homeTab()
+	homeTabContent := app.homeTab(msg)
 
 	// add application tabs (home, tasks, proxies, billing, settings)
 	tabs := container.NewAppTabs(
