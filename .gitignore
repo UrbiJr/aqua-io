@@ -2,4 +2,5 @@
 .vscode/
 tmp/
 *.json
+*-release.jpg
 *-release.png

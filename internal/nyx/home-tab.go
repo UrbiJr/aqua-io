@@ -1,11 +1,8 @@
 package nyx
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"image"
-	"image/png"
 	"io"
 	"log"
 	"os"
@@ -64,25 +61,17 @@ func (app *Config) downloadFile(URL, fileName string) error {
 		return errors.New("received wrong response code when downloading image")
 	}
 
-	b, err := io.ReadAll(response.Body)
+	//open a file for writing
+	file, err := os.Create(fmt.Sprintf("%s.jpg", fileName))
 	if err != nil {
-		return err
+		log.Fatal(err)
 	}
-	defer response.Body.Close()
+	defer file.Close()
 
-	img, _, err := image.Decode(bytes.NewReader(b))
+	// Use io.Copy to just dump the response body to the file. This supports huge files
+	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		return err
-	}
-
-	out, err := os.Create(fmt.Sprintf("./%s", fileName))
-	if err != nil {
-		return err
-	}
-
-	err = png.Encode(out, img)
-	if err != nil {
-		return err
+		log.Fatal(err)
 	}
 
 	return nil
@@ -99,16 +88,15 @@ func (app *Config) makeReleaseList() []*widget.Card {
 			release.Date,
 			widget.NewHyperlink("Check StockX", release.StockXLink),
 		)
-		if utils.DoesFileExist(fmt.Sprintf("%d-release.png", i)) {
-			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.png", i))
+		if utils.DoesFileExist(fmt.Sprintf("%d-release.jpg", i)) {
+			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.jpg", i))
 		} else {
-			// TODO: check why displaying stockx images slows app down
-			err := app.downloadFile(release.ImageURL.String(), fmt.Sprintf("%d-release.png", i))
+			err := app.downloadFile(release.ImageURL.String(), fmt.Sprintf("%d-release", i))
 			if err != nil {
 				// return bundled error image
 				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
 			} else {
-				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.png", i))
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.jpg", i))
 			}
 		}
 		canvasImage.SetMinSize(fyne.NewSize(100, 100))
