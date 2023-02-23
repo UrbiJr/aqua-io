@@ -1,11 +1,15 @@
 package nyx
 
 import (
-	"errors"
+	"database/sql"
+	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"github.com/UrbiJr/nyx/internal/client"
+	"github.com/UrbiJr/nyx/internal/repository"
 	"github.com/UrbiJr/nyx/internal/sites"
 	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/UrbiJr/nyx/internal/utils"
@@ -14,6 +18,7 @@ import (
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
 	App                     fyne.App
+	DB                      repository.Repository
 	MainWindow              fyne.Window
 	CheckoutsChartContainer *fyne.Container
 	SiteList                []*sites.SupportedSite
@@ -41,67 +46,29 @@ func (app *Config) Quit() {
 	app.Logger.QuitLogger()
 }
 
-// AddProxyProfile appends profile to user profiles list and writes the updated list to file
-func (app *Config) AddProxyProfile(profile user.ProxyProfile) error {
-	profile.Id = utils.RandString(12, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	app.User.ProxyProfiles = append(app.User.ProxyProfiles, profile)
-	user.WriteProxies(app.User.ProxyProfiles)
-	return nil
+func (app *Config) ConnectSQL() (*sql.DB, error) {
+	path := ""
+
+	if strings.HasSuffix(os.Getenv("DB_PATH"), ".db") {
+		path = os.Getenv("DB_PATH")
+	} else {
+		path = app.App.Storage().RootURI().Path() + "/sql.db"
+	}
+
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
-// AddProfile appends profile to user profiles list and writes the updated list to file
-func (app *Config) AddProfile(profile user.Profile) error {
-	for _, p := range app.User.Profiles {
-		if p.Title == profile.Title {
-			return errors.New("a profile with this title is already existent")
-		}
-	}
-	app.User.Profiles = append(app.User.Profiles, profile)
-	user.WriteProfiles(app.User.Profiles)
-	return nil
-}
+func (app *Config) SetupDB(sqldb *sql.DB) {
+	app.DB = repository.NewSQLiteRepository(sqldb)
 
-// UpdateProfile updates an existing profile and writes the updated profile list to file
-func (app *Config) UpdateProfile(profile user.Profile) error {
-	idx := -1
-	for i, p := range app.User.Profiles {
-		if p.Title == profile.Title {
-			idx = i
-		}
+	err := app.DB.Migrate()
+	if err != nil {
+		app.Logger.Error(err)
+		log.Panic()
 	}
-	if idx == -1 {
-		return errors.New("match not found")
-	}
-	app.User.Profiles[idx] = profile
-	user.WriteProfiles(app.User.Profiles)
-	return nil
-}
-
-// UpdateProfileTitle updates an existing profile title and writes the updated profile list to file
-func (app *Config) UpdateProfileTitle(oldtitle string, profile user.Profile) error {
-	idx := -1
-	for i, p := range app.User.Profiles {
-		if p.Title == oldtitle {
-			idx = i
-		}
-	}
-	if idx == -1 {
-		return errors.New("match not found")
-	}
-	app.User.Profiles[idx].Title = profile.Title
-	user.WriteProfiles(app.User.Profiles)
-	return nil
-}
-
-// DeleteProfile removes profile from user profiles list and writes the updated list to file
-func (app *Config) DeleteProfile(profileTitle string) error {
-	for i, p := range app.User.Profiles {
-		if p.Title == profileTitle {
-			// remove from slice and preserve order
-			app.User.Profiles = append(app.User.Profiles[:i], app.User.Profiles[i+1:]...)
-			user.WriteProfiles(app.User.Profiles)
-			return nil
-		}
-	}
-	return errors.New("cannot find a profile with this title")
 }

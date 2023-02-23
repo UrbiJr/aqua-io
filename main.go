@@ -16,6 +16,8 @@ import (
 	"github.com/UrbiJr/nyx/internal/resources"
 	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/UrbiJr/nyx/internal/utils"
+
+	_ "github.com/glebarez/go-sqlite"
 )
 
 func init() {
@@ -67,15 +69,23 @@ func main() {
 	nyx.Logger.Debug("debug logging enabled")
 
 	// open a connection to the database
+	sqlDB, err := nyx.ConnectSQL()
+	if err != nil {
+		log.Panic(err)
+	}
 
 	// create a database repository
+	nyx.SetupDB(sqlDB)
 
 	// create the login page
 
 	// get logged user
 	nyx.User = &user.User{
-		Email:    "urbijr@nyx-robotics.eu",
-		Username: "urbijr",
+		Email:          "urbijr@nyx-robotics.eu",
+		Username:       "urbijr",
+		Settings:       &user.Settings{},
+		ProfileManager: &user.ProfileManager{},
+		ProxyManager:   &user.ProxyManager{},
 	}
 
 	// create and size a fyne window
