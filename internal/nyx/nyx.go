@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/nyx/internal/client"
 	"github.com/UrbiJr/nyx/internal/repository"
 	"github.com/UrbiJr/nyx/internal/sites"
@@ -20,6 +21,7 @@ type Config struct {
 	App                     fyne.App
 	DB                      repository.Repository
 	MainWindow              fyne.Window
+	ProfileGroupsList       *widget.List
 	CheckoutsChartContainer *fyne.Container
 	SiteList                []*sites.SupportedSite
 	Logger                  *utils.AppLogger

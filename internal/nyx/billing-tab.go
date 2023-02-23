@@ -6,12 +6,18 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/nyx/internal/utils"
 )
 
 // NewProfilesView returns a view for the profiles management
 func (app *Config) billingTab() *fyne.Container {
+
+	// get current profile groups
+	app.User.ProfileManager.Groups, _ = app.DB.AllProfileGroups()
 
 	// define a list to display profile groups
 	list := widget.NewList(
@@ -28,9 +34,11 @@ func (app *Config) billingTab() *fyne.Container {
 			}
 		},
 	)
+	app.ProfileGroupsList = list
 
 	// define a button to create a new group
 	addProfileGroupButton := widget.NewButtonWithIcon("New Group", theme.ContentAddIcon(), func() {
+		app.addProfileGroupDialog()
 	})
 
 	// define the left container
@@ -52,12 +60,62 @@ func (app *Config) billingTab() *fyne.Container {
 	return profilesTabContainer
 }
 
-// RefreshProfilesView refresh the list of profiles
-func (app *Config) refreshProfilesTab() {
-	/*
-		for i, profile := range app.User.Profiles {
-			// table cell containing profile name
+func (app *Config) addProfileGroupDialog() dialog.Dialog {
+	nameEntry := widget.NewEntry()
 
-		}
-	*/
+	nameEntry.Validator = utils.IsStringEmpty
+
+	// create a dialog
+	addForm := dialog.NewForm(
+		"Create Group",
+		"Create",
+		"Cancel",
+		[]*widget.FormItem{
+			{Text: "Group name", Widget: nameEntry},
+		},
+		func(valid bool) {
+			if valid {
+
+				_, err := app.DB.InsertProfileGroup(user.ProfileGroup{
+					Name: nameEntry.Text,
+				})
+
+				if err != nil {
+					app.Logger.Error(err)
+				}
+				app.refreshProfileGroupsList()
+			}
+		},
+		app.MainWindow)
+
+	// size and show the dialog
+	addForm.Resize(fyne.Size{Width: 400})
+	addForm.Show()
+
+	return addForm
+}
+
+func (app *Config) currentProfileGroups() ([]user.ProfileGroup, error) {
+	pfg, err := app.DB.AllProfileGroups()
+	if err != nil {
+		app.Logger.Error(err)
+		return nil, err
+	}
+
+	return pfg, nil
+}
+
+func (app *Config) currentProfiles() ([]user.Profile, error) {
+	p, err := app.DB.AllProfiles()
+	if err != nil {
+		app.Logger.Error(err)
+		return nil, err
+	}
+
+	return p, nil
+}
+
+func (app *Config) refreshProfileGroupsList() {
+	app.User.ProfileManager.Groups, _ = app.DB.AllProfileGroups()
+	app.ProfileGroupsList.Refresh()
 }
