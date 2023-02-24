@@ -22,7 +22,6 @@ func CardMonths() []string {
 
 func CardYears() []string {
 	years := []string{
-		"2022",
 		"2023",
 		"2024",
 		"2025",

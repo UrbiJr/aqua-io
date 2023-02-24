@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/nyx/internal/client"
 	"github.com/UrbiJr/nyx/internal/repository"
 	"github.com/UrbiJr/nyx/internal/sites"
@@ -18,16 +17,16 @@ import (
 
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
-	App                     fyne.App
-	DB                      repository.Repository
-	MainWindow              fyne.Window
-	ProfileGroupsList       *widget.List
-	CheckoutsChartContainer *fyne.Container
-	SiteList                []*sites.SupportedSite
-	Logger                  *utils.AppLogger
-	User                    *user.User
-	HTTPClient              *http.Client
-	TLSClient               *client.Client
+	App        fyne.App
+	DB         repository.Repository
+	MainWindow fyne.Window
+	*BillingTab
+	*HomeTab
+	SiteList   []*sites.SupportedSite
+	Logger     *utils.AppLogger
+	User       *user.User
+	HTTPClient *http.Client
+	TLSClient  *client.Client
 }
 
 // NewNyx returns a new instance of the app

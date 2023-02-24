@@ -39,7 +39,7 @@ func (repo *SQLiteRepository) Migrate() error {
 			address_line_1 text not null,
 			address_line_2 text not null,
 			city text not null,
-			post_code text not null,
+			postcode text not null,
 			state text not null,
 			country_code text not null,
 			phone text not null,
@@ -80,7 +80,7 @@ func (repo *SQLiteRepository) Migrate() error {
 }
 
 func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, error) {
-	stmt := "insert into profiles (group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, post_code, state, country_code, phone, card_number, card_month, card_year, card_cvv) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmt := "insert into profiles (group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, postcode, state, country_code, phone, card_number, card_month, card_year, card_cvv) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
 	res, err := repo.Conn.Exec(stmt, p.GroupID, p.Title, p.Email, p.FirstName, p.LastName, p.AddressLine1, p.AddressLine2, p.City, p.Postcode, p.State, p.CountryCode, p.Phone, p.CardNumber, p.CardMonth, p.CardYear, p.CardCvv)
 	if err != nil {
@@ -114,7 +114,7 @@ func (repo *SQLiteRepository) InsertProfileGroup(pg user.ProfileGroup) (*user.Pr
 }
 
 func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
-	query := "select id, group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, post_code, state, country_code, phone, card_number, card_month, card_year, card_cvv from profiles order by title"
+	query := "select id, group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, postcode, state, country_code, phone, card_number, card_month, card_year, card_cvv from profiles order by title"
 
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
@@ -185,7 +185,7 @@ func (repo *SQLiteRepository) UpdateProfile(id int64, updated user.Profile) erro
 		return errors.New("invalid updated id")
 	}
 
-	stmt := "update profiles set group_id = ?, title = ?, email = ?, first_name = ?, last_name = ?, address_line_1 = ?, address_line_2 = ?, city = ?, post_code = ?, state = ?, country_code = ?, phone = ?, card_number = ?, card_month = ?, card_year = ?, card_cvv = ? where id = ?"
+	stmt := "update profiles set group_id = ?, title = ?, email = ?, first_name = ?, last_name = ?, address_line_1 = ?, address_line_2 = ?, city = ?, postcode = ?, state = ?, country_code = ?, phone = ?, card_number = ?, card_month = ?, card_year = ?, card_cvv = ? where id = ?"
 	res, err := repo.Conn.Exec(stmt, updated.GroupID, updated.Title, updated.Email, updated.FirstName, updated.LastName, updated.AddressLine1, updated.AddressLine2, updated.City, updated.Postcode, updated.State, updated.CountryCode, updated.Phone, updated.CardNumber, updated.CardMonth, updated.CardYear, updated.CardCvv, id)
 	if err != nil {
 		return err

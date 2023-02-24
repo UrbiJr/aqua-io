@@ -16,7 +16,7 @@ type Profile struct {
 	AddressLine1 string `json:"address_line_1"`
 	AddressLine2 string `json:"address_line_2"`
 	City         string `json:"city"`
-	Postcode     string `json:"post_code"`
+	Postcode     string `json:"postcode"`
 	State        string `json:"state"`
 	CountryCode  string `json:"country_code"`
 	Phone        string `json:"phone"`
@@ -51,4 +51,47 @@ func (pfm *ProfileManager) FilterByGroupName(groupName string) []Profile {
 	}
 
 	return filtered
+}
+
+func (pfm *ProfileManager) FilterByGroupID(ID int64) []Profile {
+	var filtered []Profile
+
+	// iterate through proxy groups
+	for _, g := range pfm.Groups {
+		// if group is the one requested
+		if g.ID == ID {
+			// keep it as current and iterate through proxies
+			for _, p := range pfm.Profiles {
+				// if proxy belongs to current group
+				if p.GroupID == g.ID {
+					// add it to filtered
+					filtered = append(filtered, p)
+				}
+			}
+			return filtered
+		}
+	}
+
+	return filtered
+}
+
+func (pfm *ProfileManager) GetGroupByID(ID int64) *ProfileGroup {
+	for idx, g := range pfm.Groups {
+		if g.ID == ID {
+			return &pfm.Groups[idx]
+		}
+	}
+
+	return nil
+}
+
+func (pfm *ProfileManager) GetProfileByTitle(title string, groupID int64) *Profile {
+	filtered := pfm.FilterByGroupID(groupID)
+	for _, p := range filtered {
+		if p.Title == title {
+			return &p
+		}
+	}
+
+	return nil
 }
