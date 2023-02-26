@@ -56,19 +56,12 @@ func (pfm *ProfileManager) FilterByGroupName(groupName string) []Profile {
 func (pfm *ProfileManager) FilterByGroupID(ID int64) []Profile {
 	var filtered []Profile
 
-	// iterate through proxy groups
-	for _, g := range pfm.Groups {
-		// if group is the one requested
-		if g.ID == ID {
-			// keep it as current and iterate through proxies
-			for _, p := range pfm.Profiles {
-				// if proxy belongs to current group
-				if p.GroupID == g.ID {
-					// add it to filtered
-					filtered = append(filtered, p)
-				}
-			}
-			return filtered
+	// keep it as current and iterate through proxies
+	for _, p := range pfm.Profiles {
+		// if proxy belongs to current group
+		if p.GroupID == ID {
+			// add it to filtered
+			filtered = append(filtered, p)
 		}
 	}
 

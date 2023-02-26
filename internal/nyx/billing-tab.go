@@ -3,7 +3,6 @@ package nyx
 import (
 	"errors"
 	"fmt"
-	"regexp"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -33,7 +32,8 @@ func (app *Config) billingTab() *fyne.Container {
 		Bottom: container.NewMax(),
 	}
 
-	// get current profile groups
+	// get current profiles and profile groups
+	app.getProfiles()
 	app.getProfileGroups()
 	if len(app.User.ProfileManager.Groups) > 0 {
 		app.CurrentProfileGroup = app.User.ProfileManager.Groups[0].ID
@@ -47,15 +47,15 @@ func (app *Config) billingTab() *fyne.Container {
 		func() fyne.CanvasObject {
 			return widget.NewLabel("")
 		},
-		func(id widget.ListItemID, item fyne.CanvasObject) {
+		func(idx widget.ListItemID, item fyne.CanvasObject) {
 			if label, ok := item.(*widget.Label); ok {
 				label.SetText(
-					fmt.Sprintf("%s\t (%d)", app.User.ProfileManager.Groups[id].Name, len(app.User.ProfileManager.FilterByGroupName(app.User.ProfileManager.Groups[id].Name))))
+					fmt.Sprintf("%s\t (%d)", app.User.ProfileManager.Groups[idx].Name, len(app.User.ProfileManager.FilterByGroupID(app.User.ProfileManager.Groups[idx].ID))))
 			}
 		},
 	)
-	list.OnSelected = func(id widget.ListItemID) {
-		app.CurrentProfileGroup = app.User.ProfileManager.Groups[id].ID
+	list.OnSelected = func(idx widget.ListItemID) {
+		app.CurrentProfileGroup = app.User.ProfileManager.Groups[idx].ID
 		app.refreshBillingTopContent()
 		app.refreshBillingBottomContent()
 	}
@@ -115,7 +115,6 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 		},
 		func(valid bool) {
 			if valid {
-
 				_, err := app.DB.InsertProfileGroup(user.ProfileGroup{
 					Name: nameEntry.Text,
 				})
@@ -135,6 +134,15 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 	return addForm
 }
 
+func (app *Config) getProfiles() {
+	profiles, err := app.DB.AllProfiles()
+	if err != nil {
+		app.Logger.Error(err)
+		app.Quit()
+	}
+	app.User.ProfileManager.Profiles = profiles
+}
+
 func (app *Config) getProfileGroups() {
 	groups, err := app.DB.AllProfileGroups()
 	if err != nil {
@@ -145,6 +153,7 @@ func (app *Config) getProfileGroups() {
 }
 
 func (app *Config) refreshProfileGroupsList() {
+	app.getProfiles()
 	app.getProfileGroups()
 	app.ProfileGroupsList.Refresh()
 }
@@ -218,6 +227,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 	postcode.SetPlaceHolder("NW2 5NG")
 	postcode.Validator = utils.IsStringEmpty
 
+	stateLabel := widget.NewLabel("State")
 	state := widget.NewSelect([]string{}, func(s string) {
 
 	})
@@ -230,26 +240,19 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 			if err == nil {
 				state.Options = states
 				state.Enable()
+				stateLabel.SetText("State*")
 			} else {
 				state.Options = []string{}
 				state.ClearSelected()
 				state.Disable()
+				stateLabel.SetText("State")
 			}
 		}
 	})
 
 	cardNumber := widget.NewEntry()
 	cardNumber.SetPlaceHolder("")
-	cardNumber.Validator = func(s string) error {
-		pattern := `(^4[0-9]{12}(?:[0-9]{3})?$)|(^(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}$)|(3[47][0-9]{13})|(^3(?:0[0-5]|[68][0-9])[0-9]{11}$)|(^6(?:011|5[0-9]{2})[0-9]{12}$)|(^(?:2131|1800|35\d{3})\d{11}$)`
-		if len(s) > 0 {
-			_, e := regexp.MatchString(pattern, s)
-			if e != nil {
-				return errors.New("not a valid credit card")
-			}
-		}
-		return nil
-	}
+	cardNumber.Validator = validation.NewRegexp(`(^4[0-9]{12}(?:[0-9]{3})?$)|(^(?:5[1-5][0-9]{2}|222[1-9]|22[3-9][0-9]|2[3-6][0-9]{2}|27[01][0-9]|2720)[0-9]{12}$)|(3[47][0-9]{13})|(^3(?:0[0-5]|[68][0-9])[0-9]{11}$)|(^6(?:011|5[0-9]{2})[0-9]{12}$)|(^(?:2131|1800|35\d{3})\d{11}$)`, "not a valid credit card")
 
 	cardMonth := widget.NewSelect(utils.CardMonths(), func(s string) {
 	})
@@ -266,35 +269,88 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 		return nil
 	}
 
-	// create a dialog
-	addForm := dialog.NewForm(
+	scrollContent := container.NewVScroll(container.NewVBox(
+		widget.NewLabel("Title*"),
+		title,
+		widget.NewLabel("Email*"),
+		email,
+		widget.NewLabel("Phone*"),
+		phone,
+		widget.NewLabel("Address Line 1*"),
+		addressLine1,
+		widget.NewLabel("Address Line 2"),
+		addressLine2,
+		widget.NewLabel("City*"),
+		city,
+		widget.NewLabel("Postcode*"),
+		postcode,
+		stateLabel,
+		state,
+		widget.NewLabel("Country*"),
+		country,
+		widget.NewLabel("Card Number*"),
+		cardNumber,
+		widget.NewLabel("Card Month*"),
+		cardMonth,
+		widget.NewLabel("Card Year*"),
+		cardYear,
+		widget.NewLabel("Card CVV*"),
+		cardCvv,
+	))
+
+	addForm := dialog.NewCustomConfirm(
 		"Add New Profile",
 		"Create",
 		"Cancel",
-		[]*widget.FormItem{
-			{Text: "Title", Widget: title},
-			{Text: "Email", Widget: email},
-			{Text: "Phone", Widget: phone},
-			{Text: "Address Line 1", Widget: addressLine1},
-			{Text: "Address Line 2", Widget: addressLine2},
-			{Text: "City", Widget: city},
-			{Text: "Postcode", Widget: postcode},
-			{Text: "State", Widget: state},
-			{Text: "Country", Widget: country},
-			{Text: "Card Number", Widget: cardNumber},
-			{Text: "Card Month", Widget: cardMonth},
-			{Text: "Card Year", Widget: cardYear},
-			{Text: "Card CVV", Widget: cardCvv},
-		},
+		scrollContent,
 		func(valid bool) {
-			if valid {
+			var countryCode, stateCode string
+			countryCode, err := utils.GetCountryCode(country.Selected)
+			if err != nil {
+				dialog.ShowError(errors.New("please choose a country"), app.MainWindow)
+				valid = false
+			}
+			if !state.Disabled() {
+				stateCode, err = utils.GetStateCode(countryCode, state.Selected)
+				if err != nil {
+					dialog.ShowError(errors.New("please choose a state"), app.MainWindow)
+					valid = false
+				}
+			}
 
+			if valid {
+				_, err = app.DB.InsertProfile(
+					user.Profile{
+						GroupID:      app.CurrentProfileGroup,
+						Title:        title.Text,
+						Email:        email.Text,
+						FirstName:    firstName.Text,
+						LastName:     lastName.Text,
+						AddressLine1: addressLine1.Text,
+						AddressLine2: addressLine2.Text,
+						City:         city.Text,
+						Postcode:     postcode.Text,
+						State:        stateCode,
+						CountryCode:  countryCode,
+						Phone:        phone.Text,
+						CardNumber:   cardNumber.Text,
+						CardMonth:    cardMonth.Selected,
+						CardYear:     cardYear.Selected,
+						CardCvv:      cardCvv.Text,
+					})
+
+				if err != nil {
+					app.Logger.Error(err)
+				}
+				app.refreshProfileGroupsList()
+				app.refreshBillingTopContent()
 			}
 		},
-		app.MainWindow)
+		app.MainWindow,
+	)
 
 	// size and show the dialog
-	addForm.Resize(fyne.NewSize(800, 700))
+	addForm.Resize(fyne.NewSize(500, 600))
 	addForm.Show()
 
 	return addForm
