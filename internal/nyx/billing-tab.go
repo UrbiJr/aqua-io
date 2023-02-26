@@ -20,6 +20,7 @@ type BillingTab struct {
 	ProfileGroupsList   *widget.List
 	Top                 *fyne.Container
 	ProfilesTable       *widget.Table
+	ProfilesSlice       [][]any
 	Bottom              *fyne.Container
 	CurrentProfileGroup int64
 }
@@ -38,6 +39,7 @@ func (app *Config) billingTab() *fyne.Container {
 	if len(app.User.ProfileManager.Groups) > 0 {
 		app.CurrentProfileGroup = app.User.ProfileManager.Groups[0].ID
 	}
+	app.ProfilesSlice = app.getProfilesSlice()
 
 	// define a list to display profile groups
 	list := widget.NewList(
@@ -58,6 +60,7 @@ func (app *Config) billingTab() *fyne.Container {
 		app.CurrentProfileGroup = app.User.ProfileManager.Groups[idx].ID
 		app.refreshBillingTopContent()
 		app.refreshBillingBottomContent()
+		app.refreshProfilesTable()
 	}
 	app.ProfileGroupsList = list
 
@@ -80,9 +83,16 @@ func (app *Config) billingTab() *fyne.Container {
 	app.refreshBillingBottomContent()
 
 	// get the profiles table
+	app.ProfilesTable = app.getProfilesTable()
 
 	// define the center container
-	centerContainer := container.NewVBox()
+	centerContainer := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		nil,
+		container.NewAdaptiveGrid(1, app.ProfilesTable),
+	)
 
 	// define the billingTab container
 	profilesTabContainer := container.NewWithoutLayout(leftContainer, app.Top, centerContainer, app.Bottom)
@@ -90,6 +100,9 @@ func (app *Config) billingTab() *fyne.Container {
 	// resize and move billingTab elements
 	leftContainer.Move(fyne.NewPos(10, 10))
 	leftContainer.Resize(fyne.NewSize(280, 600))
+
+	centerContainer.Move(fyne.NewPos(300, 90))
+	centerContainer.Resize(fyne.NewSize(970, 600))
 
 	app.Top.Move(fyne.NewPos(300, 10))
 	app.Top.Resize(fyne.NewSize(900, 64))
@@ -177,6 +190,7 @@ func (app *Config) getProfileGroupToolBar() *widget.Toolbar {
 					app.refreshProfileGroupsList()
 					app.refreshBillingTopContent()
 					app.refreshBillingBottomContent()
+					app.refreshProfilesTable()
 				}, app.MainWindow)
 		}))
 
@@ -354,6 +368,78 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 	addForm.Show()
 
 	return addForm
+}
+
+func (app *Config) getProfilesSlice() [][]any {
+	var slice [][]any
+
+	slice = append(slice, []any{"Profile", "Full Name", "Email", "Card", "Shipping", "Actions"})
+
+	for _, x := range app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup) {
+		var currentRow []any
+
+		currentRow = append(currentRow, x.Title)
+		currentRow = append(currentRow, x.FirstName+" "+x.LastName)
+		currentRow = append(currentRow, x.Email)
+		currentRow = append(currentRow, fmt.Sprintf("**%s", x.CardNumber[len(x.CardNumber)-4:]))
+		currentRow = append(currentRow, x.AddressLine1)
+		currentRow = append(currentRow, widget.NewToolbar())
+
+		slice = append(slice, currentRow)
+	}
+
+	return slice
+}
+
+func (app *Config) getProfilesTable() *widget.Table {
+	t := widget.NewTable(
+		func() (int, int) {
+			return len(app.ProfilesSlice), len(app.ProfilesSlice[0])
+		},
+		func() fyne.CanvasObject {
+			ctr := container.NewVBox(widget.NewLabel(""))
+			return ctr
+		},
+		func(tci widget.TableCellID, co fyne.CanvasObject) {
+			// in order: if last column && not the first row
+			if tci.Col == (len(app.ProfilesSlice[0])-1) && tci.Row != 0 {
+				// last cell - put in a button
+				w := widget.NewToolbar(
+					widget.NewToolbarAction(theme.ContentCopyIcon(), func() {}),
+					widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {}),
+					widget.NewToolbarAction(theme.DeleteIcon(), func() {
+						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
+							if deleted {
+								id, _ := strconv.Atoi(app.ProfilesSlice[tci.Row][0].(string))
+								err := app.DB.DeleteProfile(int64(id))
+								if err != nil {
+									app.Logger.Error(err)
+								}
+							}
+							app.refreshProfilesTable()
+						}, app.MainWindow)
+					}))
+
+				co.(*fyne.Container).Objects = []fyne.CanvasObject{w}
+			} else {
+				// we're just putting in textual information
+				co.(*fyne.Container).Objects = []fyne.CanvasObject{
+					widget.NewLabel(app.ProfilesSlice[tci.Row][tci.Col].(string)),
+				}
+			}
+		})
+
+	colWidths := []float32{50, 200, 200, 200, 110}
+	for i, w := range colWidths {
+		t.SetColumnWidth(i, w)
+	}
+
+	return t
+}
+
+func (app *Config) refreshProfilesTable() {
+	app.ProfilesSlice = app.getProfilesSlice()
+	app.ProfilesTable.Refresh()
 }
 
 func (app *Config) refreshBillingBottomContent() {
