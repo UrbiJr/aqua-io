@@ -122,14 +122,18 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 		},
 		func(valid bool) {
 			if valid {
-				_, err := app.DB.InsertProfileGroup(user.ProfileGroup{
+				inserted, err := app.DB.InsertProfileGroup(user.ProfileGroup{
 					Name: nameEntry.Text,
 				})
 
 				if err != nil {
 					app.Logger.Error(err)
 				}
+				app.CurrentProfileGroup = inserted.ID
 				app.refreshProfileGroupsList()
+				app.refreshBillingTopContent()
+				app.refreshBillingBottomContent()
+				app.refreshProfilesTable()
 			}
 		},
 		app.MainWindow)
