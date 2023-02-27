@@ -86,23 +86,17 @@ func (app *Config) billingTab() *fyne.Container {
 	app.ProfilesTable = app.getProfilesTable()
 
 	// define the center container
-	centerContainer := container.NewBorder(
-		nil,
-		nil,
-		nil,
-		nil,
-		container.NewAdaptiveGrid(1, app.ProfilesTable),
-	)
+	vScroll := container.NewScroll(app.ProfilesTable)
 
 	// define the billingTab container
-	profilesTabContainer := container.NewWithoutLayout(leftContainer, app.Top, centerContainer, app.Bottom)
+	profilesTabContainer := container.NewWithoutLayout(leftContainer, app.Top, vScroll, app.Bottom)
 
 	// resize and move billingTab elements
 	leftContainer.Move(fyne.NewPos(10, 10))
 	leftContainer.Resize(fyne.NewSize(280, 600))
 
-	centerContainer.Move(fyne.NewPos(300, 90))
-	centerContainer.Resize(fyne.NewSize(970, 600))
+	vScroll.Move(fyne.NewPos(300, 90))
+	vScroll.Resize(fyne.NewSize(970, 500))
 
 	app.Top.Move(fyne.NewPos(300, 10))
 	app.Top.Resize(fyne.NewSize(900, 64))
@@ -286,6 +280,10 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 	scrollContent := container.NewVScroll(container.NewVBox(
 		widget.NewLabel("Title*"),
 		title,
+		widget.NewLabel("First name*"),
+		firstName,
+		widget.NewLabel("Last name"),
+		lastName,
 		widget.NewLabel("Email*"),
 		email,
 		widget.NewLabel("Phone*"),
@@ -318,21 +316,18 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 		"Cancel",
 		scrollContent,
 		func(valid bool) {
-			var countryCode, stateCode string
-			countryCode, err := utils.GetCountryCode(country.Selected)
-			if err != nil {
-				dialog.ShowError(errors.New("please choose a country"), app.MainWindow)
-				valid = false
-			}
-			if !state.Disabled() {
-				stateCode, err = utils.GetStateCode(countryCode, state.Selected)
-				if err != nil {
-					dialog.ShowError(errors.New("please choose a state"), app.MainWindow)
-					valid = false
-				}
-			}
-
 			if valid {
+				var countryCode, stateCode string
+				countryCode, err := utils.GetCountryCode(country.Selected)
+				if err != nil {
+					countryCode = ""
+				}
+				if !state.Disabled() {
+					stateCode, err = utils.GetStateCode(countryCode, state.Selected)
+					if err != nil {
+						stateCode = ""
+					}
+				}
 				_, err = app.DB.InsertProfile(
 					user.Profile{
 						GroupID:      app.CurrentProfileGroup,
@@ -358,6 +353,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				}
 				app.refreshProfileGroupsList()
 				app.refreshBillingTopContent()
+				app.refreshProfilesTable()
 			}
 		},
 		app.MainWindow,
@@ -373,16 +369,20 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"Profile", "Full Name", "Email", "Card", "Shipping", "Actions"})
+	slice = append(slice, []any{"Profile", "Email", "Card", "Shipping", "Actions"})
 
 	for _, x := range app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup) {
 		var currentRow []any
 
 		currentRow = append(currentRow, x.Title)
-		currentRow = append(currentRow, x.FirstName+" "+x.LastName)
 		currentRow = append(currentRow, x.Email)
-		currentRow = append(currentRow, fmt.Sprintf("**%s", x.CardNumber[len(x.CardNumber)-4:]))
-		currentRow = append(currentRow, x.AddressLine1)
+		if len(x.CardNumber) > 5 {
+			currentRow = append(currentRow, fmt.Sprintf("**%s", x.CardNumber[len(x.CardNumber)-4:]))
+		} else {
+			currentRow = append(currentRow, x.CardNumber)
+		}
+
+		currentRow = append(currentRow, x.FirstName+" "+x.LastName+"\n"+x.AddressLine1)
 		currentRow = append(currentRow, widget.NewToolbar())
 
 		slice = append(slice, currentRow)
@@ -398,6 +398,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 		},
 		func() fyne.CanvasObject {
 			ctr := container.NewVBox(widget.NewLabel(""))
+			ctr.Resize(fyne.Size{Height: 50})
 			return ctr
 		},
 		func(tci widget.TableCellID, co fyne.CanvasObject) {
@@ -410,12 +411,14 @@ func (app *Config) getProfilesTable() *widget.Table {
 					widget.NewToolbarAction(theme.DeleteIcon(), func() {
 						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
 							if deleted {
-								id, _ := strconv.Atoi(app.ProfilesSlice[tci.Row][0].(string))
-								err := app.DB.DeleteProfile(int64(id))
+								pf := app.User.ProfileManager.GetProfileByTitle(app.ProfilesSlice[tci.Row][0].(string), app.CurrentProfileGroup)
+								err := app.DB.DeleteProfile(pf.ID)
 								if err != nil {
 									app.Logger.Error(err)
 								}
 							}
+							app.refreshProfileGroupsList()
+							app.refreshBillingTopContent()
 							app.refreshProfilesTable()
 						}, app.MainWindow)
 					}))
@@ -429,9 +432,13 @@ func (app *Config) getProfilesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{50, 200, 200, 200, 110}
+	colWidths := []float32{100, 200, 200, 200, 60}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
+	}
+
+	for i := 1; i < len(app.ProfilesSlice); i++ {
+		t.SetRowHeight(i, 55)
 	}
 
 	return t
@@ -439,6 +446,9 @@ func (app *Config) getProfilesTable() *widget.Table {
 
 func (app *Config) refreshProfilesTable() {
 	app.ProfilesSlice = app.getProfilesSlice()
+	for i := 1; i < len(app.ProfilesSlice); i++ {
+		app.ProfilesTable.SetRowHeight(i, 55)
+	}
 	app.ProfilesTable.Refresh()
 }
 
