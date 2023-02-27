@@ -88,3 +88,14 @@ func (pfm *ProfileManager) GetProfileByTitle(title string, groupID int64) *Profi
 
 	return nil
 }
+
+func (pfm *ProfileManager) GetProfileByID(ID int64, groupID int64) *Profile {
+	filtered := pfm.FilterByGroupID(groupID)
+	for _, p := range filtered {
+		if p.ID == ID {
+			return &p
+		}
+	}
+
+	return nil
+}

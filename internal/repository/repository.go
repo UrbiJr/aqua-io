@@ -21,6 +21,7 @@ type Repository interface {
 	UpdateProfileGroup(id int64, updated user.ProfileGroup) error
 	DeleteProfileGroup(id int64) error
 	DeleteProfile(id int64) error
+	DeleteProfilesByGroupID(id int64) error
 
 	InsertProxy(p user.Proxy) (*user.Proxy, error)
 	InsertProxyGroup(pg user.ProxyGroup) (*user.ProxyGroup, error)

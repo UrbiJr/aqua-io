@@ -244,6 +244,24 @@ func (repo *SQLiteRepository) DeleteProfile(id int64) error {
 	return nil
 }
 
+func (repo *SQLiteRepository) DeleteProfilesByGroupID(id int64) error {
+	res, err := repo.Conn.Exec("delete from profiles where group_id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
 func (repo *SQLiteRepository) DeleteProfileGroup(id int64) error {
 	_, err := repo.Conn.Exec("delete from profiles where group_id = ?", id)
 	if err != nil {
