@@ -7,7 +7,6 @@ type User struct {
 	UID            string
 	Settings       *Settings
 	ProfileManager *ProfileManager
-	ProxyManager   *ProxyManager
 }
 
 // NewUser creates an instance of the User class

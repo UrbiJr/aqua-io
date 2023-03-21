@@ -7,23 +7,23 @@ type ProfileGroup struct {
 
 // Profile contains information specific to a single account of a particular site i.e. BSTN
 type Profile struct {
-	ID           int64  `json:"id"`
-	GroupID      int64  `json:"group_id"`
-	Title        string `json:"title"`
-	Email        string `json:"email"`
-	FirstName    string `json:"first_name"`
-	LastName     string `json:"last_name"`
-	AddressLine1 string `json:"address_line_1"`
-	AddressLine2 string `json:"address_line_2"`
-	City         string `json:"city"`
-	Postcode     string `json:"postcode"`
-	State        string `json:"state"`
-	CountryCode  string `json:"country_code"`
-	Phone        string `json:"phone"`
-	CardNumber   string `json:"card_number"`
-	CardMonth    string `json:"card_month"`
-	CardYear     string `json:"card_year"`
-	CardCvv      string `json:"card_cvv"`
+	ID                                   int64    `json:"id"`
+	GroupID                              int64    `json:"group_id"`
+	Title                                string   `json:"title"`
+	BybitApiKey                          string   `json:"bybit_api_key"`
+	BybitApiSecret                       string   `json:"bybit_api_secret"`
+	MaxBybitBinancePriceDifferentPercent float32  `json:"max_bybit_binance_price_difference_percent"`
+	InitialOpenPercent                   float32  `json:"initial_open_percent"`
+	MaxAddMultiplier                     float32  `json:"max_add_multiplier"`
+	OpenDelay                            float32  `json:"open_delay"`
+	OneCoinMaxPercent                    float32  `json:"one_coin_max_percent"`
+	BlacklistCoins                       []string `json:"blacklist_coins"` // stored in DB as comma separated: coin1,coin2,coin3
+	AddPreventionPercent                 float32  `json:"add_prevention_percent"`
+	BlockAddsAboveEntry                  bool     `json:"block_adds_above_entry"`
+	MaxOpenPositions                     int      `json:"max_open_positions"`
+	AutoTP                               float32  `json:"auto_tp"`
+	AutoSL                               float32  `json:"auto_sl"`
+	TestMode                             bool     `json:"test_mode"`
 }
 
 type ProfileManager struct {

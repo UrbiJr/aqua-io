@@ -22,13 +22,4 @@ type Repository interface {
 	DeleteProfileGroup(id int64) error
 	DeleteProfile(id int64) error
 	DeleteProfilesByGroupID(id int64) error
-
-	InsertProxy(p user.Proxy) (*user.Proxy, error)
-	InsertProxyGroup(pg user.ProxyGroup) (*user.ProxyGroup, error)
-	AllProxies() ([]user.Proxy, error)
-	AllProxyGroups() ([]user.ProxyGroup, error)
-	UpdateProxyGroup(id int64, updated user.ProxyGroup) error
-	DeleteProxyGroup(id int64) error
-	DeleteProxy(id int64) error
-	DeleteProxiesByGroupID(id int64) error
 }
