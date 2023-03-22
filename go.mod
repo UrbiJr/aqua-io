@@ -3,7 +3,7 @@ module github.com/UrbiJr/nyx
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.3.1
+	fyne.io/fyne/v2 v2.3.2
 	github.com/2captcha/2captcha-go v1.0.1
 	github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186
 	github.com/bogdanfinn/tls-client v1.2.0
@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20230207085535-4a244dbb9d03 // indirect
+	fyne.io/systray v1.10.1-0.20230312215936-7f71b037e260 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/bogdanfinn/fhttp v0.5.14 // indirect

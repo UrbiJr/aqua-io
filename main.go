@@ -23,7 +23,7 @@ import (
 func init() {
 	rand.Seed(time.Now().Unix())
 
-	debugArg := flag.Bool("debug", false, "enable debug mode") // go run ./cmdnyx-aiomain.go -debug
+	debugArg := flag.Bool("debug", false, "enable debug mode") // go run ./main.go -debug
 	flag.Parse()
 	debug := *debugArg
 	utils.SetDebug(debug)
@@ -85,7 +85,6 @@ func main() {
 		Username:       "urbijr",
 		Settings:       &user.Settings{},
 		ProfileManager: &user.ProfileManager{},
-		ProxyManager:   &user.ProxyManager{},
 	}
 
 	// create and size a fyne window

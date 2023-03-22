@@ -21,10 +21,17 @@ endif
 ## run: builds and runs the application
 run:
 ifeq ($(OS),Windows_NT)
-	set DB_PATH=./sql.db
-	go run .
+	set DB_PATH=./sql.db && go run .
 else
 	env DB_PATH="./sql.db" go run .
+endif
+
+## debug: builds and runs the application in debug mode
+debug:
+ifeq ($(OS),Windows_NT)
+	set DB_PATH=./sql.db && go run . -debug
+else
+	env DB_PATH="./sql.db" go run . -debug
 endif
 
 ## clean: runs go clean and deletes binaries

@@ -22,19 +22,19 @@ func (repo *TestRepository) AllProfiles() ([]user.Profile, error) {
 	var all []user.Profile
 
 	p := user.Profile{
-		Title:     "john_red",
-		Email:     "john@nyx-robotics.eu",
-		FirstName: "John",
-		LastName:  "Red",
+		Title:          "john_red",
+		OpenDelay:      10.5,
+		BlacklistCoins: []string{"coin1", "coin2", "coin3"},
+		TestMode:       true,
 	}
 
 	all = append(all, p)
 
 	p = user.Profile{
-		Title:     "james_green",
-		Email:     "james@nyx-robotics.eu",
-		FirstName: "James",
-		LastName:  "Green",
+		Title:          "james_green",
+		OpenDelay:      5.7,
+		BlacklistCoins: []string{"usdt"},
+		TestMode:       false,
 	}
 
 	all = append(all, p)

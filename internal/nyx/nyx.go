@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -48,12 +49,17 @@ func (app *Config) Quit() {
 }
 
 func (app *Config) ConnectSQL() (*sql.DB, error) {
-	path := ""
 
-	if strings.HasSuffix(os.Getenv("DB_PATH"), ".db") {
-		path = os.Getenv("DB_PATH")
+	path := ""
+	dbPath := strings.TrimSpace(os.Getenv("DB_PATH"))
+	if dbPath != "" && filepath.Ext(dbPath) == ".db" {
+		path = dbPath
 	} else {
-		path = app.App.Storage().RootURI().Path() + "/sql.db"
+		path = filepath.Join(app.App.Storage().RootURI().Path(), "sql.db")
+	}
+
+	if utils.DebugEnabled {
+		app.Logger.Debug("DB path: " + path)
 	}
 
 	db, err := sql.Open("sqlite", path)

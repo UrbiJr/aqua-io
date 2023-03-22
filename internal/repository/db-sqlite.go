@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/UrbiJr/nyx/internal/user"
 )
@@ -35,18 +36,19 @@ func (repo *SQLiteRepository) Migrate() error {
 			title text not null,
 			bybit_api_key text not null,
 			bybit_api_secret text not null,
-			max_bybit_binance_price_difference_percent float not null,
-			initial_open_percent float not null,
-			max_add_multiplier float not null,
-			open_delay float not null,
-			one_coin_max_percent float not null,
+			max_bybit_binance_price_difference_percent real not null,
+			leverage real not null,
+			initial_open_percent real not null,
+			max_add_multiplier real not null,
+			open_delay real not null,
+			one_coin_max_percent real not null,
 			blacklist_coins text not null,
-			add_prevention_percent float not null,
-			block_adds_above_entry bool not null,
+			add_prevention_percent real not null,
+			block_adds_above_entry boolean not null,
 			max_open_positions integer not null,
-			auto_tp float not null,
-			auto_sl float not null,
-			test_mode bool not null,
+			auto_tp real not null,
+			auto_sl real not null,
+			test_mode boolean not null,
 			foreign key (group_id) references profile_groups (id));
 	`
 	_, err = repo.Conn.Exec(query)
@@ -58,9 +60,25 @@ func (repo *SQLiteRepository) Migrate() error {
 }
 
 func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, error) {
-	stmt := "insert into profiles (group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, postcode, state, country_code, phone, card_number, card_month, card_year, card_cvv) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmt := "insert into profiles (group_id, title, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	var blackListCoins string
+	var blockAddsAboveEntry, testMode int
 
-	res, err := repo.Conn.Exec(stmt, p.GroupID, p.Title, p.Email, p.FirstName, p.LastName, p.AddressLine1, p.AddressLine2, p.City, p.Postcode, p.State, p.CountryCode, p.Phone, p.CardNumber, p.CardMonth, p.CardYear, p.CardCvv)
+	if p.BlockAddsAboveEntry {
+		blockAddsAboveEntry = 1
+	} else {
+		blockAddsAboveEntry = 0
+	}
+
+	if p.TestMode {
+		testMode = 1
+	} else {
+		testMode = 0
+	}
+
+	blackListCoins = strings.Join(p.BlacklistCoins, ",")
+
+	res, err := repo.Conn.Exec(stmt, p.GroupID, p.Title, p.BybitApiKey, p.BybitApiSecret, p.MaxBybitBinancePriceDifferentPercent, p.Leverage, p.InitialOpenPercent, p.MaxAddMultiplier, p.OpenDelay, p.OneCoinMaxPercent, blackListCoins, p.AddPreventionPercent, blockAddsAboveEntry, p.MaxOpenPositions, p.AutoTP, p.AutoSL, testMode)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +110,7 @@ func (repo *SQLiteRepository) InsertProfileGroup(pg user.ProfileGroup) (*user.Pr
 }
 
 func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
-	query := "select id, group_id, title, email, first_name, last_name, address_line_1, address_line_2, city, postcode, state, country_code, phone, card_number, card_month, card_year, card_cvv from profiles order by title"
+	query := "select id, group_id, title, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode from profiles order by title"
 
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
@@ -104,28 +122,45 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 	var all []user.Profile
 	for rows.Next() {
 		var p user.Profile
+		var blackListCoins string
+		var blockAddsAboveEntry, testMode int
+
 		err := rows.Scan(
 			&p.ID,
 			&p.GroupID,
 			&p.Title,
-			&p.Email,
-			&p.FirstName,
-			&p.LastName,
-			&p.AddressLine1,
-			&p.AddressLine2,
-			&p.City,
-			&p.Postcode,
-			&p.State,
-			&p.CountryCode,
-			&p.Phone,
-			&p.CardNumber,
-			&p.CardMonth,
-			&p.CardYear,
-			&p.CardCvv,
+			&p.BybitApiKey,
+			&p.BybitApiSecret,
+			&p.MaxBybitBinancePriceDifferentPercent,
+			&p.Leverage,
+			&p.InitialOpenPercent,
+			&p.MaxAddMultiplier,
+			&p.OpenDelay,
+			&p.OneCoinMaxPercent,
+			&blackListCoins,
+			&p.AddPreventionPercent,
+			&blockAddsAboveEntry,
+			&p.MaxOpenPositions,
+			&p.AutoTP,
+			&p.AutoSL,
+			&testMode,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		if testMode == 0 {
+			p.TestMode = false
+		} else {
+			p.TestMode = true
+		}
+		if blockAddsAboveEntry == 0 {
+			p.BlockAddsAboveEntry = false
+		} else {
+			p.BlockAddsAboveEntry = true
+		}
+		p.BlacklistCoins = strings.Split(blackListCoins, ",")
+
 		all = append(all, p)
 	}
 
@@ -163,8 +198,23 @@ func (repo *SQLiteRepository) UpdateProfile(id int64, updated user.Profile) erro
 		return errors.New("invalid updated id")
 	}
 
-	stmt := "update profiles set group_id = ?, title = ?, email = ?, first_name = ?, last_name = ?, address_line_1 = ?, address_line_2 = ?, city = ?, postcode = ?, state = ?, country_code = ?, phone = ?, card_number = ?, card_month = ?, card_year = ?, card_cvv = ? where id = ?"
-	res, err := repo.Conn.Exec(stmt, updated.GroupID, updated.Title, updated.Email, updated.FirstName, updated.LastName, updated.AddressLine1, updated.AddressLine2, updated.City, updated.Postcode, updated.State, updated.CountryCode, updated.Phone, updated.CardNumber, updated.CardMonth, updated.CardYear, updated.CardCvv, id)
+	var blackListCoins string
+	var blockAddsAboveEntry, testMode int
+
+	if updated.BlockAddsAboveEntry {
+		blockAddsAboveEntry = 1
+	} else {
+		blockAddsAboveEntry = 0
+	}
+	if updated.TestMode {
+		testMode = 1
+	} else {
+		testMode = 0
+	}
+	blackListCoins = strings.Join(updated.BlacklistCoins, ",")
+
+	stmt := "update profiles set group_id = ?, title = ?, bybit_api_key = ?,  bybit_api_secret = ?,  max_bybit_binance_price_difference_percent = ?, leverage = ?, initial_open_percent = ?,  max_add_multiplier = ?,  open_delay = ?,  one_coin_max_percent = ?,  blacklist_coins = ?,  add_prevention_percent = ?,  block_adds_above_entry = ?,  max_open_positions = ?,  auto_tp = ?,  auto_sl = ?,  test_mode = ?"
+	res, err := repo.Conn.Exec(stmt, updated.GroupID, updated.Title, updated.BybitApiKey, updated.BybitApiSecret, updated.MaxBybitBinancePriceDifferentPercent, updated.Leverage, updated.InitialOpenPercent, updated.MaxAddMultiplier, updated.OpenDelay, updated.OneCoinMaxPercent, blackListCoins, updated.AddPreventionPercent, blockAddsAboveEntry, updated.MaxOpenPositions, updated.AutoTP, updated.AutoSL, testMode, id)
 	if err != nil {
 		return err
 	}

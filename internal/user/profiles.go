@@ -12,17 +12,18 @@ type Profile struct {
 	Title                                string   `json:"title"`
 	BybitApiKey                          string   `json:"bybit_api_key"`
 	BybitApiSecret                       string   `json:"bybit_api_secret"`
-	MaxBybitBinancePriceDifferentPercent float32  `json:"max_bybit_binance_price_difference_percent"`
-	InitialOpenPercent                   float32  `json:"initial_open_percent"`
-	MaxAddMultiplier                     float32  `json:"max_add_multiplier"`
-	OpenDelay                            float32  `json:"open_delay"`
-	OneCoinMaxPercent                    float32  `json:"one_coin_max_percent"`
+	MaxBybitBinancePriceDifferentPercent float64  `json:"max_bybit_binance_price_difference_percent"`
+	Leverage                             float64  `json:"leverage"`
+	InitialOpenPercent                   float64  `json:"initial_open_percent"`
+	MaxAddMultiplier                     float64  `json:"max_add_multiplier"`
+	OpenDelay                            float64  `json:"open_delay"`
+	OneCoinMaxPercent                    float64  `json:"one_coin_max_percent"`
 	BlacklistCoins                       []string `json:"blacklist_coins"` // stored in DB as comma separated: coin1,coin2,coin3
-	AddPreventionPercent                 float32  `json:"add_prevention_percent"`
+	AddPreventionPercent                 float64  `json:"add_prevention_percent"`
 	BlockAddsAboveEntry                  bool     `json:"block_adds_above_entry"`
-	MaxOpenPositions                     int      `json:"max_open_positions"`
-	AutoTP                               float32  `json:"auto_tp"`
-	AutoSL                               float32  `json:"auto_sl"`
+	MaxOpenPositions                     int64    `json:"max_open_positions"`
+	AutoTP                               float64  `json:"auto_tp"`
+	AutoSL                               float64  `json:"auto_sl"`
 	TestMode                             bool     `json:"test_mode"`
 }
 

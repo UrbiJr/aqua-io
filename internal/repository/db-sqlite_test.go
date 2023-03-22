@@ -15,10 +15,10 @@ func TestSQLiteRepository_Migrate(t *testing.T) {
 
 func TestSQLiteRepository_InsertProfile(t *testing.T) {
 	p := user.Profile{
-		Title:     "jack_ford",
-		Email:     "john@nyx-robotics.eu",
-		FirstName: "Jack",
-		LastName:  "Ford",
+		Title:          "jack_ford",
+		OpenDelay:      10.5,
+		BlacklistCoins: []string{"coin1", "coin2", "coin3"},
+		TestMode:       true,
 	}
 
 	result, err := testRepo.InsertProfile(p)
@@ -49,7 +49,7 @@ func TestSQLiteRepository_UpdateProfile(t *testing.T) {
 		t.Error("get all failed:", err)
 	}
 
-	p[0].FirstName = "Paul"
+	p[0].OpenDelay = 12
 	id := p[0].ID
 	err = testRepo.UpdateProfile(id, p[0])
 	if err != nil {
@@ -65,8 +65,8 @@ func TestSQLiteRepository_UpdateProfile(t *testing.T) {
 	for _, p := range p {
 		if p.ID == id {
 			found = true
-			if p.FirstName != "Paul" {
-				t.Errorf("updated failed, expected first_name Paul, got: %s", p.FirstName)
+			if p.OpenDelay != 12 {
+				t.Errorf("updated failed, expected open_delay 12, got: %f", p.OpenDelay)
 			}
 		}
 	}
