@@ -21,7 +21,7 @@ type Config struct {
 	App        fyne.App
 	DB         repository.Repository
 	MainWindow fyne.Window
-	*BillingTab
+	*ProfilesTab
 	*HomeTab
 	SiteList   []*sites.SupportedSite
 	Logger     *utils.AppLogger

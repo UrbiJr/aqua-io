@@ -17,7 +17,7 @@ import (
 	"github.com/UrbiJr/nyx/internal/utils"
 )
 
-type BillingTab struct {
+type ProfilesTab struct {
 	ProfileGroupsList   *widget.List
 	Top                 *fyne.Container
 	ProfilesTable       *widget.Table
@@ -27,9 +27,9 @@ type BillingTab struct {
 }
 
 // NewProfilesView returns a view for the profiles management
-func (app *Config) billingTab() *fyne.Container {
-	// define billingTab
-	app.BillingTab = &BillingTab{
+func (app *Config) profilesTab() *fyne.Container {
+	// define profilesTab
+	app.ProfilesTab = &ProfilesTab{
 		Top:    container.NewMax(),
 		Bottom: container.NewHBox(),
 	}
@@ -59,8 +59,8 @@ func (app *Config) billingTab() *fyne.Container {
 	)
 	list.OnSelected = func(idx widget.ListItemID) {
 		app.CurrentProfileGroup = app.User.ProfileManager.Groups[idx].ID
-		app.refreshBillingTopContent()
-		app.refreshBillingBottomContent()
+		app.refreshProfilesTopContent()
+		app.refreshProfilesBottomContent()
 		app.refreshProfilesTable()
 	}
 	app.ProfileGroupsList = list
@@ -80,8 +80,8 @@ func (app *Config) billingTab() *fyne.Container {
 		list) // scroll content (center)
 
 	// update content based on currently selected group
-	app.refreshBillingTopContent()
-	app.refreshBillingBottomContent()
+	app.refreshProfilesTopContent()
+	app.refreshProfilesBottomContent()
 
 	// get the profiles table
 	app.ProfilesTable = app.getProfilesTable()
@@ -89,10 +89,10 @@ func (app *Config) billingTab() *fyne.Container {
 	// define the center container
 	vScroll := container.NewScroll(app.ProfilesTable)
 
-	// define the billingTab container
+	// define the profilesTab container
 	profilesTabContainer := container.NewWithoutLayout(leftContainer, app.Top, vScroll, app.Bottom)
 
-	// resize and move billingTab elements
+	// resize and move profilesTab elements
 	leftContainer.Move(fyne.NewPos(10, 10))
 	leftContainer.Resize(fyne.NewSize(280, 600))
 
@@ -132,8 +132,8 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 				}
 				app.CurrentProfileGroup = inserted.ID
 				app.refreshProfileGroupsList()
-				app.refreshBillingTopContent()
-				app.refreshBillingBottomContent()
+				app.refreshProfilesTopContent()
+				app.refreshProfilesBottomContent()
 				app.refreshProfilesTable()
 			}
 		},
@@ -187,8 +187,8 @@ func (app *Config) getProfileGroupToolBar() *widget.Toolbar {
 						}
 					}
 					app.refreshProfileGroupsList()
-					app.refreshBillingTopContent()
-					app.refreshBillingBottomContent()
+					app.refreshProfilesTopContent()
+					app.refreshProfilesBottomContent()
 					app.refreshProfilesTable()
 				}, app.MainWindow)
 		}))
@@ -347,7 +347,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 					app.Logger.Error(err)
 				}
 				app.refreshProfileGroupsList()
-				app.refreshBillingTopContent()
+				app.refreshProfilesTopContent()
 				app.refreshProfilesTable()
 			}
 		},
@@ -361,7 +361,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 	return addForm
 }
 
-func (app *Config) editProfileDialog(pf *user.Profile) *container.Scroll {
+func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	title := widget.NewEntry()
 	title.SetText(pf.Title)
 	title.Validator = func(s string) error {
@@ -432,78 +432,109 @@ func (app *Config) editProfileDialog(pf *user.Profile) *container.Scroll {
 	testMode := widget.NewCheck("", func(b bool) {})
 	testMode.SetChecked(pf.TestMode)
 
-	form := &widget.Form{
-		Items: []*widget.FormItem{
-			{Text: "Title", Widget: title},
-			{Text: "Bybit Api Key", Widget: bybitApiKey, HintText: "A valid email address"},
-			{Text: "Bybit API Secret", Widget: bybitApiSecret, HintText: "A valid email address"},
-			{Text: "Binance/ByBit Price Difference", Widget: maxBybitBinancePriceDifferentPercent, HintText: "A valid email address"},
-			{Text: "Leverage", Widget: leverage, HintText: "A valid email address"},
-			{Text: "Initial Open Percent", Widget: initialOpenPercent, HintText: "A valid email address"},
-			{Text: "Max Add Multiplier", Widget: maxAddMultiplier, HintText: "A valid email address"},
-			{Text: "Open Delay", Widget: openDelay, HintText: "A valid email address"},
-			{Text: "One Coin Max Percent", Widget: oneCoinMaxPercent, HintText: "A valid email address"},
-			{Text: "Blacklist Coins", Widget: blackListCoins, HintText: "A valid email address"},
-			{Text: "Add Prevention Percent", Widget: addPreventionPercent, HintText: "A valid email address"},
-			{Text: "Blocks Adds Above Entry", Widget: blockAddsAboveEntry, HintText: "A valid email address"},
-			{Text: "Max Open Positions", Widget: maxOpenPositions, HintText: "A valid email address"},
-			{Text: "Auto TP", Widget: autoTP, HintText: "A valid email address"},
-			{Text: "Auto SL", Widget: autoSL, HintText: "A valid email address"},
-			{Text: "Test Mode", Widget: testMode, HintText: "A valid email address"},
-		},
-		OnCancel: func() {
-			app.Logger.Debug("Form cancelled")
-		},
-		OnSubmit: func() {
-			app.Logger.Debug("Form submitted")
-			p := user.Profile{
-				GroupID:             app.CurrentProfileGroup,
-				Title:               title.Text,
-				BybitApiKey:         bybitApiKey.Text,
-				BybitApiSecret:      bybitApiSecret.Text,
-				BlacklistCoins:      strings.Split(blackListCoins.Text, ","),
-				BlockAddsAboveEntry: blockAddsAboveEntry.Checked,
-				TestMode:            testMode.Checked,
-			}
-			p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
-			p.Leverage, _ = strconv.ParseFloat(leverage.Text, 64)
-			p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
-			p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
-			p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
-			p.AddPreventionPercent, _ = strconv.ParseFloat(addPreventionPercent.Text, 64)
-			p.AutoTP, _ = strconv.ParseFloat(autoTP.Text, 64)
-			p.AutoSL, _ = strconv.ParseFloat(autoSL.Text, 64)
-			p.MaxOpenPositions, _ = strconv.ParseInt(maxOpenPositions.Text, 10, 64)
+	vBox := container.NewVBox(
+		widget.NewLabel("Title"),
+		title,
+		widget.NewLabel("Bybit Api Key"),
+		bybitApiKey,
+		widget.NewLabel("Bybit API Secret"),
+		bybitApiSecret,
+		widget.NewLabel("Binance/ByBit Price Difference"),
+		maxBybitBinancePriceDifferentPercent,
+		widget.NewLabel("Leverage"),
+		leverage,
+		widget.NewLabel("Initial Open Percent"),
+		initialOpenPercent,
+		widget.NewLabel("Max Add Multiplier"),
+		maxAddMultiplier,
+		widget.NewLabel("Open Delay"),
+		openDelay,
+		widget.NewLabel("One Coin Max Percent*"),
+		oneCoinMaxPercent,
+		widget.NewLabel("Blacklist Coins"),
+		blackListCoins,
+		widget.NewLabel("Add Prevention Percent"),
+		addPreventionPercent,
+		widget.NewLabel("Blocks Adds Above Entry"),
+		blockAddsAboveEntry,
+		widget.NewLabel("Max Open Positions"),
+		maxOpenPositions,
+		widget.NewLabel("Auto TP"),
+		autoTP,
+		widget.NewLabel("Auto SL"),
+		autoSL,
+		widget.NewLabel("Test Mode"),
+		testMode,
+	)
+	scrollContent := container.NewVScroll(vBox)
 
-			err := app.DB.UpdateProfile(pf.ID, p)
+	editForm := dialog.NewCustomConfirm(
+		"Edit Profile",
+		"Update",
+		"Cancel",
+		scrollContent,
+		func(valid bool) {
 
-			if err != nil {
-				app.Logger.Error(err)
+			for _, o := range vBox.Objects {
+				switch o := o.(type) {
+				case *widget.Entry:
+					err := o.Validate()
+					if err != nil {
+						valid = false
+						break
+					}
+				}
 			}
-			app.refreshProfileGroupsList()
-			app.refreshBillingTopContent()
-			app.refreshProfilesTable()
+
+			if valid {
+				app.Logger.Debug("Form submitted")
+				p := user.Profile{
+					GroupID:             app.CurrentProfileGroup,
+					Title:               title.Text,
+					BybitApiKey:         bybitApiKey.Text,
+					BybitApiSecret:      bybitApiSecret.Text,
+					BlacklistCoins:      strings.Split(blackListCoins.Text, ","),
+					BlockAddsAboveEntry: blockAddsAboveEntry.Checked,
+					TestMode:            testMode.Checked,
+				}
+				p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
+				p.Leverage, _ = strconv.ParseFloat(leverage.Text, 64)
+				p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
+				p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
+				p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
+				p.AddPreventionPercent, _ = strconv.ParseFloat(addPreventionPercent.Text, 64)
+				p.AutoTP, _ = strconv.ParseFloat(autoTP.Text, 64)
+				p.AutoSL, _ = strconv.ParseFloat(autoSL.Text, 64)
+				p.MaxOpenPositions, _ = strconv.ParseInt(maxOpenPositions.Text, 10, 64)
+
+				err := app.DB.UpdateProfile(pf.ID, p)
+
+				if err != nil {
+					app.Logger.Error(err)
+				}
+				app.refreshProfileGroupsList()
+				app.refreshProfilesTopContent()
+				app.refreshProfilesTable()
+			}
 		},
-	}
-	scrollContent := container.NewVScroll(form)
+		app.MainWindow,
+	)
 
 	// size and show the dialog
-	scrollContent.Resize(fyne.NewSize(500, 600))
-	scrollContent.Show()
+	editForm.Resize(fyne.NewSize(500, 600))
+	editForm.Show()
 
-	return scrollContent
+	return editForm
 
 }
 
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"ID", "Profile", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
+	slice = append(slice, []any{"Profile", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
 
 	for _, x := range app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup) {
 		var currentRow []any
-
-		currentRow = append(currentRow, x.ID)
 
 		if len(x.Title) > 16 {
 			currentRow = append(currentRow, x.Title[:12]+"...")
@@ -511,15 +542,17 @@ func (app *Config) getProfilesSlice() [][]any {
 			currentRow = append(currentRow, x.Title)
 		}
 
-		currentRow = append(currentRow, x.BybitApiKey)
 		if len(x.BybitApiKey) > 5 {
-			currentRow = append(currentRow, fmt.Sprintf("**%s", x.BybitApiKey[len(x.BybitApiKey)-4:]))
+			currentRow = append(currentRow, fmt.Sprintf("%s****", x.BybitApiKey[0:4]))
 		} else {
 			currentRow = append(currentRow, x.BybitApiKey)
 		}
 
 		currentRow = append(currentRow, fmt.Sprintf("%.2f / %.2f", x.AutoTP, x.AutoSL))
-		currentRow = append(currentRow, widget.NewToolbar())
+
+		currentRow = append(currentRow, x.TestMode)
+
+		currentRow = append(currentRow, x.ID) // for toolbar actions
 
 		slice = append(slice, currentRow)
 	}
@@ -528,22 +561,29 @@ func (app *Config) getProfilesSlice() [][]any {
 }
 
 func (app *Config) getProfilesTable() *widget.Table {
+
 	t := widget.NewTable(
 		func() (int, int) {
 			return len(app.ProfilesSlice), len(app.ProfilesSlice[0])
 		},
 		func() fyne.CanvasObject {
-			ctr := container.NewVBox(widget.NewLabel(""))
-			ctr.Resize(fyne.Size{Height: 50})
-			return ctr
+			lbl := widget.NewLabel("")
+			toolbar := widget.NewToolbar()
+			toolbar.Hide()
+			return container.NewMax(lbl, toolbar)
 		},
-		func(tci widget.TableCellID, co fyne.CanvasObject) {
-			// in order: if last column && not the first row
-			if tci.Col == (len(app.ProfilesSlice[0])-1) && tci.Row != 0 {
-				// last cell - put in a button
-				w := widget.NewToolbar(
-					widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[tci.Row][0].(int64), app.CurrentProfileGroup)
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			container := o.(*fyne.Container)
+			lbl := container.Objects[0].(*widget.Label)
+			toolbar := container.Objects[1].(*widget.Toolbar)
+
+			if i.Row != 0 && i.Col == 4 {
+				lbl.Hide()
+				toolbar.Hidden = false
+
+				if len(toolbar.Items) == 0 {
+					toolbar.Append(widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
 							_, err := app.DB.InsertProfile(*pf)
@@ -551,53 +591,52 @@ func (app *Config) getProfilesTable() *widget.Table {
 								app.Logger.Error(err)
 							}
 							app.refreshProfileGroupsList()
-							app.refreshBillingTopContent()
+							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
 						}
-					}),
-					widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[tci.Row][0].(int64), app.CurrentProfileGroup)
+					}))
+					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
 						if pf != nil {
 							app.editProfileDialog(pf)
 						}
-					}),
-					widget.NewToolbarAction(theme.DeleteIcon(), func() {
+					}))
+					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
 							if deleted {
-								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[tci.Row][0].(int64), app.CurrentProfileGroup)
+								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
 								err := app.DB.DeleteProfile(pf.ID)
 								if err != nil {
 									app.Logger.Error(err)
 								}
 							}
 							app.refreshProfileGroupsList()
-							app.refreshBillingTopContent()
+							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
 						}, app.MainWindow)
 					}))
+				}
 
-				co.(*fyne.Container).Objects = []fyne.CanvasObject{w}
-			} else if tci.Col == 0 {
-				// we're just putting in textual information
-				co.(*fyne.Container).Objects = []fyne.CanvasObject{
-					widget.NewLabel(""),
+			} else if i.Col == 3 && i.Row != 0 {
+				toolbar.Hide()
+				lbl.Hidden = false
+				if app.ProfilesSlice[i.Row][i.Col].(bool) == true {
+					lbl.SetText("Test")
+				} else {
+					lbl.SetText("Real")
 				}
 			} else {
+				toolbar.Hide()
+				lbl.Hidden = false
 				// we're just putting in textual information
-				co.(*fyne.Container).Objects = []fyne.CanvasObject{
-					widget.NewLabel(app.ProfilesSlice[tci.Row][tci.Col].(string)),
-				}
+				lbl.SetText(
+					app.ProfilesSlice[i.Row][i.Col].(string))
 			}
 		})
 
-	// hide first column (ID)
-	colWidths := []float32{0, 100, 200, 200, 200, 60}
+	colWidths := []float32{100, 200, 200, 200, 60}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
-	}
-
-	for i := 1; i < len(app.ProfilesSlice); i++ {
-		t.SetRowHeight(i, 55)
 	}
 
 	return t
@@ -607,18 +646,14 @@ func (app *Config) refreshProfilesTable() {
 	app.ProfilesSlice = app.getProfilesSlice()
 	app.ProfilesTable.Refresh()
 
-	// hide first column (ID)
-	colWidths := []float32{0, 100, 200, 200, 200, 60}
+	colWidths := []float32{100, 200, 200, 200, 60}
 	for i, w := range colWidths {
 		app.ProfilesTable.SetColumnWidth(i, w)
 	}
 
-	for i := 1; i < len(app.ProfilesSlice); i++ {
-		app.ProfilesTable.SetRowHeight(i, 55)
-	}
 }
 
-func (app *Config) refreshBillingBottomContent() {
+func (app *Config) refreshProfilesBottomContent() {
 
 	if len(app.User.ProfileManager.Groups) > 0 {
 		btnAdd := widget.NewButtonWithIcon("Add Profile", theme.ContentAddIcon(), func() {
@@ -635,8 +670,8 @@ func (app *Config) refreshBillingBottomContent() {
 							app.Logger.Error(err)
 						}
 						app.refreshProfileGroupsList()
-						app.refreshBillingTopContent()
-						app.refreshBillingBottomContent()
+						app.refreshProfilesTopContent()
+						app.refreshProfilesBottomContent()
 						app.refreshProfilesTable()
 					}
 				}, app.MainWindow)
@@ -655,7 +690,7 @@ func (app *Config) refreshBillingBottomContent() {
 	app.Bottom.Refresh()
 }
 
-func (app *Config) refreshBillingTopContent() {
+func (app *Config) refreshProfilesTopContent() {
 
 	if len(app.User.ProfileManager.Groups) > 0 {
 		if app.User.ProfileManager.GetGroupByID(app.CurrentProfileGroup) == nil {

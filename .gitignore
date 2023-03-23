@@ -4,3 +4,4 @@ tmp/
 *.json
 *-release.jpg
 *-release.png
+.db
