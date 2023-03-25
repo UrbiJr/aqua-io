@@ -37,12 +37,19 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	traders, err := app.fetchTraders()
 	if err == nil {
 		for i, trader := range traders {
-			var twitterLink fyne.CanvasObject
+			var twitterLink, binanceLink fyne.CanvasObject
 			if trader.TwitterUrl == nil {
 				twitterLink = widget.NewLabel("")
 			} else {
 				twitterUrl, _ := url.Parse(trader.TwitterUrl.(string))
 				twitterLink = widget.NewHyperlink("Twitter", twitterUrl)
+			}
+
+			if trader.EncryptedUid == "" {
+				binanceLink = widget.NewLabel("")
+			} else {
+				binanceUrl, _ := url.Parse("https://www.binance.com/en/futures-activity/leaderboard/user/um?encryptedUid=" + trader.EncryptedUid)
+				binanceLink = widget.NewHyperlink("Binance", binanceUrl)
 			}
 
 			copyButton := widget.NewButton("Copy", func() {})
@@ -53,7 +60,7 @@ func (app *Config) makeTradersCards() []*widget.Card {
 				fmt.Sprintf("%d Followers", trader.FolloweCount),
 				container.NewGridWithColumns(2,
 					widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-					twitterLink, copyButton))
+					container.NewHBox(binanceLink, twitterLink), copyButton))
 
 			if utils.DoesFileExist(fmt.Sprintf("%d-trader.jpg", i)) {
 				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-trader.jpg", i))
