@@ -23,11 +23,11 @@ type Config struct {
 	MainWindow fyne.Window
 	*ProfilesTab
 	*HomeTab
-	SiteList   []*sites.SupportedSite
-	Logger     *utils.AppLogger
-	User       *user.User
-	HTTPClient *http.Client
-	TLSClient  *client.Client
+	SiteList []*sites.SupportedSite
+	Logger   *utils.AppLogger
+	User     *user.User
+	*http.Client
+	*client.TLSClient
 }
 
 // NewNyx returns a new instance of the app

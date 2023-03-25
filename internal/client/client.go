@@ -5,20 +5,21 @@ import (
 	tls_client "github.com/bogdanfinn/tls-client"
 )
 
-// Client is used by packages that use/implement inernal/bot.Bot.
-type Client struct {
+// TLSClient is used to make requests with custom TLS profiles.
+type TLSClient struct {
 	captcha.Solver
-	TLSClient *tls_client.HttpClient
+	tls_client.HttpClient
 }
 
 type ClientOptions struct {
-	timeout        int
-	allowRedirects bool
-	proxy          string
-	tlsClient      tls_client.ClientProfile
+	Timeout          int
+	AllowRedirects   bool
+	CharlesProxy     bool
+	Proxy            string
+	TlsClientProfile tls_client.ClientProfile
 }
 
-func NewClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptions) (*Client, error) {
+func NewTLSClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptions) (*TLSClient, error) {
 
 	solver, err := captcha.NewCaptchaSolver(*captchaOptions)
 	if err != nil {
@@ -27,20 +28,23 @@ func NewClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptio
 
 	jar := tls_client.NewCookieJar()
 	options := []tls_client.HttpClientOption{
-		tls_client.WithTimeoutSeconds(clientOptions.timeout),
-		tls_client.WithClientProfile(clientOptions.tlsClient),
+		tls_client.WithRandomTLSExtensionOrder(),
+		tls_client.WithTimeoutSeconds(clientOptions.Timeout),
+		tls_client.WithClientProfile(clientOptions.TlsClientProfile),
 		tls_client.WithCookieJar(jar), // create cookieJar instance and pass it as argument
 		//tls_client.WithInsecureSkipVerify(),
 	}
 
-	if clientOptions.proxy != "" {
-		proxyUrl, err := ValidateProxyFormatToUrl(clientOptions.proxy)
+	if clientOptions.CharlesProxy {
+		options = append(options, tls_client.WithCharlesProxy("127.0.0.1", "8888"))
+	} else if clientOptions.Proxy != "" {
+		proxyUrl, err := ValidateProxyFormatToUrl(clientOptions.Proxy)
 		if err == nil {
 			options = append(options, tls_client.WithProxyUrl(proxyUrl.String()))
 		}
 	}
 
-	if !clientOptions.allowRedirects {
+	if !clientOptions.AllowRedirects {
 		options = append(options, tls_client.WithNotFollowRedirects())
 	}
 
@@ -49,8 +53,8 @@ func NewClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptio
 		return nil, err
 	}
 
-	return &Client{
-		Solver:    solver,
-		TLSClient: &client,
+	return &TLSClient{
+		Solver:     solver,
+		HttpClient: client,
 	}, nil
 }

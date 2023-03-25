@@ -56,12 +56,14 @@ func (app *Config) MakeDesktopUI() {
 	// get app tabs content
 	homeTabContent := app.homeTab(msg)
 	profilesTabContent := app.profilesTab()
+	leaderboardContent := app.leaderboardTab()
 
 	// add application tabs (home, tasks, proxies, profiles, settings)
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent),
-		container.NewTabItemWithIcon("Tasks", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
-		container.NewTabItemWithIcon("Proxies", app.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
+		container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), canvas.NewText("Copied Traders goes here", nil)),
+		container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent),
+		container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil)),
 		container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), profilesTabContent),
 		container.NewTabItemWithIcon("Settings", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
 	)

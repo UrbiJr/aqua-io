@@ -12,10 +12,13 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
+	"github.com/UrbiJr/nyx/internal/captcha"
+	"github.com/UrbiJr/nyx/internal/client"
 	"github.com/UrbiJr/nyx/internal/nyx"
 	"github.com/UrbiJr/nyx/internal/resources"
 	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/UrbiJr/nyx/internal/utils"
+	tls_client "github.com/bogdanfinn/tls-client"
 
 	_ "github.com/glebarez/go-sqlite"
 )
@@ -60,8 +63,19 @@ func main() {
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.NyxTheme{})
 	nyx.App = fyneApp
-	nyx.HTTPClient = &http.Client{}
-	//nyx.TLSClient = client.NewClient()
+	nyx.Client = &http.Client{}
+	clientOptions := &client.ClientOptions{
+		Timeout:          30,
+		TlsClientProfile: tls_client.Chrome_110,
+	}
+	if utils.DebugEnabled {
+		clientOptions.CharlesProxy = true
+	}
+	client, err := client.NewTLSClient(&captcha.SolverOptions{Provider: "2captcha"}, clientOptions)
+	if err != nil {
+		log.Panic(err)
+	}
+	nyx.TLSClient = client
 
 	// create our loggers
 	nyx.Logger = new(utils.AppLogger)

@@ -63,8 +63,13 @@ func (app *Config) homeTab(greetingMsg string) *fyne.Container {
 }
 
 func (app *Config) downloadFile(URL, fileName string) error {
+
+	if URL == "" {
+		return errors.New("empty URL")
+	}
+
 	// get the response bytes from calling a url
-	response, err := app.HTTPClient.Get(URL)
+	response, err := app.Client.Get(URL)
 	if err != nil {
 		return err
 	}
