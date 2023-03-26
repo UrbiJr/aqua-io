@@ -47,11 +47,11 @@ func (app *Config) fetchTraders() ([]Trader, error) {
 	postJson["isTrader"] = false
 	postData, err := json.MarshalIndent(postJson, " ", "")
 	if err != nil {
-		return nil, err
+		return []Trader{}, err
 	}
 	req, err := fhttp.NewRequest("POST", binanceApi, bytes.NewReader(postData))
 	if err != nil {
-		return nil, err
+		return []Trader{}, err
 	}
 
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36")
@@ -65,20 +65,20 @@ func (app *Config) fetchTraders() ([]Trader, error) {
 	resp, err := app.TLSClient.Do(req)
 	if err != nil {
 		app.Logger.Error("Binance API request failed: " + err.Error())
-		return nil, err
+		return []Trader{}, err
 	}
 
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return []Trader{}, err
 	}
 
 	var binanceApiResponse BinanceApiResponse
 	err = json.Unmarshal(body, &binanceApiResponse)
 	if err != nil {
 		app.Logger.Error("Error decoding Binance API response " + err.Error())
-		return nil, err
+		return []Trader{}, err
 	}
 
 	switch code := binanceApiResponse.Code.(type) {

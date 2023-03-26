@@ -3,6 +3,7 @@ package nyx
 import (
 	"fmt"
 	"math/rand"
+	"net/url"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,7 +26,6 @@ func (app *Config) MakeMobileUI() {
 		container.NewTabItemWithIcon("          ", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
 		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
 		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), canvas.NewText("Profiles content goes here", nil)),
-		container.NewTabItemWithIcon("          ", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
 	)
 	// show tabs at the bottom of the window
 	tabs.SetTabLocation(container.TabLocationBottom)
@@ -54,18 +54,29 @@ func (app *Config) MakeDesktopUI() {
 	msg := fmt.Sprintf("Hello %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
 
 	// get app tabs content
+	app.HomeTab = &HomeTab{}
+	app.CopiedTradersTab = &CopiedTradersTab{}
+	app.LeaderboardTab = &LeaderboardTab{}
+	app.AnalyticsTab = &AnalyticsTab{}
+	app.ProfilesTab = &ProfilesTab{}
+
 	homeTabContent := app.homeTab(msg)
 	profilesTabContent := app.profilesTab()
 	leaderboardContent := app.leaderboardTab()
 
+	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
+	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), canvas.NewText("Copied Traders goes here", nil))
+	app.LeaderboardTab.TabItem = container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent)
+	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
+	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), profilesTabContent)
+
 	// add application tabs (home, tasks, proxies, profiles, settings)
 	tabs := container.NewAppTabs(
-		container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent),
-		container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), canvas.NewText("Copied Traders goes here", nil)),
-		container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent),
-		container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil)),
-		container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), profilesTabContent),
-		container.NewTabItemWithIcon("Settings", theme.SettingsIcon(), canvas.NewText("Settings content goes here", nil)),
+		app.HomeTab.TabItem,
+		app.CopiedTradersTab.TabItem,
+		app.LeaderboardTab.TabItem,
+		app.AnalyticsTab.TabItem,
+		app.ProfilesTab.TabItem,
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
@@ -93,4 +104,45 @@ func (app *Config) getToolbar() *widget.Toolbar {
 		widget.NewToolbarSpacer(),
 	)
 	return toolbar
+}
+
+func (app *Config) MakeMenu() *fyne.MainMenu {
+
+	setDarkThemeItem := fyne.NewMenuItem("Dark", func() {
+		app.App.Settings().SetTheme(&resources.NyxDarkTheme{})
+		app.HomeTab.Content.Refresh()
+		app.CopiedTradersTab.Content.Refresh()
+		app.RefreshLeaderboardWithoutFetch()
+		app.LeaderboardTab.Content.Refresh()
+		app.AnalyticsTab.Content.Refresh()
+		app.ProfilesTab.Content.Refresh()
+	})
+	setLightThemeItem := fyne.NewMenuItem("Light", func() {
+		app.App.Settings().SetTheme(&resources.NyxLightTheme{})
+		app.HomeTab.Content.Refresh()
+		app.CopiedTradersTab.Content.Refresh()
+		app.RefreshLeaderboardWithoutFetch()
+		app.LeaderboardTab.Content.Refresh()
+		app.AnalyticsTab.Content.Refresh()
+		app.ProfilesTab.Content.Refresh()
+	})
+	themeItem := fyne.NewMenuItem("Theme", nil)
+	themeItem.ChildMenu = fyne.NewMenu("",
+		setDarkThemeItem,
+		setLightThemeItem)
+
+	fileMenu := fyne.NewMenu("Settings", themeItem)
+
+	helpMenu := fyne.NewMenu("Help",
+		fyne.NewMenuItem("Documentation", func() {
+			u, _ := url.Parse("https://docs.itrade.io")
+			_ = app.App.OpenURL(u)
+		}))
+
+	main := fyne.NewMainMenu(
+		fileMenu,
+		helpMenu,
+	)
+
+	return main
 }

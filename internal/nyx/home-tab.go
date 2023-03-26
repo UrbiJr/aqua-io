@@ -18,11 +18,11 @@ import (
 )
 
 type HomeTab struct {
+	*container.TabItem
 	CheckoutsChartContainer *fyne.Container
 }
 
 func (app *Config) homeTab(greetingMsg string) *fyne.Container {
-	app.HomeTab = &HomeTab{}
 	// fill default checkout data
 	data := []float64{15, 5, 0, 6, 78, 2, 0, 10, 0, 20, 5, 14}
 	// get the checkouts chart

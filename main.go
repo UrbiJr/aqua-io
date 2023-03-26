@@ -61,7 +61,7 @@ func main() {
 	// create a fyne application
 	fyneApp := app.NewWithID("com.nyx-aio.nyxapp.preferences")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources.NyxTheme{})
+	fyneApp.Settings().SetTheme(&resources.NyxDarkTheme{})
 	nyx.App = fyneApp
 	nyx.Client = &http.Client{}
 	clientOptions := &client.ClientOptions{
@@ -124,6 +124,8 @@ func main() {
 		win.SetMaster()
 		nyx.MakeMobileUI()
 	}
+
+	win.SetMainMenu(nyx.MakeMenu())
 
 	// show and run the application (blocking function)
 	win.ShowAndRun()

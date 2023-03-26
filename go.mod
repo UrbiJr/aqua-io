@@ -6,6 +6,7 @@ require (
 	fyne.io/fyne/v2 v2.3.2
 	github.com/2captcha/2captcha-go v1.0.1
 	github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186
+	github.com/bogdanfinn/fhttp v0.5.19
 	github.com/bogdanfinn/tls-client v1.3.8
 	github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082
 	github.com/glebarez/go-sqlite v1.20.3
@@ -17,7 +18,6 @@ require (
 	fyne.io/systray v1.10.1-0.20230312215936-7f71b037e260 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
-	github.com/bogdanfinn/fhttp v0.5.19 // indirect
 	github.com/bogdanfinn/utls v1.5.15 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -26,6 +26,7 @@ require (
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504 // indirect
 	github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345 // indirect
+	github.com/fyne-io/mobile v0.1.2 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
 	github.com/go-text/typesetting v0.0.0-20221212183139-1eb938670a1f // indirect

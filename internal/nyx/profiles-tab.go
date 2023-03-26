@@ -18,6 +18,7 @@ import (
 )
 
 type ProfilesTab struct {
+	*container.TabItem
 	ProfileGroupsList   *widget.List
 	Top                 *fyne.Container
 	ProfilesTable       *widget.Table
@@ -29,10 +30,8 @@ type ProfilesTab struct {
 // NewProfilesView returns a view for the profiles management
 func (app *Config) profilesTab() *fyne.Container {
 	// define profilesTab
-	app.ProfilesTab = &ProfilesTab{
-		Top:    container.NewMax(),
-		Bottom: container.NewHBox(),
-	}
+	app.ProfilesTab.Top = container.NewMax()
+	app.ProfilesTab.Bottom = container.NewHBox()
 
 	// get current profiles and profile groups
 	app.getProfiles()
