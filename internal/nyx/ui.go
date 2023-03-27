@@ -81,16 +81,16 @@ func (app *Config) MakeDesktopUI() {
 	tabs.SetTabLocation(container.TabLocationTop)
 
 	// populate window
-	toolbar := app.getToolbar()
-	finalContent := container.NewWithoutLayout(tabs, toolbar)
+	app.TopRightToolbar = app.getToolbar()
+	app.GlobalContent = container.NewWithoutLayout(tabs, app.TopRightToolbar)
 
 	// resize and position widgets
 	tabs.Resize(fyne.NewSize(1280, 720))
-	toolbar.Resize(fyne.NewSize(100, 30))
+	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
-	toolbar.Move(fyne.NewPos(1180, 0))
+	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
 
-	app.MainWindow.SetContent(finalContent)
+	app.MainWindow.SetContent(app.GlobalContent)
 
 }
 
@@ -106,6 +106,20 @@ func (app *Config) getToolbar() *widget.Toolbar {
 	return toolbar
 }
 
+func (app *Config) refreshGlobalContent() {
+	// refresh custom icons for app tabs
+	app.ProfilesTab.Icon = app.App.Settings().Theme().Icon(resources.IconNameCreditCard)
+
+	app.TopRightToolbar = app.getToolbar()
+	app.GlobalContent.Objects[1] = app.TopRightToolbar
+
+	// resize and position widgets
+	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
+	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
+
+	app.GlobalContent.Refresh()
+}
+
 func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	setDarkThemeItem := fyne.NewMenuItem("Dark", func() {
@@ -116,6 +130,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.LeaderboardTab.Content.Refresh()
 		app.AnalyticsTab.Content.Refresh()
 		app.ProfilesTab.Content.Refresh()
+		app.refreshGlobalContent()
 	})
 	setLightThemeItem := fyne.NewMenuItem("Light", func() {
 		app.App.Settings().SetTheme(&resources.NyxLightTheme{})
@@ -125,6 +140,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.LeaderboardTab.Content.Refresh()
 		app.AnalyticsTab.Content.Refresh()
 		app.ProfilesTab.Content.Refresh()
+		app.refreshGlobalContent()
 	})
 	themeItem := fyne.NewMenuItem("Theme", nil)
 	themeItem.ChildMenu = fyne.NewMenu("",

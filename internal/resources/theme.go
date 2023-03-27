@@ -24,19 +24,20 @@ var _ fyne.Theme = (*NyxLightTheme)(nil)
 
 func (m NyxDarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
-	case theme.ColorNameBackground:
+	case theme.ColorNameBackground, theme.ColorNameMenuBackground, theme.ColorNameOverlayBackground:
 		// rgb(13, 17, 23)
 		return &color.RGBA{R: 13, G: 17, B: 23, A: 255}
 	case theme.ColorNameForeground:
 		// rgb(201, 209, 217);
 		return &color.RGBA{R: 201, G: 209, B: 217, A: 255}
+	case theme.ColorNameScrollBar:
+		// rgb(104 104 104);
+		return &color.RGBA{R: 104, G: 104, B: 104, A: 255}
 	case theme.ColorNamePrimary:
 		// rgb(88, 166, 255);
 		return &color.RGBA{R: 88, G: 166, B: 255, A: 255}
-	case theme.ColorNameHover:
-		return &color.RGBA{A: 42}
-	case theme.ColorNameFocus:
-		return &color.RGBA{R: 13, G: 17, B: 23, A: 255}
+	case theme.ColorNameHover, theme.ColorNameFocus:
+		return &color.RGBA{A: 100}
 	case theme.ColorNameInputBackground:
 		// removes background from entry
 		return color.Transparent
@@ -70,22 +71,23 @@ func (m NyxDarkTheme) Size(name fyne.ThemeSizeName) float32 {
 
 func (m NyxLightTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
-	case theme.ColorNameBackground:
+	case theme.ColorNameBackground, theme.ColorNameMenuBackground, theme.ColorNameOverlayBackground:
 		// rgb(13, 17, 23)
 		return &color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	case theme.ColorNameForeground:
 		// rgb(36, 41, 47);
 		return &color.RGBA{R: 36, G: 41, B: 47, A: 255}
+	case theme.ColorNameScrollBar:
+		// rgb(193 193 193);
+		return &color.RGBA{R: 193, G: 193, B: 193, A: 255}
 	case theme.ColorNameButton:
 		//rgb(246 248 250)
 		return &color.RGBA{R: 200, G: 200, B: 200, A: 255}
-	case theme.ColorNameHover:
+	case theme.ColorNameHover, theme.ColorNameFocus:
 		return &color.RGBA{A: 42}
 	case theme.ColorNamePrimary:
 		// rgb(9, 105, 218);
 		return &color.RGBA{R: 9, G: 105, B: 218, A: 255}
-	case theme.ColorNameFocus:
-		return &color.RGBA{R: 255, G: 255, B: 255, A: 255}
 	case theme.ColorNameInputBackground:
 		// removes background from entry
 		return color.Transparent

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/nyx/internal/client"
 	"github.com/UrbiJr/nyx/internal/repository"
 	"github.com/UrbiJr/nyx/internal/sites"
@@ -18,9 +19,11 @@ import (
 
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
-	App        fyne.App
-	DB         repository.Repository
-	MainWindow fyne.Window
+	App             fyne.App
+	DB              repository.Repository
+	MainWindow      fyne.Window
+	TopRightToolbar *widget.Toolbar
+	GlobalContent   *fyne.Container
 	*HomeTab
 	*CopiedTradersTab
 	*LeaderboardTab
