@@ -33,6 +33,9 @@ func (m NyxDarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Co
 	case theme.ColorNameScrollBar:
 		// rgb(104 104 104);
 		return &color.RGBA{R: 104, G: 104, B: 104, A: 255}
+	case theme.ColorNameButton:
+		// rgb(33 38 46)
+		return &color.RGBA{R: 33, G: 38, B: 46, A: 255}
 	case theme.ColorNamePrimary:
 		// rgb(88, 166, 255);
 		return &color.RGBA{R: 88, G: 166, B: 255, A: 255}
@@ -62,6 +65,21 @@ func (m NyxDarkTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 }
 
 func (m NyxDarkTheme) Font(style fyne.TextStyle) fyne.Resource {
+	if style.Monospace {
+		return theme.DefaultTheme().Font(style)
+	}
+	if style.Bold {
+		if style.Italic {
+			return theme.DefaultTheme().Font(style)
+		}
+		return resourceNotoSansSCRegularTtf
+	}
+	if style.Italic {
+		return theme.DefaultTheme().Font(style)
+	}
+	if style.Symbol {
+		return theme.DefaultTheme().Font(style)
+	}
 	return theme.DefaultTheme().Font(style)
 }
 
@@ -112,6 +130,21 @@ func (m NyxLightTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 }
 
 func (m NyxLightTheme) Font(style fyne.TextStyle) fyne.Resource {
+	if style.Monospace {
+		return theme.DefaultTheme().Font(style)
+	}
+	if style.Bold {
+		if style.Italic {
+			return theme.DefaultTheme().Font(style)
+		}
+		return resourceNotoSansSCRegularTtf
+	}
+	if style.Italic {
+		return theme.DefaultTheme().Font(style)
+	}
+	if style.Symbol {
+		return theme.DefaultTheme().Font(style)
+	}
 	return theme.DefaultTheme().Font(style)
 }
 
