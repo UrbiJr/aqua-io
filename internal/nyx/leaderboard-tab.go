@@ -13,6 +13,11 @@ import (
 	"github.com/UrbiJr/nyx/internal/utils"
 )
 
+const (
+	defaultPeriodType     = "WEEKLY"
+	defaultStatisticsType = "ROI"
+)
+
 type LeaderboardTab struct {
 	Traders []Trader
 	*container.TabItem
@@ -23,7 +28,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	var profileGroups []string
 
 	grid := container.NewAdaptiveGrid(3)
-	app.LeaderboardTab.Traders, _ = app.fetchTraders()
+	app.LeaderboardTab.Traders, _ = app.fetchTraders(defaultStatisticsType, defaultPeriodType)
 	cards := app.makeTradersCards()
 	for _, card := range cards {
 		grid.Add(card)
@@ -51,7 +56,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	searchEntry := widget.NewSelectEntry([]string{})
 	searchEntry.SetPlaceHolder("Search by nickname...")
 	searchResults := fyne.NewMenu("")
-	btn := widget.NewButton("", func() {
+	onSearchSubmitted := func() {
 		go func() {
 			searchResults.Items = []*fyne.MenuItem{}
 			filtered, err := app.searchByNickname(searchEntry.Text)
@@ -75,12 +80,33 @@ func (app *Config) leaderboardTab() *fyne.Container {
 			popUp.ShowAtPosition(entryPos.Add(fyne.NewPos(0, searchEntry.Size().Height)))
 			popUp.Resize(fyne.NewSize(searchEntry.Size().Width, 50))
 		}()
-	})
+	}
+	searchEntry.OnSubmitted = func(s string) {
+		onSearchSubmitted()
+	}
+	btn := widget.NewButton("", onSearchSubmitted)
 	btn.Importance = widget.LowImportance
 	btn.SetIcon(theme.SearchIcon())
 	searchEntry.ActionItem = btn
 
-	leftTopContainer := container.NewVBox(widget.NewLabel("Search Trader"), searchEntry)
+	sortByStatistics := widget.NewSelect([]string{"ROI", "PNL"}, nil)
+	sortByStatistics.SetSelected("ROI")
+	filterByPeriod := widget.NewSelect([]string{"DAILY", "WEEKLY", "MONTHLY", "TOTAL"}, nil)
+	filterByPeriod.SetSelected("WEEKLY")
+
+	sortByStatistics.OnChanged = func(s string) {
+		go func() {
+			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		}()
+
+	}
+	filterByPeriod.OnChanged = func(s string) {
+		go func() {
+			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		}()
+	}
+
+	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
 	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), groupSelector, profileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
@@ -145,8 +171,8 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	return cards
 }
 
-func (app *Config) RefreshLeaderboard() {
-	app.LeaderboardTab.Traders, _ = app.fetchTraders()
+func (app *Config) RefreshLeaderboard(statisticsType, periodType string) {
+	app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
 	cards := app.makeTradersCards()
 	app.LeaderboardTab.CardsContainer.RemoveAll()
 	for _, card := range cards {

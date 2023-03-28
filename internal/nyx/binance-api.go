@@ -34,15 +34,18 @@ type Trader struct {
 	OpenId         any     `json:"openId"`
 }
 
-func (app *Config) fetchTraders() ([]Trader, error) {
+func (app *Config) fetchTraders(statisticsType, periodType string) ([]Trader, error) {
 
+	if periodType == "TOTAL" {
+		periodType = "ALL"
+	}
 	binanceApi := "https://www.binance.com/bapi/futures/v3/public/future/leaderboard/getLeaderboardRank"
 
 	postJson := make(map[string]interface{})
 	var postData []byte
 	postJson["tradeType"] = "PERPETUAL"
-	postJson["statisticsType"] = "ROI"
-	postJson["periodType"] = "WEEKLY"
+	postJson["statisticsType"] = statisticsType
+	postJson["periodType"] = periodType
 	postJson["isShared"] = true
 	postJson["isTrader"] = false
 	postData, err := json.MarshalIndent(postJson, " ", "")
