@@ -28,7 +28,7 @@ type Trader struct {
 	TwitterUrl     any     `json:"twitterUrl"`
 	EncryptedUid   string  `json:"encryptedUid"`
 	UpdateTime     int64   `json:"updateTime"`
-	FolloweCount   int64   `json:"followerCount"`
+	FollowerCount  int64   `json:"followerCount"`
 	TwShared       string  `json:"-"`
 	IsTwTrader     bool    `json:"isTwTrader"`
 	OpenId         any     `json:"openId"`
