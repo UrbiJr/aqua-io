@@ -110,7 +110,16 @@ func (app *Config) profilesTab() *fyne.Container {
 func (app *Config) addProfileGroupDialog() dialog.Dialog {
 	nameEntry := widget.NewEntry()
 
-	nameEntry.Validator = utils.IsStringEmpty
+	nameEntry.Validator = func(s string) error {
+		s = strings.TrimSpace(s)
+		if app.User.ProfileManager.GetGroupByName(s) != nil {
+			return fmt.Errorf("a group named %s already exists", s)
+		} else if len(s) <= 0 {
+			return errors.New("please insert a name")
+		} else {
+			return nil
+		}
+	}
 
 	// create a dialog
 	addForm := dialog.NewForm(

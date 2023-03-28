@@ -51,10 +51,10 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	searchEntry := widget.NewSelectEntry([]string{})
 	searchEntry.SetPlaceHolder("Search by nickname...")
 	searchResults := fyne.NewMenu("")
-	btn := widget.NewButton("", func() {
+	searchEntry.OnChanged = func(s string) {
 		go func() {
 			searchResults.Items = []*fyne.MenuItem{}
-			filtered, err := app.searchByNickname(searchEntry.Text)
+			filtered, err := app.searchByNickname(s)
 			if err != nil {
 				searchResults.Items = append(searchResults.Items, fyne.NewMenuItem("API error", func() {}))
 			} else {
@@ -63,11 +63,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					if len(options) > 5 {
 						break
 					}
-					n := trader.NickName
-					//uid := trader.EncryptedUid
-					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
-						app.Logger.Debug("Selected trader " + n)
-					}))
+					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(trader.NickName, func() {}))
 				}
 			}
 			entryPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(searchEntry)
@@ -75,10 +71,8 @@ func (app *Config) leaderboardTab() *fyne.Container {
 			popUp.ShowAtPosition(entryPos.Add(fyne.NewPos(0, searchEntry.Size().Height)))
 			popUp.Resize(fyne.NewSize(searchEntry.Size().Width, 50))
 		}()
-	})
-	btn.Importance = widget.LowImportance
-	btn.SetIcon(theme.SearchIcon())
-	searchEntry.ActionItem = btn
+	}
+	searchEntry.ActionItem = canvas.NewImageFromResource(theme.SearchIcon())
 
 	leftTopContainer := container.NewVBox(widget.NewLabel("Search Trader"), searchEntry)
 	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), groupSelector, profileSelector)

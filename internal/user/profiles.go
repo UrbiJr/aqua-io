@@ -79,6 +79,16 @@ func (pfm *ProfileManager) GetGroupByID(ID int64) *ProfileGroup {
 	return nil
 }
 
+func (pfm *ProfileManager) GetGroupByName(name string) *ProfileGroup {
+	for _, p := range pfm.Groups {
+		if p.Name == name {
+			return &p
+		}
+	}
+
+	return nil
+}
+
 func (pfm *ProfileManager) GetProfileByTitle(title string, groupID int64) *Profile {
 	filtered := pfm.FilterByGroupID(groupID)
 	for _, p := range filtered {
