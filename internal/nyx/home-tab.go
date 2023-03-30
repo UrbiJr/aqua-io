@@ -1,11 +1,8 @@
 package nyx
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"log"
-	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -62,38 +59,6 @@ func (app *Config) homeTab(greetingMsg string) *fyne.Container {
 	return homeTabContainer
 }
 
-func (app *Config) downloadFile(URL, fileName string) error {
-
-	if URL == "" {
-		return errors.New("empty URL")
-	}
-
-	// get the response bytes from calling a url
-	response, err := app.Client.Get(URL)
-	if err != nil {
-		return err
-	}
-
-	if response.StatusCode != 200 {
-		return errors.New("received wrong response code when downloading image")
-	}
-
-	//open a file for writing
-	file, err := os.Create(fmt.Sprintf("%s.jpg", fileName))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	// Use io.Copy to just dump the response body to the file. This supports huge files
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return nil
-}
-
 func (app *Config) makeReleaseList() []*widget.Card {
 	var cards []*widget.Card
 	var canvasImage *canvas.Image
@@ -105,15 +70,15 @@ func (app *Config) makeReleaseList() []*widget.Card {
 			release.Date,
 			widget.NewHyperlink("Check StockX", release.StockXLink),
 		)
-		if utils.DoesFileExist(fmt.Sprintf("%d-release.jpg", i)) {
-			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.jpg", i))
+		if utils.DoesFileExist(fmt.Sprintf("downloads/%d-release.jpg", i)) {
+			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%d-release.jpg", i))
 		} else {
 			err := app.downloadFile(release.ImageURL.String(), fmt.Sprintf("%d-release", i))
 			if err != nil {
 				// return bundled error image
 				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
 			} else {
-				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%d-release.jpg", i))
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%d-release.jpg", i))
 			}
 		}
 		canvasImage.SetMinSize(fyne.NewSize(100, 100))

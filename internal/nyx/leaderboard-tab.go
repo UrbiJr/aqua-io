@@ -2,6 +2,7 @@ package nyx
 
 import (
 	"fmt"
+	"math"
 	"net/url"
 
 	"fyne.io/fyne/v2"
@@ -23,65 +24,9 @@ const (
 type LeaderboardTab struct {
 	Traders []Trader
 	*container.TabItem
-	SelectedProfile user.Profile
-	CardsContainer  *fyne.Container
-}
-
-func (app *Config) traderDialog(t Trader) dialog.Dialog {
-
-	var slice [][]any
-	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL", "Action"})
-	slice = append(slice, []any{"BTCUSDT Perpetual", "0.293", "26,996.00", "26,707.95", "84.40 (26.9625%)", t.EncryptedUid})
-
-	traderCard := app.getTraderCard(t, true)
-	positionsTable := widget.NewTable(
-		func() (int, int) {
-			return len(slice), len(slice[0])
-		},
-		func() fyne.CanvasObject {
-			lbl := widget.NewLabel("")
-			btn := widget.NewButton("Trade", nil)
-			btn.Hide()
-			return container.NewMax(lbl, btn)
-		},
-		func(i widget.TableCellID, o fyne.CanvasObject) {
-			container := o.(*fyne.Container)
-			lbl := container.Objects[0].(*widget.Label)
-			btn := container.Objects[1].(*widget.Button)
-
-			if i.Row != 0 && i.Col == 5 {
-				lbl.Hide()
-				btn.Hidden = false
-				btn.OnTapped = func() {
-					app.Logger.Debug("trade button tapped")
-				}
-			} else {
-				btn.Hide()
-				lbl.Hidden = false
-				// we're just putting in textual information
-				lbl.SetText(
-					slice[i.Row][i.Col].(string))
-			}
-		})
-	colWidths := []float32{200, 100, 100, 100, 200, 60}
-	for i, w := range colWidths {
-		positionsTable.SetColumnWidth(i, w)
-	}
-	positionsCard := widget.NewCard("Positions", "", positionsTable)
-
-	grid := container.NewGridWithRows(2, traderCard, positionsCard)
-	scrollContent := container.NewVScroll(grid)
-
-	traderDialog := dialog.NewCustom(
-		"Trader Overview",
-		"Close",
-		scrollContent,
-		app.MainWindow)
-
-	traderDialog.Resize(fyne.NewSize(900, 600))
-	traderDialog.Show()
-
-	return traderDialog
+	SelectedProfile      user.Profile
+	TraderPositionsSlice [][]any
+	CardsContainer       *fyne.Container
 }
 
 func (app *Config) leaderboardTab() *fyne.Container {
@@ -187,13 +132,88 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
 
 	topContainer.Move(fyne.NewPos(10, 10))
-	topContainer.Resize(fyne.NewSize(1260, 50))
+	topContainer.Resize(fyne.NewSize(1420, 50))
 	vScroll.Move(fyne.NewPos(10, 130))
-	vScroll.Resize(fyne.NewSize(1260, 540))
+	vScroll.Resize(fyne.NewSize(1420, 680))
 
 	app.LeaderboardTab.CardsContainer = grid
 
 	return releasesContainer
+}
+
+func (app *Config) getTraderPositionsSlice(t Trader) [][]any {
+	var slice [][]any
+
+	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
+	positions, err := app.fetchTraderPositions(t.EncryptedUid)
+	if err != nil {
+		return slice
+	}
+
+	for _, x := range positions {
+		var currentRow []any
+
+		currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
+
+		currentRow = append(currentRow, fmt.Sprintf("%.3f", math.Abs(x.Amount)))
+
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.EntryPrice))
+
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.MarkPrice))
+
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Pnl))
+
+		slice = append(slice, currentRow)
+	}
+
+	return slice
+}
+
+func (app *Config) traderDialog(t Trader) dialog.Dialog {
+
+	var slice [][]any
+	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
+	app.TraderPositionsSlice = slice
+	traderCard := app.getTraderCard(t, true, false)
+	positionsTable := widget.NewTable(
+		func() (int, int) {
+			return len(app.TraderPositionsSlice), len(app.TraderPositionsSlice[0])
+		},
+		func() fyne.CanvasObject {
+			lbl := widget.NewLabel("")
+			return container.NewMax(lbl)
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			container := o.(*fyne.Container)
+			lbl := container.Objects[0].(*widget.Label)
+			lbl.Hidden = false
+			// we're just putting in textual information
+			lbl.SetText(
+				app.TraderPositionsSlice[i.Row][i.Col].(string))
+		})
+	colWidths := []float32{200, 100, 100, 100, 200}
+	for i, w := range colWidths {
+		positionsTable.SetColumnWidth(i, w)
+	}
+	positionsCard := widget.NewCard("Positions", "", positionsTable)
+	go func() {
+		app.TraderPositionsSlice = app.getTraderPositionsSlice(t)
+		positionsTable.Refresh()
+	}()
+
+	grid := container.NewGridWithRows(2, traderCard, positionsCard)
+	scrollContent := container.NewVScroll(grid)
+
+	traderDialog := dialog.NewCustom(
+		"Trader Overview",
+		"Close",
+		scrollContent,
+		app.MainWindow)
+
+	traderDialog.Resize(fyne.NewSize(900, 600))
+	traderDialog.Show()
+
+	return traderDialog
 }
 
 func (app *Config) makeTradersCards() []*widget.Card {
@@ -201,7 +221,7 @@ func (app *Config) makeTradersCards() []*widget.Card {
 
 	for _, trader := range app.LeaderboardTab.Traders {
 
-		card := app.getTraderCard(trader, false)
+		card := app.getTraderCard(trader, false, true)
 		//card.SetImage(canvasImage)
 		cards = append(cards, card)
 	}
@@ -209,7 +229,7 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	return cards
 }
 
-func (app *Config) getTraderCard(trader Trader, showImage bool) *widget.Card {
+func (app *Config) getTraderCard(trader Trader, showImage bool, showPopUpButton bool) *widget.Card {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
 	copyButton := widget.NewButton("Copy", func() {})
@@ -229,23 +249,36 @@ func (app *Config) getTraderCard(trader Trader, showImage bool) *widget.Card {
 		binanceLink = widget.NewHyperlink("Binance", binanceUrl)
 	}
 
-	card := widget.NewCard(
-		trader.NickName,
-		fmt.Sprintf("%d Followers", trader.FollowerCount),
-		container.NewGridWithColumns(2,
-			widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-			container.NewHBox(binanceLink, twitterLink), copyButton))
+	var card *widget.Card
+	if showPopUpButton {
+		card = widget.NewCard(
+			trader.NickName,
+			fmt.Sprintf("%d Followers", trader.FollowerCount),
+			container.NewGridWithColumns(2,
+				widget.NewButtonWithIcon("View Positions", theme.VisibilityIcon(), func() {
+					app.traderDialog(trader)
+				}), widget.NewLabel(""),
+				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
+				container.NewHBox(binanceLink, twitterLink), copyButton))
+	} else {
+		card = widget.NewCard(
+			trader.NickName,
+			fmt.Sprintf("%d Followers", trader.FollowerCount),
+			container.NewGridWithColumns(2,
+				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
+				container.NewHBox(binanceLink, twitterLink), copyButton))
+	}
 
 	if showImage {
-		if utils.DoesFileExist(fmt.Sprintf("%s.jpg", trader.EncryptedUid)) {
-			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%s.jpg", trader.EncryptedUid))
+		if utils.DoesFileExist(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid)) {
+			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid))
 		} else {
 			err := app.downloadFile(trader.UserPhotoUrl, trader.EncryptedUid)
 			if err != nil {
 				// return bundled error image
 				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
 			} else {
-				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("%s.jpg", trader.EncryptedUid))
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid))
 			}
 		}
 		canvasImage.SetMinSize(fyne.NewSize(25, 25))

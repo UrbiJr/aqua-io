@@ -2,6 +2,9 @@ package nyx
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -84,4 +87,36 @@ func (app *Config) SetupDB(sqldb *sql.DB) {
 		app.Logger.Error(err)
 		log.Panic()
 	}
+}
+
+func (app *Config) downloadFile(URL, fileName string) error {
+
+	if URL == "" {
+		return errors.New("empty URL")
+	}
+
+	// get the response bytes from calling a url
+	response, err := app.Client.Get(URL)
+	if err != nil {
+		return err
+	}
+
+	if response.StatusCode != 200 {
+		return errors.New("received wrong response code when downloading image")
+	}
+
+	//open a file for writing
+	file, err := os.Create(fmt.Sprintf("downloads/%s.jpg", fileName))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	// Use io.Copy to just dump the response body to the file. This supports huge files
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
 }

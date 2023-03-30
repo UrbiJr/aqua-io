@@ -3,6 +3,5 @@
 tmp/
 *.json
 *-release.jpg
-*-release.png
 .db
-*-trader.jpg
+*.jpg

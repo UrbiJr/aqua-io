@@ -9,6 +9,28 @@ import (
 	fhttp "github.com/bogdanfinn/fhttp"
 )
 
+type GetOtherPositionResponse struct {
+	Code          any            `json:"code"`
+	Message       any            `json:"message"`
+	MessageDetail any            `json:"messageDetail"`
+	Data          map[string]any `json:"data"`
+	Success       bool           `json:"success"`
+}
+
+type Position struct {
+	Symbol          string  `json:"symbol"`
+	EntryPrice      float64 `json:"entryPrice"`
+	MarkPrice       float64 `json:"markPrice"`
+	Pnl             float64 `json:"pnl"`
+	Roe             float64 `json:"roe"`
+	UpdateTime      []int64 `json:"updateTime"`
+	Amount          float64 `json:"amount"`
+	UpdateTimestamp int64   `json:"updateTimeStamp"`
+	Yellow          bool    `json:"yellow"`
+	TradeBefore     bool    `json:"tradeBefore"`
+	Leverage        int64   `json:"leverage"`
+}
+
 type LeaderboardResponse struct {
 	Code          any      `json:"code"`
 	Message       any      `json:"message"`
@@ -94,6 +116,78 @@ func (app *Config) fetchTraders(statisticsType, periodType string) ([]Trader, er
 	}
 
 	return binanceApiResponse.Data, nil
+}
+
+func (app *Config) fetchTraderPositions(uid string) ([]Position, error) {
+
+	binanceApi := "https://www.binance.com/bapi/futures/v1/public/future/leaderboard/getOtherPosition"
+
+	postJson := make(map[string]interface{})
+	var postData []byte
+	postJson["encryptedUid"] = uid
+	postJson["tradeType"] = "PERPETUAL"
+	postData, err := json.MarshalIndent(postJson, " ", "")
+	if err != nil {
+		return []Position{}, err
+	}
+	req, err := fhttp.NewRequest("POST", binanceApi, bytes.NewReader(postData))
+	if err != nil {
+		return []Position{}, err
+	}
+
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Origin", "https://www.binance.com")
+	req.Header.Add("Referer", "https://www.binance.com/en/futures-activity/leaderboard/futures")
+	req.Header.Add("lang", "en")
+	req.Header.Add("clienttype", "web")
+	req.Header.Add("content-type", "application/json")
+
+	resp, err := app.TLSClient.Do(req)
+	if err != nil {
+		app.Logger.Error("Binance API request failed: " + err.Error())
+		return []Position{}, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []Position{}, err
+	}
+
+	var binanceApiResponse GetOtherPositionResponse
+	err = json.Unmarshal(body, &binanceApiResponse)
+	if err != nil {
+		app.Logger.Error("Error decoding Binance API response " + err.Error())
+		return []Position{}, err
+	}
+
+	switch code := binanceApiResponse.Code.(type) {
+	case float64:
+		if code == 400 {
+			app.Logger.Debug(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+		}
+	default:
+		app.Logger.Debug(fmt.Sprintf("collected %d traders from binance API", len(binanceApiResponse.Data)))
+	}
+
+	_, ok := binanceApiResponse.Data["otherPositionRetList"]
+	// If the key exists
+	if ok {
+		var positions []Position
+		byteData, _ := json.Marshal(binanceApiResponse.Data["otherPositionRetList"])
+		err = json.Unmarshal(byteData, &positions)
+		if err != nil {
+			app.Logger.Error("Error decoding Binance API response " + err.Error())
+			return []Position{}, err
+		}
+		return positions, nil
+	} else {
+		err = fmt.Errorf("failed parsing positions for trader %s: key otherPositionRetList does not exist", uid)
+		app.Logger.Debug(err)
+		return []Position{}, err
+	}
+
 }
 
 func (app *Config) searchByNickname(nickname string) ([]Trader, error) {
