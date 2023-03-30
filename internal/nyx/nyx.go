@@ -120,3 +120,22 @@ func (app *Config) downloadFile(URL, fileName string) error {
 
 	return nil
 }
+
+func (app *Config) copyTrader(trader user.Trader) error {
+
+	app.User.CopiedTradersManager.Traders = append(app.User.CopiedTradersManager.Traders, trader)
+
+	//TODO: call the actual ByBit APIs
+	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range positions {
+		if !utils.Contains(app.SelectedProfile.BlacklistCoins, p.Symbol) {
+			app.User.CopiedTradersManager.Positions = append(app.User.CopiedTradersManager.Positions)
+		}
+	}
+
+	return nil
+}

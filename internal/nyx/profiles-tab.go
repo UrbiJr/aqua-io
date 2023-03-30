@@ -143,6 +143,7 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 				app.refreshProfilesTopContent()
 				app.refreshProfilesBottomContent()
 				app.refreshProfilesTable()
+				app.refreshProfileSelector()
 			}
 		},
 		app.MainWindow)
@@ -198,6 +199,7 @@ func (app *Config) getProfileGroupToolBar() *widget.Toolbar {
 					app.refreshProfilesTopContent()
 					app.refreshProfilesBottomContent()
 					app.refreshProfilesTable()
+					app.refreshProfileSelector()
 				}, app.MainWindow)
 		}))
 
@@ -357,6 +359,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				app.refreshProfileGroupsList()
 				app.refreshProfilesTopContent()
 				app.refreshProfilesTable()
+				app.refreshProfileSelector()
 			}
 		},
 		app.MainWindow,
@@ -523,6 +526,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 				app.refreshProfileGroupsList()
 				app.refreshProfilesTopContent()
 				app.refreshProfilesTable()
+				app.refreshProfileSelector()
 			}
 		},
 		app.MainWindow,
@@ -601,6 +605,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 							app.refreshProfileGroupsList()
 							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
+							app.refreshProfileSelector()
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
@@ -621,6 +626,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 							app.refreshProfileGroupsList()
 							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
+							app.refreshProfileSelector()
 						}, app.MainWindow)
 					}))
 				}
@@ -681,6 +687,7 @@ func (app *Config) refreshProfilesBottomContent() {
 						app.refreshProfilesTopContent()
 						app.refreshProfilesBottomContent()
 						app.refreshProfilesTable()
+						app.refreshProfileSelector()
 					}
 				}, app.MainWindow)
 		})

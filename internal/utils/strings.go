@@ -10,3 +10,14 @@ func RandString(n int, randomChars string) string {
 	}
 	return string(b)
 }
+
+// Contains checks if a string is present in a slice
+func Contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}

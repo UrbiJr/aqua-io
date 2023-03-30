@@ -22,4 +22,11 @@ type Repository interface {
 	DeleteProfileGroup(id int64) error
 	DeleteProfile(id int64) error
 	DeleteProfilesByGroupID(id int64) error
+	AllPositions() ([]user.Position, error)
+	AllTraders() ([]user.Trader, error)
+	UpdatePosition(id int64, updated user.Position) error
+	UpdateTrader(encryptedUid string, updated user.Trader) error
+	DeletePosition(id int64) error
+	DeletePositionsByTraderID(encryptedUid string) error
+	DeleteTrader(encryptedUid string) error
 }

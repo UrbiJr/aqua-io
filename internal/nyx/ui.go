@@ -61,11 +61,12 @@ func (app *Config) MakeDesktopUI() {
 	app.ProfilesTab = &ProfilesTab{}
 
 	homeTabContent := app.homeTab(msg)
+	copiedTradersTabContent := app.copiedTradersTab()
 	profilesTabContent := app.profilesTab()
 	leaderboardContent := app.leaderboardTab()
 
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
-	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), canvas.NewText("Copied Traders goes here", nil))
+	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), copiedTradersTabContent)
 	app.LeaderboardTab.TabItem = container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent)
 	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
 	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), profilesTabContent)
@@ -88,7 +89,7 @@ func (app *Config) MakeDesktopUI() {
 	tabs.Resize(fyne.NewSize(1440, 900))
 	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
-	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
+	app.TopRightToolbar.Move(fyne.NewPos(1340, 0))
 
 	app.MainWindow.SetContent(app.GlobalContent)
 

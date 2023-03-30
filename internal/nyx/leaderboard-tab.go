@@ -2,6 +2,7 @@ package nyx
 
 import (
 	"fmt"
+	"image/color"
 	"math"
 	"net/url"
 
@@ -22,9 +23,11 @@ const (
 )
 
 type LeaderboardTab struct {
-	Traders []Trader
+	Traders []user.Trader
 	*container.TabItem
-	SelectedProfile      user.Profile
+	ProfileSelector      *widget.Select
+	GroupSelector        *widget.Select
+	SelectedProfile      *user.Profile
 	TraderPositionsSlice [][]any
 	CardsContainer       *fyne.Container
 }
@@ -44,18 +47,23 @@ func (app *Config) leaderboardTab() *fyne.Container {
 		profileGroups = append(profileGroups, pfg.Name)
 	}
 
-	profileSelector := widget.NewSelect([]string{}, func(s string) {})
-	profileSelector.Disable()
-	groupSelector := widget.NewSelect(profileGroups, func(s string) {
-		profileSelector.Options = []string{}
+	app.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
+		group := app.User.ProfileManager.GetGroupByName(app.GroupSelector.Selected)
+		if group != nil {
+			app.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
+		}
+	})
+	app.ProfileSelector.Disable()
+	app.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
+		app.ProfileSelector.Options = []string{}
 		profiles := app.User.ProfileManager.FilterByGroupName(s)
 		for _, p := range profiles {
-			profileSelector.Options = append(profileSelector.Options, p.Title)
+			app.ProfileSelector.Options = append(app.ProfileSelector.Options, p.Title)
 		}
-		if len(profileSelector.Options) > 0 {
-			profileSelector.Enable()
+		if len(app.ProfileSelector.Options) > 0 {
+			app.ProfileSelector.Enable()
 		}
-		profileSelector.Refresh()
+		app.ProfileSelector.Refresh()
 	})
 
 	searchEntry := widget.NewSelectEntry([]string{})
@@ -83,7 +91,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					roi := trader.Roi
 					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
 						app.Logger.Debug("Selected trader " + n)
-						app.traderDialog(Trader{
+						app.traderDialog(user.Trader{
 							NickName:      n,
 							UserPhotoUrl:  photoUrl,
 							EncryptedUid:  uid,
@@ -127,7 +135,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	}
 
 	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
-	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), groupSelector, profileSelector)
+	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.GroupSelector, app.ProfileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
 
@@ -141,7 +149,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	return releasesContainer
 }
 
-func (app *Config) getTraderPositionsSlice(t Trader) [][]any {
+func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 	var slice [][]any
 
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
@@ -161,7 +169,7 @@ func (app *Config) getTraderPositionsSlice(t Trader) [][]any {
 
 		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.MarkPrice))
 
-		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Pnl))
+		currentRow = append(currentRow, x.Pnl)
 
 		slice = append(slice, currentRow)
 	}
@@ -169,7 +177,7 @@ func (app *Config) getTraderPositionsSlice(t Trader) [][]any {
 	return slice
 }
 
-func (app *Config) traderDialog(t Trader) dialog.Dialog {
+func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
 
 	var slice [][]any
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
@@ -181,15 +189,31 @@ func (app *Config) traderDialog(t Trader) dialog.Dialog {
 		},
 		func() fyne.CanvasObject {
 			lbl := widget.NewLabel("")
-			return container.NewMax(lbl)
+			canvasText := canvas.NewText("", nil)
+			canvasText.Hide()
+			return container.NewMax(lbl, canvasText)
 		},
 		func(i widget.TableCellID, o fyne.CanvasObject) {
 			container := o.(*fyne.Container)
 			lbl := container.Objects[0].(*widget.Label)
-			lbl.Hidden = false
-			// we're just putting in textual information
-			lbl.SetText(
-				app.TraderPositionsSlice[i.Row][i.Col].(string))
+			canvasText := container.Objects[1].(*canvas.Text)
+
+			if i.Col == 4 && i.Row != 0 {
+				lbl.Hide()
+				canvasText.Hidden = false
+				pnl := app.TraderPositionsSlice[i.Row][i.Col].(float64)
+				if pnl > 0 {
+					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
+				} else {
+					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
+				}
+				canvasText.Text = fmt.Sprintf("%.2f", pnl)
+			} else {
+				canvasText.Hide()
+				lbl.Hidden = false
+				lbl.SetText(
+					app.TraderPositionsSlice[i.Row][i.Col].(string))
+			}
 		})
 	colWidths := []float32{200, 100, 100, 100, 200}
 	for i, w := range colWidths {
@@ -229,11 +253,65 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	return cards
 }
 
-func (app *Config) getTraderCard(trader Trader, showImage bool, showPopUpButton bool) *widget.Card {
+func (app *Config) noProfileSelectedDialog() dialog.Dialog {
+	d := dialog.NewInformation(
+		"No Profile Selected",
+		"Please select a profile first, then try again.",
+		app.MainWindow)
+	d.Show()
+
+	return d
+}
+
+func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
+	d := dialog.NewConfirm(
+		"Copy?",
+		fmt.Sprintf("Copy %s", t.NickName),
+		func(b bool) {
+			if b {
+				app.copyTrader(t)
+			}
+		},
+		app.MainWindow)
+	d.Show()
+
+	return d
+}
+
+func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
+	d := dialog.NewConfirm(
+		"Stop Copying?",
+		fmt.Sprintf("Stop Copying %s", t.NickName),
+		func(b bool) {
+			if b {
+			}
+		},
+		app.MainWindow)
+	d.Show()
+
+	return d
+}
+
+func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) *widget.Card {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
-	copyButton := widget.NewButton("Copy", func() {})
-	copyButton.Importance = widget.HighImportance
+	var btn *widget.Button
+
+	if t := app.User.CopiedTradersManager.GetTraderByUid(trader.EncryptedUid); t != nil {
+		btn = widget.NewButton("Stop Copying", func() {
+			app.stopCopyingTraderDialog(trader)
+		})
+	} else {
+		btn = widget.NewButton("Copy", func() {
+			if app.SelectedProfile == nil {
+				app.noProfileSelectedDialog()
+				return
+			}
+			app.copyTraderDialog(trader)
+		})
+	}
+
+	btn.Importance = widget.HighImportance
 
 	if trader.TwitterUrl == nil {
 		twitterLink = widget.NewLabel("")
@@ -259,14 +337,14 @@ func (app *Config) getTraderCard(trader Trader, showImage bool, showPopUpButton 
 					app.traderDialog(trader)
 				}), widget.NewLabel(""),
 				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-				container.NewHBox(binanceLink, twitterLink), copyButton))
+				container.NewHBox(binanceLink, twitterLink), btn))
 	} else {
 		card = widget.NewCard(
 			trader.NickName,
 			fmt.Sprintf("%d Followers", trader.FollowerCount),
 			container.NewGridWithColumns(2,
 				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-				container.NewHBox(binanceLink, twitterLink), copyButton))
+				container.NewHBox(binanceLink, twitterLink), btn))
 	}
 
 	if showImage {
@@ -306,4 +384,16 @@ func (app *Config) RefreshLeaderboardWithoutFetch() {
 		app.LeaderboardTab.CardsContainer.Add(card)
 	}
 	app.LeaderboardTab.CardsContainer.Refresh()
+}
+
+func (app *Config) refreshProfileSelector() {
+	var profileGroups []string
+	for _, pfg := range app.User.ProfileManager.Groups {
+		profileGroups = append(profileGroups, pfg.Name)
+	}
+	app.GroupSelector.Options = profileGroups
+	app.GroupSelector.ClearSelected()
+	app.GroupSelector.Refresh()
+	app.ProfileSelector.Refresh()
+	app.ProfileSelector.Disable()
 }

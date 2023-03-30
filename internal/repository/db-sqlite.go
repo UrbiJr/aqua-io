@@ -56,6 +56,48 @@ func (repo *SQLiteRepository) Migrate() error {
 		return err
 	}
 
+	query = `
+		create table if not exists traders(
+			encryptedUid primary key,
+			futureUid text not null,
+			nickName text not null,
+			userPhotoUrl text not null,
+			rank integer not null,
+			pnl real not null,
+			roi real not null,
+			positionShared boolean not null,
+			twitterUrl text not null,
+			updateTime integer not null,
+			followerCount integer not null,
+			isTwTrader boolean not null,
+			openId text not null);
+	`
+	_, err = repo.Conn.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	query = `
+		create table if not exists positions(
+			id integer primary key autoincrement,
+			trader_id text not null,
+			symbol text not null,
+			entryPrice real not null,
+			markPrice real not null,
+			pnl text real null,
+			roe text real null,
+			amount real not null,
+			updateTimeStamp integer not null,
+			yellow boolean not null,
+			tradeBefore boolean not null,
+			leverage integer not null,
+			foreign key (trader_id) references traders (id));
+	`
+	_, err = repo.Conn.Exec(query)
+	if err != nil {
+		return err
+	}
+
 	return err
 }
 
@@ -297,6 +339,186 @@ func (repo *SQLiteRepository) DeleteProfileGroup(id int64) error {
 	}
 
 	res, err := repo.Conn.Exec("delete from profile_groups where id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) AllPositions() ([]user.Position, error) {
+	query := "select * from positions order by symbol"
+
+	rows, err := repo.Conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var all []user.Position
+	for rows.Next() {
+		var p user.Position
+
+		err := rows.Scan(
+			&p.ID,
+			&p.TraderID,
+			&p.Symbol,
+			&p.EntryPrice,
+			&p.MarkPrice,
+			&p.Pnl,
+			&p.Roe,
+			&p.Amount,
+			&p.UpdateTimestamp,
+			&p.Yellow,
+			&p.TradeBefore,
+			&p.Leverage,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		all = append(all, p)
+	}
+
+	return all, nil
+}
+
+func (repo *SQLiteRepository) AllTraders() ([]user.Trader, error) {
+	query := "select * from traders order by nickname"
+
+	rows, err := repo.Conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var all []user.Trader
+	for rows.Next() {
+		var p user.Trader
+		err := rows.Scan(
+			&p.EncryptedUid,
+			&p.FutureUid,
+			&p.NickName,
+			&p.UserPhotoUrl,
+			&p.Rank,
+			&p.Pnl,
+			&p.Roi,
+			&p.PositionShared,
+			&p.TwitterUrl,
+			&p.UpdateTime,
+			&p.FollowerCount,
+			&p.IsTwTrader,
+			&p.OpenId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, p)
+	}
+
+	return all, nil
+}
+
+func (repo *SQLiteRepository) UpdatePosition(id int64, updated user.Position) error {
+	if id <= 0 {
+		return errors.New("invalid updated id")
+	}
+
+	stmt := "update positions set trader_id = ?, symbol = ?, entryPrice = ?,  markPrice = ?,  pnl = ?, roe = ?, amount = ?,  updateTimeStamp = ?,  yellow = ?,  tradeBefore = ?,  leverage = ? where id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.TraderID, updated.Symbol, updated.EntryPrice, updated.MarkPrice, updated.Pnl, updated.Roe, updated.Amount, updated.UpdateTimestamp, updated.Yellow, updated.TradeBefore, updated.Leverage, id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errUpdateFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) UpdateTrader(encryptedUid string, updated user.Trader) error {
+	if encryptedUid == "" {
+		return errors.New("invalid encryptedUid")
+	}
+
+	stmt := "update traders set futureUid = ?, nickName = ?, userPhotoUrl = ?,  rank = ?,  pnl = ?, roi = ?, positionShared = ?,  twitterUrl = ?, updateTime = ?,  followerCount = ?,  isTwTrader = ?,  openId = ? where encryptedUid = ?"
+	res, err := repo.Conn.Exec(stmt, updated.FutureUid, updated.NickName, updated.UserPhotoUrl, updated.Rank, updated.Pnl, updated.Roi, updated.PositionShared, updated.TwitterUrl, updated.UpdateTime, updated.FollowerCount, updated.IsTwTrader, updated.OpenId, encryptedUid)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errUpdateFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeletePosition(id int64) error {
+	res, err := repo.Conn.Exec("delete from positions where id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeletePositionsByTraderID(encryptedUid string) error {
+	res, err := repo.Conn.Exec("delete from positions where trader_id = ?", encryptedUid)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeleteTrader(encryptedUid string) error {
+	_, err := repo.Conn.Exec("delete from positions where trader_id = ?", encryptedUid)
+	if err != nil {
+		return err
+	}
+
+	res, err := repo.Conn.Exec("delete from traders where encryptedUid = ?", encryptedUid)
 	if err != nil {
 		return err
 	}

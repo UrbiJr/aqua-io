@@ -95,10 +95,11 @@ func main() {
 
 	// get logged user
 	nyx.User = &user.User{
-		Email:          "urbijr@nyx-robotics.eu",
-		Username:       "urbijr",
-		Settings:       &user.Settings{},
-		ProfileManager: &user.ProfileManager{},
+		Email:                "urbijr@nyx-robotics.eu",
+		Username:             "urbijr",
+		Settings:             &user.Settings{},
+		CopiedTradersManager: &user.CopiedTradersManager{},
+		ProfileManager:       &user.ProfileManager{},
 	}
 
 	// create and size a fyne window
