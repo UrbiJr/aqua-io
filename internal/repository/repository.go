@@ -22,6 +22,8 @@ type Repository interface {
 	DeleteProfileGroup(id int64) error
 	DeleteProfile(id int64) error
 	DeleteProfilesByGroupID(id int64) error
+	InsertPosition(p user.Position) (*user.Position, error)
+	InsertTrader(t user.Trader) (*user.Trader, error)
 	AllPositions() ([]user.Position, error)
 	AllTraders() ([]user.Trader, error)
 	UpdatePosition(id int64, updated user.Position) error

@@ -140,9 +140,9 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
 
 	topContainer.Move(fyne.NewPos(10, 10))
-	topContainer.Resize(fyne.NewSize(1420, 50))
+	topContainer.Resize(fyne.NewSize(1370, 50))
 	vScroll.Move(fyne.NewPos(10, 130))
-	vScroll.Resize(fyne.NewSize(1420, 680))
+	vScroll.Resize(fyne.NewSize(1370, 628))
 
 	app.LeaderboardTab.CardsContainer = grid
 

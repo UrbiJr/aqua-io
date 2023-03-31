@@ -1,9 +1,6 @@
 package nyx
 
 import (
-	"fmt"
-	"strconv"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
@@ -16,6 +13,7 @@ type CopiedTradersTab struct {
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
+	app.getTraders()
 	copiedTradersList := app.getCopiedTraders()
 
 	max := container.NewMax(copiedTradersList)
@@ -24,9 +22,9 @@ func (app *Config) copiedTradersTab() *fyne.Container {
 }
 
 func (app *Config) getCopiedTraders() *container.Split {
-	data := make([]string, 1000)
-	for i := range data {
-		data[i] = "Trader " + strconv.Itoa(i)
+	var data []string
+	for _, t := range app.User.CopiedTradersManager.Traders {
+		data = append(data, t.NickName)
 	}
 
 	icon := widget.NewIcon(nil)
@@ -41,10 +39,11 @@ func (app *Config) getCopiedTraders() *container.Split {
 			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
+			t := app.User.CopiedTradersManager.Traders[id]
 			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
 			if len(toolbar.Items) == 0 {
 				toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
-					//app.traderDialog()
+					app.traderDialog(t)
 				}))
 				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 					dialog.ShowConfirm("Stop copying?", "Confirming will delete all current positions copied from this trader.", func(deleted bool) {
@@ -52,12 +51,25 @@ func (app *Config) getCopiedTraders() *container.Split {
 					}, app.MainWindow)
 				}))
 			}
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(data[id] + "\ncopied positions: 0")
+			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(data[id] + "\n" + t.EncryptedUid)
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		label.SetText(fmt.Sprintf("Copied positions from %s go here", data[id]))
+		label.SetText("Loading Positions...")
+		t := app.User.CopiedTradersManager.Traders[id]
 		icon.SetResource(theme.AccountIcon())
+		go func() {
+			positions, err := app.fetchTraderPositions(t.EncryptedUid)
+			if err != nil {
+				app.Logger.Error(err)
+				return
+			}
+			positionsText := ""
+			for _, p := range positions {
+				positionsText = positionsText + p.Symbol + "\n"
+			}
+			label.SetText(positionsText)
+		}()
 	}
 	list.OnUnselected = func(id widget.ListItemID) {
 		label.SetText("Select A Copied Trader From The List")
@@ -68,15 +80,6 @@ func (app *Config) getCopiedTraders() *container.Split {
 	}
 
 	return container.NewHSplit(list, container.NewCenter(hbox))
-}
-
-func (app *Config) getPositions() {
-	positions, err := app.DB.AllPositions()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.CopiedTradersManager.Positions = positions
 }
 
 func (app *Config) getTraders() {

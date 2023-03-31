@@ -86,10 +86,10 @@ func (app *Config) MakeDesktopUI() {
 	app.GlobalContent = container.NewWithoutLayout(tabs, app.TopRightToolbar)
 
 	// resize and position widgets
-	tabs.Resize(fyne.NewSize(1440, 900))
+	tabs.Resize(fyne.NewSize(1390, 848))
 	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
-	app.TopRightToolbar.Move(fyne.NewPos(1340, 0))
+	app.TopRightToolbar.Move(fyne.NewPos(1290, 0))
 
 	app.MainWindow.SetContent(app.GlobalContent)
 

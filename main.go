@@ -108,13 +108,13 @@ func main() {
 	os := runtime.GOOS
 	switch os {
 	case "windows":
-		win.Resize(fyne.NewSize(1440, 900))
+		win.Resize(fyne.NewSize(1390, 848))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
 		nyx.MakeDesktopUI()
 	case "darwin":
-		win.Resize(fyne.NewSize(1440, 900))
+		win.Resize(fyne.NewSize(1390, 848))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()

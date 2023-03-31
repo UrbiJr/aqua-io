@@ -34,30 +34,7 @@ type Position struct {
 }
 
 type CopiedTradersManager struct {
-	Traders   []Trader
-	Positions []Position
-}
-
-func (ctm *CopiedTradersManager) FilterByTraderUid(encryptedUid string) []Position {
-	var filtered []Position
-
-	// iterate through proxy groups
-	for _, t := range ctm.Traders {
-		// if group is the one requested
-		if t.EncryptedUid == encryptedUid {
-			// keep it as current and iterate through proxies
-			for _, p := range ctm.Positions {
-				// if proxy belongs to current group
-				if p.TraderID == p.ID {
-					// add it to filtered
-					filtered = append(filtered, p)
-				}
-			}
-			return filtered
-		}
-	}
-
-	return filtered
+	Traders []Trader
 }
 
 func (ctm *CopiedTradersManager) GetTraderByUid(encryptedUid string) *Trader {

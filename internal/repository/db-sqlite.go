@@ -34,21 +34,21 @@ func (repo *SQLiteRepository) Migrate() error {
 			id integer primary key autoincrement,
 			group_id integer not null,
 			title text not null,
-			bybit_api_key text not null,
-			bybit_api_secret text not null,
-			max_bybit_binance_price_difference_percent real not null,
-			leverage real not null,
-			initial_open_percent real not null,
-			max_add_multiplier real not null,
-			open_delay real not null,
-			one_coin_max_percent real not null,
-			blacklist_coins text not null,
-			add_prevention_percent real not null,
-			block_adds_above_entry boolean not null,
-			max_open_positions integer not null,
-			auto_tp real not null,
-			auto_sl real not null,
-			test_mode boolean not null,
+			bybit_api_key text null,
+			bybit_api_secret text null,
+			max_bybit_binance_price_difference_percent real null,
+			leverage real null,
+			initial_open_percent real null,
+			max_add_multiplier real null,
+			open_delay real null,
+			one_coin_max_percent real null,
+			blacklist_coins text null,
+			add_prevention_percent real null,
+			block_adds_above_entry boolean null,
+			max_open_positions integer null,
+			auto_tp real null,
+			auto_sl real null,
+			test_mode boolean null,
 			foreign key (group_id) references profile_groups (id));
 	`
 	_, err = repo.Conn.Exec(query)
@@ -59,18 +59,18 @@ func (repo *SQLiteRepository) Migrate() error {
 	query = `
 		create table if not exists traders(
 			encryptedUid primary key,
-			futureUid text not null,
-			nickName text not null,
-			userPhotoUrl text not null,
-			rank integer not null,
-			pnl real not null,
-			roi real not null,
-			positionShared boolean not null,
-			twitterUrl text not null,
-			updateTime integer not null,
-			followerCount integer not null,
-			isTwTrader boolean not null,
-			openId text not null);
+			futureUid text null,
+			nickName text null,
+			userPhotoUrl text null,
+			rank integer null,
+			pnl real null,
+			roi real null,
+			positionShared boolean null,
+			twitterUrl text null,
+			updateTime integer null,
+			followerCount integer null,
+			isTwTrader boolean null,
+			openId text null);
 	`
 	_, err = repo.Conn.Exec(query)
 	if err != nil {
@@ -81,16 +81,16 @@ func (repo *SQLiteRepository) Migrate() error {
 		create table if not exists positions(
 			id integer primary key autoincrement,
 			trader_id text not null,
-			symbol text not null,
-			entryPrice real not null,
-			markPrice real not null,
+			symbol text null,
+			entryPrice real null,
+			markPrice real null,
 			pnl text real null,
 			roe text real null,
-			amount real not null,
-			updateTimeStamp integer not null,
-			yellow boolean not null,
-			tradeBefore boolean not null,
-			leverage integer not null,
+			amount real null,
+			updateTimeStamp integer null,
+			yellow boolean null,
+			tradeBefore boolean null,
+			leverage integer null,
 			foreign key (trader_id) references traders (id));
 	`
 	_, err = repo.Conn.Exec(query)
@@ -353,6 +353,39 @@ func (repo *SQLiteRepository) DeleteProfileGroup(id int64) error {
 	}
 
 	return nil
+}
+
+func (repo *SQLiteRepository) InsertPosition(p user.Position) (*user.Position, error) {
+	stmt := "insert into positions (trader_id,symbol,entryPrice,markPrice,pnl,roe,amount,updateTimeStamp,yellow,tradeBefore,leverage) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+	res, err := repo.Conn.Exec(stmt, p.TraderID, p.Symbol, p.EntryPrice, p.MarkPrice, p.Pnl, p.Roe, p.Amount, p.UpdateTimestamp, p.Yellow, p.TradeBefore, p.Leverage)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	p.ID = id
+	return &p, nil
+}
+
+func (repo *SQLiteRepository) InsertTrader(t user.Trader) (*user.Trader, error) {
+	stmt := "insert into traders (encryptedUid,futureUid,nickName,userPhotoUrl,rank,pnl,roi,positionShared,twitterUrl,updateTime,followerCount,isTwTrader,openId) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+
+	res, err := repo.Conn.Exec(stmt, t.EncryptedUid, t.FutureUid, t.NickName, t.UserPhotoUrl, t.Rank, t.Pnl, t.Roi, t.PositionShared, t.TwitterUrl, t.UpdateTime, t.FollowerCount, t.IsTwTrader, t.OpenId)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
 }
 
 func (repo *SQLiteRepository) AllPositions() ([]user.Position, error) {
