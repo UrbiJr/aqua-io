@@ -15,7 +15,10 @@ import (
 
 type CopiedTradersTab struct {
 	*container.TabItem
-	CopiedPositionsSlice [][]any
+	TransactionsSlice [][]any
+	ProfileSelector   *widget.Select
+	GroupSelector     *widget.Select
+	SelectedProfile   *user.Profile
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
@@ -35,12 +38,11 @@ func (app *Config) getCopiedTraders() *container.Split {
 		data = append(data, t.NickName)
 	}
 
-	label := widget.NewLabel("Loading Your Positions...")
-	slice = append(slice, []any{"Symbol", "Leverage", "Mark Price", "Unrealised PNL", "Last Update"})
-	app.CopiedPositionsSlice = slice
-	positionsTable := widget.NewTable(
+	slice = append(slice, []any{"Profile", "Symbol", "Currency", "Funding", "Trade Price", "Qty/Size", "Side", "Transaction Time"})
+	app.TransactionsSlice = slice
+	transactionsTable := widget.NewTable(
 		func() (int, int) {
-			return len(app.CopiedPositionsSlice), len(app.CopiedPositionsSlice[0])
+			return len(app.TransactionsSlice), len(app.TransactionsSlice[0])
 		},
 		func() fyne.CanvasObject {
 			lbl := widget.NewLabel("")
@@ -53,39 +55,71 @@ func (app *Config) getCopiedTraders() *container.Split {
 			lbl := container.Objects[0].(*widget.Label)
 			canvasText := container.Objects[1].(*canvas.Text)
 
-			if i.Col == 3 && i.Row != 0 {
+			if i.Col == 2 && i.Row != 0 {
 				lbl.Hide()
 				canvasText.Hidden = false
-				pnl := app.CopiedPositionsSlice[i.Row][i.Col].(float64)
-				if pnl > 0 {
+				funding := app.TransactionsSlice[i.Row][i.Col].(float64)
+				if funding > 0 {
 					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
 				} else {
 					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
 				}
-				canvasText.Text = fmt.Sprintf("%.2f", pnl)
+				canvasText.Text = fmt.Sprintf("%f", funding)
 			} else {
 				canvasText.Hide()
 				lbl.Hidden = false
 				lbl.SetText(
-					app.CopiedPositionsSlice[i.Row][i.Col].(string))
+					app.TransactionsSlice[i.Row][i.Col].(string))
 			}
 		})
-	colWidths := []float32{200, 100, 100, 200, 100}
+	colWidths := []float32{100, 100, 200, 100, 100, 100, 200}
 	for i, w := range colWidths {
-		positionsTable.SetColumnWidth(i, w)
+		transactionsTable.SetColumnWidth(i, w)
 	}
+
+	var profileGroups []string
+	for _, pfg := range app.User.ProfileManager.Groups {
+		profileGroups = append(profileGroups, pfg.Name)
+	}
+
+	app.CopiedTradersTab.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
+		group := app.User.ProfileManager.GetGroupByName(app.CopiedTradersTab.GroupSelector.Selected)
+		if group != nil {
+			app.CopiedTradersTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
+		}
+	})
+	app.CopiedTradersTab.ProfileSelector.Disable()
+	app.CopiedTradersTab.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
+		app.CopiedTradersTab.ProfileSelector.Options = []string{}
+		profiles := app.User.ProfileManager.FilterByGroupName(s)
+		for _, p := range profiles {
+			app.CopiedTradersTab.ProfileSelector.Options = append(app.CopiedTradersTab.ProfileSelector.Options, p.Title)
+		}
+		if len(app.CopiedTradersTab.ProfileSelector.Options) > 0 {
+			app.CopiedTradersTab.ProfileSelector.Enable()
+		}
+		app.CopiedTradersTab.ProfileSelector.Refresh()
+	})
+
 	go func() {
-		app.CopiedPositionsSlice = app.getPositionsSlice()
-		label.SetText("Your Positions")
-		positionsTable.Refresh()
+		app.TransactionsSlice = app.getTransactionsSlice()
+		transactionsTable.Refresh()
 	}()
 
+	top := container.NewVBox(
+		widget.NewCheck("Show From All Profiles", func(b bool) {}),
+		widget.NewSeparator(),
+		widget.NewLabel("...Or Select Profile"),
+		app.CopiedTradersTab.GroupSelector,
+		app.CopiedTradersTab.ProfileSelector,
+	)
+
 	border := container.NewBorder(
-		label,
+		top,
 		nil,
 		nil,
 		nil,
-		container.NewVScroll(positionsTable),
+		container.NewVScroll(transactionsTable),
 	)
 
 	list := widget.NewList(
@@ -131,33 +165,41 @@ func (app *Config) getTraders() {
 	app.User.CopiedTradersManager.Traders = traders
 }
 
-func (app *Config) getPositionsSlice() [][]any {
+func (app *Config) getTransactionsSlice() [][]any {
 	var slice [][]any
-	var allPositions []user.Position
+	var allTransactions []user.Transaction
 
-	slice = append(slice, []any{"Symbol", "Leverage", "Mark Price", "Unrealised PNL", "Last Update"})
+	slice = append(slice, []any{"Profile", "Symbol", "Currency", "Funding", "Trade Price", "Qty/Size", "Side", "Transaction Time"})
 	for _, p := range app.User.Profiles {
 		//TODO: better check if bybit or binance api key, add binance api key code
 		if p.BybitApiKey != "" {
-			bybitPositions := app.getBybitPositions(p.BybitApiKey, p.BybitApiSecret, p.TestMode)
-			if bybitPositions != nil {
-				allPositions = append(allPositions, bybitPositions...)
+			byBitTransactions := app.getBybitTransactions(p)
+			if byBitTransactions != nil {
+				allTransactions = append(allTransactions, byBitTransactions...)
 			}
 		}
 	}
 
-	for _, x := range allPositions {
+	for _, x := range allTransactions {
 		var currentRow []any
+
+		profile := app.User.ProfileManager.GetProfileByID(x.ProfileID, x.ProfileGroupID)
+
+		currentRow = append(currentRow, profile.Title)
 
 		currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
 
-		currentRow = append(currentRow, fmt.Sprintf("%d", x.Leverage))
+		currentRow = append(currentRow, x.Currency)
 
-		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.MarkPrice))
+		currentRow = append(currentRow, fmt.Sprintf("%f", x.Funding))
 
-		currentRow = append(currentRow, x.Pnl)
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.TradePrice))
 
-		currentRow = append(currentRow, fmt.Sprintf("%d", x.UpdateTimestamp))
+		currentRow = append(currentRow, fmt.Sprintf("%.2f/%.2f", x.Qty, x.Size))
+
+		currentRow = append(currentRow, x.Side)
+
+		currentRow = append(currentRow, fmt.Sprintf("%d", x.TransactionTime))
 
 		slice = append(slice, currentRow)
 	}

@@ -14,11 +14,11 @@ import (
 	"github.com/UrbiJr/nyx/internal/user"
 )
 
-func (app *Config) getBybitPositions(bybitApiKey, bybitApiSecret string, testMode bool) []user.Position {
+func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	var url string
 
-	if testMode {
-		url = "https://api-testnet.bybit.com/v5/position/list"
+	if p.TestMode {
+		url = "https://api-testnet.bybit.com/v5/account/transaction-log"
 	}
 	method := "GET"
 	req, err := http.NewRequest(method, url, nil)
@@ -34,13 +34,13 @@ func (app *Config) getBybitPositions(bybitApiKey, bybitApiSecret string, testMod
 	unixMilli := now.UnixMilli()
 
 	// generate hmac for X-BAPI-SIGN
-	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, bybitApiKey, "20000", "")
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "20000", "")
 
-	hm := hmac.New(sha256.New, []byte(bybitApiSecret))
+	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
 	hm.Write([]byte(str_to_sign))
 	HMAC := hex.EncodeToString(hm.Sum(nil))
 
-	req.Header.Add("X-BAPI-API-KEY", bybitApiKey)
+	req.Header.Add("X-BAPI-API-KEY", p.BybitApiKey)
 	req.Header.Add("X-BAPI-TIMESTAMP", fmt.Sprintf("%d", unixMilli))
 	req.Header.Add("X-BAPI-RECV-WINDOW", "20000")
 	req.Header.Add("X-BAPI-SIGN", HMAC)
@@ -59,7 +59,7 @@ func (app *Config) getBybitPositions(bybitApiKey, bybitApiSecret string, testMod
 	}
 
 	var parsed map[string]interface{}
-	var positions []user.Position
+	var transactions []user.Transaction
 
 	// Unmarshal or Decode the JSON to the interface.
 	json.Unmarshal(body, &parsed)
@@ -69,31 +69,42 @@ func (app *Config) getBybitPositions(bybitApiKey, bybitApiSecret string, testMod
 		if key == "result" {
 			result := parsed["result"].(map[string]interface{})
 			for key, _ := range result {
-				if key == "list" {
+				if key == "list" && parsed["list"] != nil {
 					list := parsed["list"].([]map[string]interface{})
 					for _, x := range list {
-						leverage, err := strconv.ParseInt(x["leverage"].(string), 10, 64)
+						tradePrice, err := strconv.ParseFloat(x["tradePrice"].(string), 64)
 						if err != nil {
 							continue
 						}
-						markPrice, err := strconv.ParseFloat(x["markPrice"].(string), 64)
+						qty, err := strconv.ParseFloat(x["qty"].(string), 64)
 						if err != nil {
 							continue
 						}
-						unrealisedPnl, err := strconv.ParseFloat(x["unrealisedPnl"].(string), 64)
+						size, err := strconv.ParseFloat(x["size"].(string), 64)
 						if err != nil {
 							continue
 						}
-						updateTimestamp, err := strconv.ParseInt(x["updatedTime"].(string), 10, 64)
+						funding, err := strconv.ParseFloat(x["funding"].(string), 64)
 						if err != nil {
 							continue
 						}
-						positions = append(positions, user.Position{
+						transactionTime, err := strconv.ParseInt(x["transactionTime"].(string), 10, 64)
+						if err != nil {
+							continue
+						}
+						transactions = append(transactions, user.Transaction{
+							ProfileID:       p.ID,
+							ProfileGroupID:  p.GroupID,
+							OrderID:         x["orderId"].(string),
+							TradeID:         x["tradeId"].(string),
 							Symbol:          x["symbol"].(string),
-							Leverage:        leverage,
-							MarkPrice:       markPrice,
-							Pnl:             unrealisedPnl,
-							UpdateTimestamp: updateTimestamp,
+							Funding:         funding,
+							Currency:        x["currency"].(string),
+							TradePrice:      tradePrice,
+							Qty:             qty,
+							Size:            size,
+							Side:            x["side"].(string),
+							TransactionTime: transactionTime,
 						})
 					}
 				}
@@ -101,7 +112,7 @@ func (app *Config) getBybitPositions(bybitApiKey, bybitApiSecret string, testMod
 		}
 	}
 
-	app.Logger.Debug(fmt.Sprintf("Fetched %d positions from bybit", len(positions)))
+	app.Logger.Debug(fmt.Sprintf("Fetched %d transactions from bybit", len(transactions)))
 
-	return positions
+	return transactions
 }

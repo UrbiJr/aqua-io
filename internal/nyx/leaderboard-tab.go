@@ -47,23 +47,23 @@ func (app *Config) leaderboardTab() *fyne.Container {
 		profileGroups = append(profileGroups, pfg.Name)
 	}
 
-	app.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
-		group := app.User.ProfileManager.GetGroupByName(app.GroupSelector.Selected)
+	app.LeaderboardTab.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
+		group := app.User.ProfileManager.GetGroupByName(app.LeaderboardTab.GroupSelector.Selected)
 		if group != nil {
-			app.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
+			app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
 		}
 	})
-	app.ProfileSelector.Disable()
-	app.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
-		app.ProfileSelector.Options = []string{}
+	app.LeaderboardTab.ProfileSelector.Disable()
+	app.LeaderboardTab.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
+		app.LeaderboardTab.ProfileSelector.Options = []string{}
 		profiles := app.User.ProfileManager.FilterByGroupName(s)
 		for _, p := range profiles {
-			app.ProfileSelector.Options = append(app.ProfileSelector.Options, p.Title)
+			app.LeaderboardTab.ProfileSelector.Options = append(app.LeaderboardTab.ProfileSelector.Options, p.Title)
 		}
-		if len(app.ProfileSelector.Options) > 0 {
-			app.ProfileSelector.Enable()
+		if len(app.LeaderboardTab.ProfileSelector.Options) > 0 {
+			app.LeaderboardTab.ProfileSelector.Enable()
 		}
-		app.ProfileSelector.Refresh()
+		app.LeaderboardTab.ProfileSelector.Refresh()
 	})
 
 	searchEntry := widget.NewSelectEntry([]string{})
@@ -135,7 +135,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	}
 
 	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
-	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.GroupSelector, app.ProfileSelector)
+	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.LeaderboardTab.GroupSelector, app.LeaderboardTab.ProfileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
 
@@ -303,7 +303,7 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 		})
 	} else {
 		btn = widget.NewButton("Copy", func() {
-			if app.SelectedProfile == nil {
+			if app.LeaderboardTab.SelectedProfile == nil {
 				app.noProfileSelectedDialog()
 				return
 			}
@@ -391,9 +391,9 @@ func (app *Config) refreshProfileSelector() {
 	for _, pfg := range app.User.ProfileManager.Groups {
 		profileGroups = append(profileGroups, pfg.Name)
 	}
-	app.GroupSelector.Options = profileGroups
-	app.GroupSelector.ClearSelected()
-	app.GroupSelector.Refresh()
-	app.ProfileSelector.Refresh()
-	app.ProfileSelector.Disable()
+	app.LeaderboardTab.GroupSelector.Options = profileGroups
+	app.LeaderboardTab.GroupSelector.ClearSelected()
+	app.LeaderboardTab.GroupSelector.Refresh()
+	app.LeaderboardTab.ProfileSelector.Refresh()
+	app.LeaderboardTab.ProfileSelector.Disable()
 }

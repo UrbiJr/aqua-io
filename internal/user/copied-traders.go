@@ -33,6 +33,21 @@ type Position struct {
 	Leverage        int64   `json:"leverage"`
 }
 
+type Transaction struct {
+	ProfileID       int64   `json:"-"`
+	ProfileGroupID  int64   `json:"-"`
+	OrderID         string  `json:"orderId"`
+	TradeID         string  `json:"tradeId"`
+	Symbol          string  `json:"symbol"`
+	Currency        string  `json:"currency"`
+	Funding         float64 `json:"funding"`
+	TradePrice      float64 `json:"tradePrice"`
+	Qty             float64 `json:"qty"`
+	Size            float64 `json:"size"`
+	Side            string  `json:"side"`
+	TransactionTime int64   `json:"transactionTime"`
+}
+
 type CopiedTradersManager struct {
 	Traders []Trader
 }
