@@ -60,9 +60,9 @@ func (app *Config) MakeDesktopUI() {
 	app.AnalyticsTab = &AnalyticsTab{}
 	app.ProfilesTab = &ProfilesTab{}
 
+	profilesTabContent := app.profilesTab() // important: load profiles tab content before anyone else!
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.copiedTradersTab()
-	profilesTabContent := app.profilesTab()
 	leaderboardContent := app.leaderboardTab()
 
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)

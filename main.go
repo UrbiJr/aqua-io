@@ -5,6 +5,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -63,12 +64,13 @@ func main() {
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.NyxDarkTheme{})
 	nyx.App = fyneApp
-	nyx.Client = &http.Client{}
+
 	clientOptions := &client.ClientOptions{
 		Timeout:          30,
 		TlsClientProfile: tls_client.Chrome_110,
 	}
 	if utils.DebugEnabled {
+		// enable charles proxy for tls client
 		clientOptions.CharlesProxy = true
 	}
 	client, err := client.NewTLSClient(&captcha.SolverOptions{Provider: "2captcha"}, clientOptions)
@@ -76,6 +78,17 @@ func main() {
 		log.Panic(err)
 	}
 	nyx.TLSClient = client
+	if utils.DebugEnabled {
+		// enable charles proxy for http client
+		proxyStr := "http://127.0.0.1:8888"
+		proxyURL, _ := url.Parse(proxyStr)
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+		nyx.Client = &http.Client{Transport: transport}
+	} else {
+		nyx.Client = &http.Client{}
+	}
 
 	// create our loggers
 	nyx.Logger = new(utils.AppLogger)

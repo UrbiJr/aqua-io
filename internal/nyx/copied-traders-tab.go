@@ -1,15 +1,21 @@
 package nyx
 
 import (
+	"fmt"
+	"image/color"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"github.com/UrbiJr/nyx/internal/user"
 )
 
 type CopiedTradersTab struct {
 	*container.TabItem
+	CopiedPositionsSlice [][]any
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
@@ -23,13 +29,64 @@ func (app *Config) copiedTradersTab() *fyne.Container {
 
 func (app *Config) getCopiedTraders() *container.Split {
 	var data []string
+	var slice [][]any
+
 	for _, t := range app.User.CopiedTradersManager.Traders {
 		data = append(data, t.NickName)
 	}
 
-	icon := widget.NewIcon(nil)
-	label := widget.NewLabel("Select A Copied Trader From The List")
-	hbox := container.NewHBox(icon, label)
+	label := widget.NewLabel("Loading Your Positions...")
+	slice = append(slice, []any{"Symbol", "Leverage", "Mark Price", "Unrealised PNL", "Last Update"})
+	app.CopiedPositionsSlice = slice
+	positionsTable := widget.NewTable(
+		func() (int, int) {
+			return len(app.CopiedPositionsSlice), len(app.CopiedPositionsSlice[0])
+		},
+		func() fyne.CanvasObject {
+			lbl := widget.NewLabel("")
+			canvasText := canvas.NewText("", nil)
+			canvasText.Hide()
+			return container.NewMax(lbl, canvasText)
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			container := o.(*fyne.Container)
+			lbl := container.Objects[0].(*widget.Label)
+			canvasText := container.Objects[1].(*canvas.Text)
+
+			if i.Col == 3 && i.Row != 0 {
+				lbl.Hide()
+				canvasText.Hidden = false
+				pnl := app.CopiedPositionsSlice[i.Row][i.Col].(float64)
+				if pnl > 0 {
+					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
+				} else {
+					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
+				}
+				canvasText.Text = fmt.Sprintf("%.2f", pnl)
+			} else {
+				canvasText.Hide()
+				lbl.Hidden = false
+				lbl.SetText(
+					app.CopiedPositionsSlice[i.Row][i.Col].(string))
+			}
+		})
+	colWidths := []float32{200, 100, 100, 200, 100}
+	for i, w := range colWidths {
+		positionsTable.SetColumnWidth(i, w)
+	}
+	go func() {
+		app.CopiedPositionsSlice = app.getPositionsSlice()
+		label.SetText("Your Positions")
+		positionsTable.Refresh()
+	}()
+
+	border := container.NewBorder(
+		label,
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(positionsTable),
+	)
 
 	list := widget.NewList(
 		func() int {
@@ -55,31 +112,14 @@ func (app *Config) getCopiedTraders() *container.Split {
 		},
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		label.SetText("Loading Positions...")
-		t := app.User.CopiedTradersManager.Traders[id]
-		icon.SetResource(theme.AccountIcon())
-		go func() {
-			positions, err := app.fetchTraderPositions(t.EncryptedUid)
-			if err != nil {
-				app.Logger.Error(err)
-				return
-			}
-			positionsText := ""
-			for _, p := range positions {
-				positionsText = positionsText + p.Symbol + "\n"
-			}
-			label.SetText(positionsText)
-		}()
 	}
 	list.OnUnselected = func(id widget.ListItemID) {
-		label.SetText("Select A Copied Trader From The List")
-		icon.SetResource(nil)
 	}
 	for i := range data {
 		list.SetItemHeight(i, 50)
 	}
 
-	return container.NewHSplit(list, container.NewCenter(hbox))
+	return container.NewHSplit(list, border)
 }
 
 func (app *Config) getTraders() {
@@ -89,4 +129,38 @@ func (app *Config) getTraders() {
 		app.Quit()
 	}
 	app.User.CopiedTradersManager.Traders = traders
+}
+
+func (app *Config) getPositionsSlice() [][]any {
+	var slice [][]any
+	var allPositions []user.Position
+
+	slice = append(slice, []any{"Symbol", "Leverage", "Mark Price", "Unrealised PNL", "Last Update"})
+	for _, p := range app.User.Profiles {
+		//TODO: better check if bybit or binance api key, add binance api key code
+		if p.BybitApiKey != "" {
+			bybitPositions := app.getBybitPositions(p.BybitApiKey, p.BybitApiSecret, p.TestMode)
+			if bybitPositions != nil {
+				allPositions = append(allPositions, bybitPositions...)
+			}
+		}
+	}
+
+	for _, x := range allPositions {
+		var currentRow []any
+
+		currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
+
+		currentRow = append(currentRow, fmt.Sprintf("%d", x.Leverage))
+
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.MarkPrice))
+
+		currentRow = append(currentRow, x.Pnl)
+
+		currentRow = append(currentRow, fmt.Sprintf("%d", x.UpdateTimestamp))
+
+		slice = append(slice, currentRow)
+	}
+
+	return slice
 }
