@@ -5,38 +5,49 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 )
 
-type Logger struct {
+type AppLogger struct {
 	File   *os.File
 	logger *log.Logger
 }
 
-// And just go global.
-var defaultLogger *Logger
-
-func NewLogger() {
-	defaultLogger = new(Logger)
-	getFilePath, err := setLogFile()
-	if err != nil {
-		log.Panic(err)
+func (appLogger *AppLogger) SetupLogger() {
+	if DebugEnabled {
+		appLogger.File = os.Stdout
+	} else {
+		getFilePath, err := setLogFile()
+		if err != nil {
+			log.Panic(err)
+		}
+		appLogger.File = getFilePath
 	}
-	defaultLogger.File = getFilePath
-	defaultLogger.logger = log.New(getFilePath, "CACTUS-AIO: ", log.LstdFlags)
+	appLogger.logger = log.New(appLogger.File, "Copy.io: ", log.LstdFlags)
 }
 
-func QuitLogger() {
-	defaultLogger.File.Close()
+func (appLogger *AppLogger) QuitLogger() {
+	appLogger.File.Close()
 }
 
 func setLogFile() (*os.File, error) {
 
 	var LOG_FILE string
+	var path string
+
+	path, err := os.UserCacheDir()
+	if err != nil {
+		return nil, err
+	}
+
+	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Copy IO\logs
+	path = filepath.Join(path, "Copy IO", "logs")
 
 	// read all logs files
-	files, err := ioutil.ReadDir("tmp/logs/")
+	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return nil, err
 	}
@@ -51,13 +62,13 @@ func setLogFile() (*os.File, error) {
 		if (files[len(files)-1].Size() / 1000) >= 4000 {
 			// if yes, create a new log file
 			t := time.Now()
-			LOG_FILE = fmt.Sprintf("tmp/logs/%s.log", t.Format("02-01-2006 15h04m05s"))
+			LOG_FILE = fmt.Sprintf("%s/%s.log", path, t.Format("02-01-2006 15h04m05s"))
 		} else {
-			LOG_FILE = fmt.Sprintf("tmp/logs/%s", files[len(files)-1].Name())
+			LOG_FILE = fmt.Sprintf("%s/%s", path, files[len(files)-1].Name())
 		}
 	} else {
 		t := time.Now()
-		LOG_FILE = fmt.Sprintf("tmp/logs/%s.log", t.Format("02-01-2006 15h04m05s"))
+		LOG_FILE = fmt.Sprintf("%s/%s.log", path, t.Format("02-01-2006 15h04m05s"))
 	}
 
 	// open log file
@@ -69,34 +80,40 @@ func setLogFile() (*os.File, error) {
 	return logFile, nil
 }
 
-func Info(v ...any) {
-	defaultLogger.logger.Println("INFO: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Debug(v ...any) {
+	if DebugEnabled {
+		appLogger.logger.Println("DEBUG: " + fmt.Sprint(v...))
+	}
 }
 
-func Infof(format string, v ...any) {
-	defaultLogger.logger.Printf("INFO: "+format, v...)
+func (appLogger *AppLogger) Info(v ...any) {
+	appLogger.logger.Println("INFO: " + fmt.Sprint(v...))
 }
 
-func Warning(v ...any) {
-	defaultLogger.logger.Println("WARNING: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Infof(format string, v ...any) {
+	appLogger.logger.Printf("INFO: "+format, v...)
 }
 
-func Warningf(format string, v ...any) {
-	defaultLogger.logger.Printf("WARNING: "+format, v...)
+func (appLogger *AppLogger) Warning(v ...any) {
+	appLogger.logger.Println("WARNING: " + fmt.Sprint(v...))
 }
 
-func Error(v ...any) {
-	defaultLogger.logger.Println("ERROR: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Warningf(format string, v ...any) {
+	appLogger.logger.Printf("WARNING: "+format, v...)
 }
 
-func Errorf(format string, v ...any) {
-	defaultLogger.logger.Printf("ERROR: "+format, v...)
+func (appLogger *AppLogger) Error(v ...any) {
+	appLogger.logger.Println("ERROR: " + fmt.Sprint(v...))
 }
 
-func Fatal(v ...any) {
-	defaultLogger.logger.Println("FATAL: " + fmt.Sprint(v...))
+func (appLogger *AppLogger) Errorf(format string, v ...any) {
+	appLogger.logger.Printf("ERROR: "+format, v...)
 }
 
-func Fatalf(format string, v ...any) {
-	defaultLogger.logger.Printf("FATAL: "+format, v...)
+func (appLogger *AppLogger) Fatal(v ...any) {
+	appLogger.logger.Println("FATAL: " + fmt.Sprint(v...))
+}
+
+func (appLogger *AppLogger) Fatalf(format string, v ...any) {
+	appLogger.logger.Printf("FATAL: "+format, v...)
 }

@@ -2,3 +2,6 @@
 .vscode/
 tmp/
 *.json
+*-release.jpg
+.db
+*.jpg

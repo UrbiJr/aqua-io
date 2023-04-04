@@ -6,7 +6,8 @@ type User struct {
 	Username string
 	UID      string
 	Settings *Settings
-	Profiles []Profile
+	*CopiedTradersManager
+	*ProfileManager
 }
 
 // NewUser creates an instance of the User class

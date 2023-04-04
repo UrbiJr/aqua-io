@@ -1,66 +1,25 @@
 package user
 
-import (
-	"encoding/json"
-	"io/ioutil"
-	"os"
-
-	"github.com/UrbiJr/go-cactus/internal/sites"
-)
-
 type SiteSettings struct {
-	Captcha string `json:"captcha"`
-	Delay   int    `json:"delay"`
+	Captcha string
+	Delay   int
 }
 
 type Settings struct {
-	LicenseKey    string                  `json:"license_key"`
-	Webhook       string                  `json:"webhook"`
-	Delay         int                     `json:"delay"`
-	APIKeys       map[string]string       `json:"api_keys"`
-	SitesSettings map[string]SiteSettings `json:"site_settings"`
+	LicenseKey    string
+	Webhook       string
+	Delay         int
+	APIKeys       map[string]string
+	SitesSettings map[string]SiteSettings
 }
 
-// ReadSettings reads settings.json and returns read data as Settings
+// ReadSettings reads settings from the DB and returns read data as Settings
 func ReadSettings() (*Settings, error) {
 
-	jsonFile, err := os.Open("settings.json")
-	if err != nil {
-		// file does not exist
-		settings := Settings{
-			APIKeys: map[string]string{},
-			SitesSettings: map[string]SiteSettings{
-				sites.Kickz.String(): {},
-			},
-		}
-		settings.APIKeys["2captcha"] = ""
-		settings.APIKeys["capmonster"] = ""
-		settings.APIKeys["anticaptcha"] = ""
-		file, _ := json.MarshalIndent(settings, "", "   ")
-		_ = ioutil.WriteFile("settings.json", file, 0644)
-		return &settings, nil
-	}
-
-	defer jsonFile.Close()
-
-	// read our opened jsonFile as a byte array.
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	settings := Settings{
-		APIKeys:       map[string]string{},
-		SitesSettings: map[string]SiteSettings{},
-	}
-	err = json.Unmarshal(byteValue, &settings)
-	if err != nil {
-		return &Settings{}, err
-	}
-
-	return &settings, nil
-
+	return &Settings{}, nil
 }
 
-// WriteSettings writes settings to settings.json
+// WriteSettings writes settings to the DB
 func WriteSettings(settings *Settings) {
-	file, _ := json.MarshalIndent(settings, "", "   ")
-	_ = ioutil.WriteFile("settings.json", file, 0644)
+
 }
