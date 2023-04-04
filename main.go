@@ -143,6 +143,8 @@ func main() {
 
 	win.SetMainMenu(app.MakeMenu())
 
+	win.SetIcon(resources.ResourceInternalResourcesProvisionalLogoJpg)
+
 	// show and run the application (blocking function)
 	win.ShowAndRun()
 }

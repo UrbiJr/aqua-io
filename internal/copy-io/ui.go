@@ -152,7 +152,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Documentation", func() {
-			u, _ := url.Parse("https://docs.itrade.io")
+			u, _ := url.Parse("https://docs.copy-trading.io")
 			_ = app.App.OpenURL(u)
 		}))
 
