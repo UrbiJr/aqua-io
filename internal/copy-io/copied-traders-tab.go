@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/copy-io/internal/user"
 )
 
 type CopiedTradersTab struct {

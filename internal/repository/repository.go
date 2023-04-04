@@ -3,7 +3,7 @@ package repository
 import (
 	"errors"
 
-	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/copy-io/internal/user"
 )
 
 var (

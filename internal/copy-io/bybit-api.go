@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/copy-io/internal/user"
 )
 
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {

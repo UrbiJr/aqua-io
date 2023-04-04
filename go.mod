@@ -1,4 +1,4 @@
-module github.com/UrbiJr/nyx
+module github.com/UrbiJr/copy-io
 
 go 1.19
 

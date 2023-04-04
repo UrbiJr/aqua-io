@@ -13,8 +13,8 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/nyx/internal/user"
-	"github.com/UrbiJr/nyx/internal/utils"
+	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/copy-io/internal/utils"
 )
 
 type ProfilesTab struct {

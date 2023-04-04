@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/nyx/internal/resources"
+	"github.com/UrbiJr/copy-io/internal/resources"
 )
 
 // UI contains fyne elements

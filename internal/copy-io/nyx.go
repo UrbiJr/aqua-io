@@ -13,11 +13,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/nyx/internal/client"
-	"github.com/UrbiJr/nyx/internal/repository"
-	"github.com/UrbiJr/nyx/internal/sites"
-	"github.com/UrbiJr/nyx/internal/user"
-	"github.com/UrbiJr/nyx/internal/utils"
+	"github.com/UrbiJr/copy-io/internal/client"
+	"github.com/UrbiJr/copy-io/internal/repository"
+	"github.com/UrbiJr/copy-io/internal/sites"
+	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/copy-io/internal/utils"
 )
 
 // Config is the container of the main app, it contains the main attributes
