@@ -61,3 +61,11 @@ func (ctm *CopiedTradersManager) GetTraderByUid(encryptedUid string) *Trader {
 
 	return nil
 }
+
+func (ctm *CopiedTradersManager) RemoveTraderByUid(encryptedUid string) {
+	for idx, t := range ctm.Traders {
+		if t.EncryptedUid == encryptedUid {
+			ctm.Traders = append(ctm.Traders[:idx], ctm.Traders[idx+1:]...)
+		}
+	}
+}

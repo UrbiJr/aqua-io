@@ -116,23 +116,45 @@ func (app *Config) downloadFile(URL, fileName string) error {
 	return nil
 }
 
-func (app *Config) copyTrader(trader user.Trader) error {
+func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
+	var createdOrders []string
+	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
+	if err != nil {
+		return err
+	}
 
-	//TODO: call the actual ByBit APIs
-
-	/*
-		positions, err := app.fetchTraderPositions(trader.EncryptedUid)
-		if err != nil {
-			return err
+	// create order for each trader's position
+	for _, p := range positions {
+		app.Logger.Debug(fmt.Sprintf("creating order for symbol %s for profile %s", p.Symbol, profile.Title))
+		orderId, err := app.createOrder(profile, p.Symbol, "Buy", "Market", "0.1", p.EntryPrice)
+		if err == nil {
+			createdOrders = append(createdOrders, orderId)
+			// TODO: send notification about created order
 		}
-	*/
+	}
 
-	_, err := app.DB.InsertTrader(trader)
+	_, err = app.DB.InsertTrader(trader)
 	if err != nil {
 		app.Logger.Error(err)
 	} else {
 		app.User.CopiedTradersManager.Traders = append(app.User.CopiedTradersManager.Traders, trader)
 	}
 
+	// refresh affected widgets
+	app.CopiedTradersList.Refresh()
+
 	return nil
+}
+
+func (app *Config) stopCopyingTrader(trader user.Trader) {
+	err := app.DB.DeleteTrader(trader.EncryptedUid)
+	if err != nil {
+		app.Logger.Error(err)
+	}
+
+	app.User.CopiedTradersManager.RemoveTraderByUid(trader.EncryptedUid)
+
+	// refresh affected widgets
+	app.CopiedTradersList.Refresh()
+	app.RefreshLeaderboardWithoutFetch()
 }

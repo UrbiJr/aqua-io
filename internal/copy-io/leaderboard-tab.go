@@ -269,7 +269,7 @@ func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 		fmt.Sprintf("Copy %s", t.NickName),
 		func(b bool) {
 			if b {
-				app.copyTrader(t)
+				app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
 			}
 		},
 		app.MainWindow)
@@ -284,6 +284,7 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 		fmt.Sprintf("Stop Copying %s", t.NickName),
 		func(b bool) {
 			if b {
+				app.stopCopyingTrader(t)
 			}
 		},
 		app.MainWindow)
@@ -394,6 +395,7 @@ func (app *Config) refreshProfileSelector() {
 	app.LeaderboardTab.GroupSelector.Options = profileGroups
 	app.LeaderboardTab.GroupSelector.ClearSelected()
 	app.LeaderboardTab.GroupSelector.Refresh()
+	app.LeaderboardTab.ProfileSelector.ClearSelected()
 	app.LeaderboardTab.ProfileSelector.Refresh()
 	app.LeaderboardTab.ProfileSelector.Disable()
 }

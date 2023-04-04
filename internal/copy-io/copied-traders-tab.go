@@ -19,6 +19,7 @@ type CopiedTradersTab struct {
 	ProfileSelector   *widget.Select
 	GroupSelector     *widget.Select
 	SelectedProfile   *user.Profile
+	CopiedTradersList *widget.List
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
@@ -31,12 +32,7 @@ func (app *Config) copiedTradersTab() *fyne.Container {
 }
 
 func (app *Config) getCopiedTraders() *container.Split {
-	var data []string
 	var slice [][]any
-
-	for _, t := range app.User.CopiedTradersManager.Traders {
-		data = append(data, t.NickName)
-	}
 
 	slice = append(slice, []any{"Profile", "Symbol", "Currency", "Funding", "Trade Price", "Qty/Size", "Side", "Transaction Time"})
 	app.TransactionsSlice = slice
@@ -122,9 +118,9 @@ func (app *Config) getCopiedTraders() *container.Split {
 		container.NewVScroll(transactionsTable),
 	)
 
-	list := widget.NewList(
+	app.CopiedTradersList = widget.NewList(
 		func() int {
-			return len(data)
+			return len(app.User.CopiedTradersManager.Traders)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
@@ -138,22 +134,32 @@ func (app *Config) getCopiedTraders() *container.Split {
 				}))
 				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 					dialog.ShowConfirm("Stop copying?", "Confirming will delete all current positions copied from this trader.", func(deleted bool) {
-
+						app.stopCopyingTrader(t)
 					}, app.MainWindow)
 				}))
 			}
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(data[id] + "\n" + t.EncryptedUid)
+			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(t.NickName + "\n" + t.EncryptedUid)
 		},
 	)
-	list.OnSelected = func(id widget.ListItemID) {
+	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
 	}
-	list.OnUnselected = func(id widget.ListItemID) {
+	app.CopiedTradersList.OnUnselected = func(id widget.ListItemID) {
 	}
-	for i := range data {
-		list.SetItemHeight(i, 50)
+	for i := range app.User.CopiedTradersManager.Traders {
+		app.CopiedTradersList.SetItemHeight(i, 50)
 	}
 
-	return container.NewHSplit(list, border)
+	return container.NewHSplit(container.NewBorder(
+		widget.NewLabelWithStyle("Copied Traders", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		nil,
+		nil,
+		nil,
+		app.CopiedTradersList,
+	), container.NewBorder(widget.NewLabelWithStyle("Transactions Log", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		nil,
+		nil,
+		nil,
+		border))
 }
 
 func (app *Config) getTraders() {
