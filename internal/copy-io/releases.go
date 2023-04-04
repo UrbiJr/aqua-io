@@ -1,4 +1,4 @@
-package nyx
+package copy_io
 
 import (
 	"net/url"

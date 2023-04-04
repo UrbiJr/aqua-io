@@ -1,15 +1,15 @@
 # if on Windows
 ifeq ($(OS),Windows_NT)
-BINARY_NAME=NyxAIO.exe
+BINARY_NAME=Copy IO.exe
 else
 # we're on a Mac
-BINARY_NAME=NyxAIO.app
+BINARY_NAME=Copy IO.app
 endif
-APP_NAME=NyxAIO
+APP_NAME=Copy.io
 VERSION=1.0.1
 BUILD_NO=1
 
-## build: build binary and package app
+## build: build binary and package copy_io
 build:
 ifeq ($(OS),Windows_NT)
 	@del ${BINARY_NAME}

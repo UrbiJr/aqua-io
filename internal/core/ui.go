@@ -1,4 +1,4 @@
-package nyx
+package core
 
 import (
 	"fmt"
@@ -43,13 +43,13 @@ func (app *Config) MakeMobileUI() {
 func (app *Config) MakeDesktopUI() {
 
 	greetings := []string{
-		"how can Nyx assist you today? :-)",
-		"how are you going to use Nyx today? :-)",
-		"ready to have some fun with Nyx?",
-		"Nyx is at your service :nyx-salute:",
+		"how can Copy.io assist you today? :-)",
+		"how are you going to use Copy.io today? :-)",
+		"ready to have some fun with Copy.io?",
+		"Copy.io is at your service :salute:",
 		"it's been a while.",
 		"time to make the checkout feed go brrr.",
-		"everyday is a perfect day to run Nyx!",
+		"everyday is a perfect day to run Copy.io!",
 	}
 	msg := fmt.Sprintf("Hello %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
 
@@ -124,7 +124,7 @@ func (app *Config) refreshGlobalContent() {
 func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	setDarkThemeItem := fyne.NewMenuItem("Dark", func() {
-		app.App.Settings().SetTheme(&resources.NyxDarkTheme{})
+		app.App.Settings().SetTheme(&resources.DarkTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()
 		app.RefreshLeaderboardWithoutFetch()
@@ -134,7 +134,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.refreshGlobalContent()
 	})
 	setLightThemeItem := fyne.NewMenuItem("Light", func() {
-		app.App.Settings().SetTheme(&resources.NyxLightTheme{})
+		app.App.Settings().SetTheme(&resources.LightTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()
 		app.RefreshLeaderboardWithoutFetch()

@@ -7,8 +7,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
-type NyxDarkTheme struct{}
-type NyxLightTheme struct{}
+type DarkTheme struct{}
+type LightTheme struct{}
 
 const (
 	IconNameCreditCard      fyne.ThemeIconName = "creditCard"
@@ -19,10 +19,10 @@ const (
 
 // It is a good idea to assert that we implement an interface
 // so that compile errors are closer to the defining type.
-var _ fyne.Theme = (*NyxDarkTheme)(nil)
-var _ fyne.Theme = (*NyxLightTheme)(nil)
+var _ fyne.Theme = (*DarkTheme)(nil)
+var _ fyne.Theme = (*LightTheme)(nil)
 
-func (m NyxDarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+func (m DarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
 	case theme.ColorNameBackground, theme.ColorNameMenuBackground, theme.ColorNameOverlayBackground:
 		// rgb(13, 17, 23)
@@ -50,7 +50,7 @@ func (m NyxDarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Co
 	return theme.DefaultTheme().Color(n, v)
 }
 
-func (m NyxDarkTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
+func (m DarkTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 	switch n {
 	case IconNameWifi:
 		return resourceWifiWhiteSvg
@@ -64,7 +64,7 @@ func (m NyxDarkTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(n)
 }
 
-func (m NyxDarkTheme) Font(style fyne.TextStyle) fyne.Resource {
+func (m DarkTheme) Font(style fyne.TextStyle) fyne.Resource {
 	if style.Monospace {
 		return theme.DefaultTheme().Font(style)
 	}
@@ -83,11 +83,11 @@ func (m NyxDarkTheme) Font(style fyne.TextStyle) fyne.Resource {
 	return theme.DefaultTheme().Font(style)
 }
 
-func (m NyxDarkTheme) Size(name fyne.ThemeSizeName) float32 {
+func (m DarkTheme) Size(name fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(name)
 }
 
-func (m NyxLightTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+func (m LightTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
 	switch n {
 	case theme.ColorNameBackground, theme.ColorNameMenuBackground, theme.ColorNameOverlayBackground:
 		// rgb(13, 17, 23)
@@ -115,7 +115,7 @@ func (m NyxLightTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.C
 	return theme.DefaultTheme().Color(n, v)
 }
 
-func (m NyxLightTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
+func (m LightTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 	switch n {
 	case IconNameWifi:
 		return resourceWifiSvg
@@ -129,7 +129,7 @@ func (m NyxLightTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
 	return theme.DefaultTheme().Icon(n)
 }
 
-func (m NyxLightTheme) Font(style fyne.TextStyle) fyne.Resource {
+func (m LightTheme) Font(style fyne.TextStyle) fyne.Resource {
 	if style.Monospace {
 		return theme.DefaultTheme().Font(style)
 	}
@@ -148,6 +148,6 @@ func (m NyxLightTheme) Font(style fyne.TextStyle) fyne.Resource {
 	return theme.DefaultTheme().Font(style)
 }
 
-func (m NyxLightTheme) Size(name fyne.ThemeSizeName) float32 {
+func (m LightTheme) Size(name fyne.ThemeSizeName) float32 {
 	return theme.DefaultTheme().Size(name)
 }

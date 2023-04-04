@@ -1,1 +1,1 @@
-Golang backend of Nyx AIO.
+Copy-trading app with GUI 100% fueled by golang.

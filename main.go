@@ -12,13 +12,15 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
+	fyne_app "fyne.io/fyne/v2/app"
+
 	"github.com/UrbiJr/nyx/internal/captcha"
 	"github.com/UrbiJr/nyx/internal/client"
-	"github.com/UrbiJr/nyx/internal/nyx"
+	copy_io "github.com/UrbiJr/nyx/internal/copy-io"
 	"github.com/UrbiJr/nyx/internal/resources"
 	"github.com/UrbiJr/nyx/internal/user"
 	"github.com/UrbiJr/nyx/internal/utils"
+
 	tls_client "github.com/bogdanfinn/tls-client"
 
 	_ "github.com/glebarez/go-sqlite"
@@ -40,9 +42,9 @@ func init() {
 		log.Println(err)
 		return
 	}
-	// Crea il percorso della sottocartella "NyxAIO" all'interno di "AppData/Local".
-	// windows: C:\Users\<user>\AppData\Local\Roaming\NyxAIO\logs
-	appDataLogsDir = filepath.Join(appDataDir, "NyxAIO", "logs")
+	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Roaming\Copy IO\logs
+	appDataLogsDir = filepath.Join(appDataDir, "Copy IO", "logs")
 
 	err = os.MkdirAll(appDataLogsDir, os.ModePerm)
 	if err != nil {
@@ -57,13 +59,13 @@ func main() {
 
 	//utils.Info("Booting up...")
 
-	var nyx nyx.Config
+	var app copy_io.Config
 
 	// create a fyne application
-	fyneApp := app.NewWithID("com.nyx-aio.nyxapp.preferences")
+	fyneApp := fyne_app.NewWithID("io.copy-trading.copy-io.preferences")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources.NyxDarkTheme{})
-	nyx.App = fyneApp
+	fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+	app.App = fyneApp
 
 	clientOptions := &client.ClientOptions{
 		Timeout:          30,
@@ -77,7 +79,7 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	nyx.TLSClient = client
+	app.TLSClient = client
 	if utils.DebugEnabled {
 		// enable charles proxy for http client
 		proxyStr := "http://127.0.0.1:8888"
@@ -85,30 +87,30 @@ func main() {
 		transport := &http.Transport{
 			Proxy: http.ProxyURL(proxyURL),
 		}
-		nyx.Client = &http.Client{Transport: transport}
+		app.Client = &http.Client{Transport: transport}
 	} else {
-		nyx.Client = &http.Client{}
+		app.Client = &http.Client{}
 	}
 
 	// create our loggers
-	nyx.Logger = new(utils.AppLogger)
-	nyx.Logger.SetupLogger()
-	nyx.Logger.Debug("debug logging enabled")
+	app.Logger = new(utils.AppLogger)
+	app.Logger.SetupLogger()
+	app.Logger.Debug("debug logging enabled")
 
 	// open a connection to the database
-	sqlDB, err := nyx.ConnectSQL()
+	sqlDB, err := app.ConnectSQL()
 	if err != nil {
 		log.Panic(err)
 	}
 
 	// create a database repository
-	nyx.SetupDB(sqlDB)
+	app.SetupDB(sqlDB)
 
 	// create the login page
 
 	// get logged user
-	nyx.User = &user.User{
-		Email:                "urbijr@nyx-robotics.eu",
+	app.User = &user.User{
+		Email:                "urbijr@app-robotics.eu",
 		Username:             "urbijr",
 		Settings:             &user.Settings{},
 		CopiedTradersManager: &user.CopiedTradersManager{},
@@ -116,8 +118,8 @@ func main() {
 	}
 
 	// create and size a fyne window
-	win := fyneApp.NewWindow("Nyx AIO")
-	nyx.MainWindow = win
+	win := fyneApp.NewWindow("Copy.io")
+	app.MainWindow = win
 	os := runtime.GOOS
 	switch os {
 	case "windows":
@@ -125,21 +127,21 @@ func main() {
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		nyx.MakeDesktopUI()
+		app.MakeDesktopUI()
 	case "darwin":
 		win.Resize(fyne.NewSize(1390, 848))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		nyx.MakeDesktopUI()
+		app.MakeDesktopUI()
 	default:
 		win.Resize(fyne.NewSize(415, 890))
 		win.SetFixedSize(true)
 		win.SetMaster()
-		nyx.MakeMobileUI()
+		app.MakeMobileUI()
 	}
 
-	win.SetMainMenu(nyx.MakeMenu())
+	win.SetMainMenu(app.MakeMenu())
 
 	// show and run the application (blocking function)
 	win.ShowAndRun()

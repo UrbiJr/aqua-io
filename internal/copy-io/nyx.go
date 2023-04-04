@@ -1,4 +1,4 @@
-package nyx
+package copy_io
 
 import (
 	"database/sql"
@@ -39,17 +39,12 @@ type Config struct {
 	*client.TLSClient
 }
 
-// NewNyx returns a new instance of the app
-func NewNyx() *Config {
-	sitelist := []*sites.SupportedSite{
-		{Name: sites.Kickz, Category: sites.SneakerSite, CSVFields: []string{"PID", "MIN SIZE", "MAX SIZE", "PROFILE", "MODE", "REGION"}},
-	}
+// NewApp returns a new instance of the app
+func NewApp() *Config {
 
-	nyx := &Config{
-		SiteList: sitelist,
-	}
+	config := &Config{}
 
-	return nyx
+	return config
 }
 
 // Quit exits the app gracefully

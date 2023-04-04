@@ -1,4 +1,4 @@
-package nyx
+package copy_io
 
 import (
 	"fyne.io/fyne/v2/container"

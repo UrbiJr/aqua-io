@@ -25,7 +25,7 @@ func (appLogger *AppLogger) SetupLogger() {
 		}
 		appLogger.File = getFilePath
 	}
-	appLogger.logger = log.New(appLogger.File, "NyxAIO: ", log.LstdFlags)
+	appLogger.logger = log.New(appLogger.File, "Copy.io: ", log.LstdFlags)
 }
 
 func (appLogger *AppLogger) QuitLogger() {
@@ -42,9 +42,9 @@ func setLogFile() (*os.File, error) {
 		return nil, err
 	}
 
-	// Crea il percorso della sottocartella "NyxAIO" all'interno di "AppData/Local".
-	// windows: C:\Users\<user>\AppData\Local\NyxAIO\logs
-	path = filepath.Join(path, "NyxAIO", "logs")
+	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Copy IO\logs
+	path = filepath.Join(path, "Copy IO", "logs")
 
 	// read all logs files
 	files, err := ioutil.ReadDir(path)
