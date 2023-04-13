@@ -25,7 +25,7 @@ func (appLogger *AppLogger) SetupLogger() {
 		}
 		appLogger.File = getFilePath
 	}
-	appLogger.logger = log.New(appLogger.File, "Copy.io: ", log.LstdFlags)
+	appLogger.logger = log.New(appLogger.File, "Aqua.io: ", log.LstdFlags)
 }
 
 func (appLogger *AppLogger) QuitLogger() {
@@ -42,9 +42,9 @@ func setLogFile() (*os.File, error) {
 		return nil, err
 	}
 
-	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
-	// windows: C:\Users\<user>\AppData\Local\Copy IO\logs
-	path = filepath.Join(path, "Copy IO", "logs")
+	// Crea il percorso della sottocartella "Aqua IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Aqua IO\logs
+	path = filepath.Join(path, "Aqua IO", "logs")
 
 	// read all logs files
 	files, err := ioutil.ReadDir(path)

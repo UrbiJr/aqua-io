@@ -43,13 +43,13 @@ func (app *Config) MakeMobileUI() {
 func (app *Config) MakeDesktopUI() {
 
 	greetings := []string{
-		"how can Copy.io assist you today? :-)",
-		"how are you going to use Copy.io today? :-)",
-		"ready to have some fun with Copy.io?",
-		"Copy.io is at your service :salute:",
+		"how can Aqua.io assist you today? :-)",
+		"how are you going to use Aqua.io today? :-)",
+		"ready to have some fun with Aqua.io?",
+		"Aqua.io is at your service :salute:",
 		"it's been a while.",
 		"time to make the checkout feed go brrr.",
-		"everyday is a perfect day to run Copy.io!",
+		"everyday is a perfect day to run Aqua.io!",
 	}
 	msg := fmt.Sprintf("Hello %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
 
@@ -86,10 +86,10 @@ func (app *Config) MakeDesktopUI() {
 	app.GlobalContent = container.NewWithoutLayout(tabs, app.TopRightToolbar)
 
 	// resize and position widgets
-	tabs.Resize(fyne.NewSize(1390, 848))
+	tabs.Resize(fyne.NewSize(1280, 720))
 	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
-	app.TopRightToolbar.Move(fyne.NewPos(1290, 0))
+	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
 
 	app.MainWindow.SetContent(app.GlobalContent)
 

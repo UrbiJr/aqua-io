@@ -93,16 +93,16 @@ func (app *Config) profilesTab() *fyne.Container {
 
 	// resize and move profilesTab elements
 	leftContainer.Move(fyne.NewPos(10, 10))
-	leftContainer.Resize(fyne.NewSize(280, 728))
+	leftContainer.Resize(fyne.NewSize(280, 600))
 
 	vScroll.Move(fyne.NewPos(300, 90))
-	vScroll.Resize(fyne.NewSize(1070, 608))
+	vScroll.Resize(fyne.NewSize(970, 500))
 
 	app.Top.Move(fyne.NewPos(300, 10))
-	app.Top.Resize(fyne.NewSize(1070, 64))
+	app.Top.Resize(fyne.NewSize(900, 64))
 
-	app.Bottom.Move(fyne.NewPos(285, 720))
-	app.Bottom.Resize(fyne.NewSize(1070, 50))
+	app.Bottom.Move(fyne.NewPos(300, 600))
+	app.Bottom.Resize(fyne.NewSize(900, 50))
 
 	return profilesTabContainer
 }

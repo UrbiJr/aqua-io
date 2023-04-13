@@ -42,9 +42,9 @@ func init() {
 		log.Println(err)
 		return
 	}
-	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
-	// windows: C:\Users\<user>\AppData\Local\Roaming\Copy IO\logs
-	appDataLogsDir = filepath.Join(appDataDir, "Copy IO", "logs")
+	// Crea il percorso della sottocartella "Aqua IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Roaming\Aqua IO\logs
+	appDataLogsDir = filepath.Join(appDataDir, "Aqua IO", "logs")
 
 	err = os.MkdirAll(appDataLogsDir, os.ModePerm)
 	if err != nil {
@@ -62,7 +62,7 @@ func main() {
 	var app copy_io.Config
 
 	// create a fyne application
-	fyneApp := fyne_app.NewWithID("io.copy-trading.copy-io.preferences")
+	fyneApp := fyne_app.NewWithID("io.aqua-trading.preferences")
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.DarkTheme{})
 	app.App = fyneApp
@@ -118,18 +118,18 @@ func main() {
 	}
 
 	// create and size a fyne window
-	win := fyneApp.NewWindow("Copy.io")
+	win := fyneApp.NewWindow("Aqua.io")
 	app.MainWindow = win
 	os := runtime.GOOS
 	switch os {
 	case "windows":
-		win.Resize(fyne.NewSize(1390, 848))
+		win.Resize(fyne.NewSize(1280, 720))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
 		app.MakeDesktopUI()
 	case "darwin":
-		win.Resize(fyne.NewSize(1390, 848))
+		win.Resize(fyne.NewSize(1280, 720))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()

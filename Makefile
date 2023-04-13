@@ -1,11 +1,11 @@
 # if on Windows
 ifeq ($(OS),Windows_NT)
-BINARY_NAME=Copy IO.exe
+BINARY_NAME=Aqua IO.exe
 else
 # we're on a Mac
-BINARY_NAME=Copy IO.app
+BINARY_NAME=Aqua IO.app
 endif
-APP_NAME=Copy.io
+APP_NAME=Aqua.io
 VERSION=1.0.1
 BUILD_NO=1
 
