@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/UrbiJr/anticaptcha"
-	"github.com/UrbiJr/nyx/internal/captcha/base"
+	"github.com/UrbiJr/copy-io/internal/captcha/base"
 )
 
 var manager = CapMonsterManager{}

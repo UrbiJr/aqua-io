@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/UrbiJr/nyx/internal/user"
+	"github.com/UrbiJr/copy-io/internal/user"
 )
 
 func TestSQLiteRepository_Migrate(t *testing.T) {

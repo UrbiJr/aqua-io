@@ -14,12 +14,12 @@ import (
 	"fyne.io/fyne/v2"
 	fyne_app "fyne.io/fyne/v2/app"
 
-	"github.com/UrbiJr/nyx/internal/captcha"
-	"github.com/UrbiJr/nyx/internal/client"
-	copy_io "github.com/UrbiJr/nyx/internal/copy-io"
-	"github.com/UrbiJr/nyx/internal/resources"
-	"github.com/UrbiJr/nyx/internal/user"
-	"github.com/UrbiJr/nyx/internal/utils"
+	"github.com/UrbiJr/copy-io/internal/captcha"
+	"github.com/UrbiJr/copy-io/internal/client"
+	copy_io "github.com/UrbiJr/copy-io/internal/copy-io"
+	"github.com/UrbiJr/copy-io/internal/resources"
+	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/copy-io/internal/utils"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 

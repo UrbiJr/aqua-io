@@ -9,8 +9,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/UrbiJr/nyx/internal/resources"
-	"github.com/UrbiJr/nyx/internal/utils"
+	"github.com/UrbiJr/copy-io/internal/resources"
+	"github.com/UrbiJr/copy-io/internal/utils"
 	chart "github.com/wcharczuk/go-chart/v2"
 )
 

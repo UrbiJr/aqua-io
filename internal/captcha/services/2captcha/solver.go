@@ -5,8 +5,8 @@ import (
 
 	api2captcha "github.com/2captcha/2captcha-go"
 	"github.com/UrbiJr/anticaptcha"
-	"github.com/UrbiJr/nyx/internal/captcha/base"
-	"github.com/UrbiJr/nyx/internal/captcha/services/2captcha/task"
+	"github.com/UrbiJr/copy-io/internal/captcha/base"
+	"github.com/UrbiJr/copy-io/internal/captcha/services/2captcha/task"
 )
 
 // CaptchaSolver client used to perform 2Captcha tasks.
