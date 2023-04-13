@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/user"
 	fhttp "github.com/bogdanfinn/fhttp"
 )
 

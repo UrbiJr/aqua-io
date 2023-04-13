@@ -3,10 +3,10 @@ package captcha
 import (
 	"fmt"
 
-	"github.com/UrbiJr/copy-io/internal/captcha/base"
-	twocaptcha "github.com/UrbiJr/copy-io/internal/captcha/services/2captcha"
-	"github.com/UrbiJr/copy-io/internal/captcha/services/anticaptcha"
-	"github.com/UrbiJr/copy-io/internal/captcha/services/capmonster"
+	"github.com/UrbiJr/aqua-io/internal/captcha/base"
+	twocaptcha "github.com/UrbiJr/aqua-io/internal/captcha/services/2captcha"
+	"github.com/UrbiJr/aqua-io/internal/captcha/services/anticaptcha"
+	"github.com/UrbiJr/aqua-io/internal/captcha/services/capmonster"
 )
 
 type (

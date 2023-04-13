@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/user"
 )
 
 func TestSQLiteRepository_Migrate(t *testing.T) {

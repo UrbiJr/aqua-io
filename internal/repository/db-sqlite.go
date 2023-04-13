@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/user"
 )
 
 type SQLiteRepository struct {

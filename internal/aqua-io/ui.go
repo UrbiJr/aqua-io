@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/copy-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/resources"
 )
 
 // UI contains fyne elements
@@ -152,7 +152,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	helpMenu := fyne.NewMenu("Help",
 		fyne.NewMenuItem("Documentation", func() {
-			u, _ := url.Parse("https://docs.copy-trading.io")
+			u, _ := url.Parse("https://docs.aqua-trading.io")
 			_ = app.App.OpenURL(u)
 		}))
 

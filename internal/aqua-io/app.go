@@ -13,11 +13,11 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/copy-io/internal/client"
-	"github.com/UrbiJr/copy-io/internal/repository"
-	"github.com/UrbiJr/copy-io/internal/sites"
-	"github.com/UrbiJr/copy-io/internal/user"
-	"github.com/UrbiJr/copy-io/internal/utils"
+	"github.com/UrbiJr/aqua-io/internal/client"
+	"github.com/UrbiJr/aqua-io/internal/repository"
+	"github.com/UrbiJr/aqua-io/internal/sites"
+	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
 // Config is the container of the main app, it contains the main attributes
@@ -117,7 +117,6 @@ func (app *Config) downloadFile(URL, fileName string) error {
 }
 
 func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
-	var createdOrders []string
 	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
 	if err != nil {
 		return err
@@ -126,10 +125,14 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	// create order for each trader's position
 	for _, p := range positions {
 		app.Logger.Debug(fmt.Sprintf("creating order for symbol %s for profile %s", p.Symbol, profile.Title))
-		orderId, err := app.createOrder(profile, p.Symbol, "Buy", "Market", "0.1", p.EntryPrice)
+		orderId, err := app.createOrder(profile, p.Symbol, "Buy", "Market", p.Amount, p.MarkPrice)
 		if err == nil {
-			createdOrders = append(createdOrders, orderId)
-			// TODO: send notification about created order
+			app.App.SendNotification(&fyne.Notification{
+				Title:   "Order create success!",
+				Content: fmt.Sprintf("Create order with ID %s", orderId),
+			})
+		} else {
+			app.Logger.Error(err.Error())
 		}
 	}
 
@@ -142,6 +145,8 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
+	app.RefreshLeaderboardWithoutFetch()
+	app.refreshOrdersTable()
 
 	return nil
 }

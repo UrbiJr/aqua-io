@@ -1,4 +1,4 @@
-module github.com/UrbiJr/copy-io
+module github.com/UrbiJr/aqua-io
 
 go 1.19
 

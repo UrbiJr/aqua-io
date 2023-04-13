@@ -12,11 +12,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UrbiJr/copy-io/internal/user"
-	"github.com/UrbiJr/copy-io/internal/utils"
+	"fyne.io/fyne/v2"
+	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, symbol, side, orderType, qty string, price float64) (string, error) {
+func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price float64) (string, error) {
 	var url string
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
@@ -42,19 +43,26 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType, qty str
 		takeProfitStr = fmt.Sprintf("%f", takeProfit)
 	}
 
+	var timeInForce string
+	if orderType == "Market" {
+		timeInForce = "IOC"
+	} else {
+		timeInForce = "GTC"
+	}
+
 	postData := fmt.Sprintf(`{
 		"category": "spot",
 		"symbol": "%s",
 		"side": "%s",
 		"orderType": "%s",
-		"qty": "%s",
+		"qty": "%.1f",
 		"price": "%s",
-		"timeInForce": "GTC",
+		"timeInForce": "%s",
 		"isLeverage": 0,
 		"orderFilter": "Order",
 		"takeProfit": "%s",
 		"stopLoss": "%s"
-	}`, symbol, side, orderType, qty, fmt.Sprintf("%f", price), takeProfitStr, stopLossStr)
+	}`, symbol, side, orderType, amount, fmt.Sprintf("%.2f", price), timeInForce, takeProfitStr, stopLossStr)
 
 	req, err := http.NewRequest(method, url, strings.NewReader(postData))
 
@@ -110,6 +118,18 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType, qty str
 					}
 				}
 			} else {
+				if strings.Contains(parsed["retMsg"].(string), "Timestamp for this request is outside of the recvWindow.") {
+					// send notification to adjust system time
+					app.App.SendNotification(&fyne.Notification{
+						Title:   "Create order failed",
+						Content: "Timestamp not synchronized: please sync your system time and try again",
+					})
+				} else {
+					app.App.SendNotification(&fyne.Notification{
+						Title:   "Create order failed",
+						Content: parsed["retMsg"].(string),
+					})
+				}
 				return "", fmt.Errorf("create order failed: %s", parsed["retMsg"].(string))
 			}
 		}
@@ -219,4 +239,106 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	app.Logger.Debug(fmt.Sprintf("Fetched %d transactions from bybit", len(transactions)))
 
 	return transactions
+}
+
+func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order {
+	var url string
+
+	if p.TestMode {
+		url = "https://api-testnet.bybit.com/v5/order/history?category=" + category
+	}
+	method := "GET"
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	// create a time variable
+	now := time.Now()
+	// convert to unix time in milliseconds
+	unixMilli := now.UnixMilli()
+
+	// generate hmac for X-BAPI-SIGN
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "20000", "category="+category)
+
+	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
+	hm.Write([]byte(str_to_sign))
+	HMAC := hex.EncodeToString(hm.Sum(nil))
+
+	req.Header.Add("X-BAPI-API-KEY", p.BybitApiKey)
+	req.Header.Add("X-BAPI-TIMESTAMP", fmt.Sprintf("%d", unixMilli))
+	req.Header.Add("X-BAPI-RECV-WINDOW", "20000")
+	req.Header.Add("X-BAPI-SIGN", HMAC)
+
+	res, err := app.Client.Do(req)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	var parsed map[string]interface{}
+	var orders []user.Order
+
+	// Unmarshal or Decode the JSON to the interface.
+	json.Unmarshal(body, &parsed)
+
+	for key, _ := range parsed {
+
+		if key == "result" {
+			result := parsed["result"].(map[string]interface{})
+			for key, _ := range result {
+				if key == "list" && parsed["list"] != nil {
+					list := parsed["list"].([]map[string]interface{})
+					for _, x := range list {
+						price, err := strconv.ParseFloat(x["price"].(string), 64)
+						if err != nil {
+							continue
+						}
+
+						qty, err := strconv.ParseFloat(x["qty"].(string), 64)
+						if err != nil {
+							continue
+						}
+
+						isLeverage, err := strconv.ParseFloat(x["isLeverage"].(string), 64)
+						if err != nil {
+							continue
+						}
+
+						createdTime, err := strconv.ParseInt(x["createdTime"].(string), 10, 64)
+						if err != nil {
+							continue
+						}
+						orders = append(orders, user.Order{
+							ProfileID:      p.ID,
+							ProfileGroupID: p.GroupID,
+							Symbol:         x["symbol"].(string),
+							OrderID:        x["orderId"].(string),
+							OrderLinkID:    x["orderLinkId"].(string),
+							OrderStatus:    x["orderStatus"].(string),
+							OrderType:      x["orderType"].(string),
+							Price:          price,
+							CreatedTime:    createdTime,
+							Qty:            qty,
+							Side:           x["side"].(string),
+							IsLeverage:     isLeverage,
+						})
+					}
+				}
+			}
+		}
+	}
+
+	app.Logger.Debug(fmt.Sprintf("Fetched %d orders from bybit", len(orders)))
+
+	return orders
 }

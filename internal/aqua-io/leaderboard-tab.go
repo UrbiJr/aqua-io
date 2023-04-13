@@ -12,9 +12,9 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/copy-io/internal/resources"
-	"github.com/UrbiJr/copy-io/internal/user"
-	"github.com/UrbiJr/copy-io/internal/utils"
+	"github.com/UrbiJr/aqua-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
 const (

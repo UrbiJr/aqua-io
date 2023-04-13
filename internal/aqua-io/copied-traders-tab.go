@@ -10,12 +10,13 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/user"
 )
 
 type CopiedTradersTab struct {
 	*container.TabItem
-	TransactionsSlice [][]any
+	OrdersSlice       [][]any
+	OrdersTable       *widget.Table
 	ProfileSelector   *widget.Select
 	GroupSelector     *widget.Select
 	SelectedProfile   *user.Profile
@@ -34,11 +35,11 @@ func (app *Config) copiedTradersTab() *fyne.Container {
 func (app *Config) getCopiedTraders() *container.Split {
 	var slice [][]any
 
-	slice = append(slice, []any{"Profile", "Symbol", "Currency", "Funding", "Trade Price", "Qty/Size", "Side", "Transaction Time"})
-	app.TransactionsSlice = slice
-	transactionsTable := widget.NewTable(
+	slice = append(slice, []any{"Profile", "Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Is Leverage", "Created Time"})
+	app.OrdersSlice = slice
+	app.OrdersTable = widget.NewTable(
 		func() (int, int) {
-			return len(app.TransactionsSlice), len(app.TransactionsSlice[0])
+			return len(app.OrdersSlice), len(app.OrdersSlice[0])
 		},
 		func() fyne.CanvasObject {
 			lbl := widget.NewLabel("")
@@ -51,10 +52,10 @@ func (app *Config) getCopiedTraders() *container.Split {
 			lbl := container.Objects[0].(*widget.Label)
 			canvasText := container.Objects[1].(*canvas.Text)
 
-			if i.Col == 2 && i.Row != 0 {
+			if i.Col == 999 && i.Row != 0 {
 				lbl.Hide()
 				canvasText.Hidden = false
-				funding := app.TransactionsSlice[i.Row][i.Col].(float64)
+				funding := app.OrdersSlice[i.Row][i.Col].(float64)
 				if funding > 0 {
 					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
 				} else {
@@ -65,12 +66,12 @@ func (app *Config) getCopiedTraders() *container.Split {
 				canvasText.Hide()
 				lbl.Hidden = false
 				lbl.SetText(
-					app.TransactionsSlice[i.Row][i.Col].(string))
+					app.OrdersSlice[i.Row][i.Col].(string))
 			}
 		})
-	colWidths := []float32{100, 100, 200, 100, 100, 100, 200}
+	colWidths := []float32{100, 100, 200, 200, 100, 100, 100, 100, 200}
 	for i, w := range colWidths {
-		transactionsTable.SetColumnWidth(i, w)
+		app.OrdersTable.SetColumnWidth(i, w)
 	}
 
 	var profileGroups []string
@@ -98,8 +99,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 	})
 
 	go func() {
-		app.TransactionsSlice = app.getTransactionsSlice()
-		transactionsTable.Refresh()
+		app.refreshOrdersTable()
 	}()
 
 	top := container.NewVBox(
@@ -115,7 +115,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 		nil,
 		nil,
 		nil,
-		container.NewVScroll(transactionsTable),
+		container.NewVScroll(app.OrdersTable),
 	)
 
 	app.CopiedTradersList = widget.NewList(
@@ -155,7 +155,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 		nil,
 		nil,
 		app.CopiedTradersList,
-	), container.NewBorder(widget.NewLabelWithStyle("Transactions Log", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+	), container.NewBorder(widget.NewLabelWithStyle("Orders History", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		nil,
 		nil,
 		nil,
@@ -171,22 +171,22 @@ func (app *Config) getTraders() {
 	app.User.CopiedTradersManager.Traders = traders
 }
 
-func (app *Config) getTransactionsSlice() [][]any {
+func (app *Config) getOrdersSlice() [][]any {
 	var slice [][]any
-	var allTransactions []user.Transaction
+	var allOrders []user.Order
 
-	slice = append(slice, []any{"Profile", "Symbol", "Currency", "Funding", "Trade Price", "Qty/Size", "Side", "Transaction Time"})
+	slice = append(slice, []any{"Profile", "Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Is Leverage", "Created Time"})
 	for _, p := range app.User.Profiles {
 		//TODO: better check if bybit or binance api key, add binance api key code
 		if p.BybitApiKey != "" {
-			byBitTransactions := app.getBybitTransactions(p)
-			if byBitTransactions != nil {
-				allTransactions = append(allTransactions, byBitTransactions...)
+			byBitOrders := app.getOrderHistory("spot", p)
+			if byBitOrders != nil {
+				allOrders = append(allOrders, byBitOrders...)
 			}
 		}
 	}
 
-	for _, x := range allTransactions {
+	for _, x := range allOrders {
 		var currentRow []any
 
 		profile := app.User.ProfileManager.GetProfileByID(x.ProfileID, x.ProfileGroupID)
@@ -195,20 +195,27 @@ func (app *Config) getTransactionsSlice() [][]any {
 
 		currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
 
-		currentRow = append(currentRow, x.Currency)
+		currentRow = append(currentRow, x.OrderID)
 
-		currentRow = append(currentRow, fmt.Sprintf("%f", x.Funding))
+		currentRow = append(currentRow, x.OrderStatus)
 
-		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.TradePrice))
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Qty))
 
-		currentRow = append(currentRow, fmt.Sprintf("%.2f/%.2f", x.Qty, x.Size))
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Price))
 
 		currentRow = append(currentRow, x.Side)
 
-		currentRow = append(currentRow, fmt.Sprintf("%d", x.TransactionTime))
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.IsLeverage))
+
+		currentRow = append(currentRow, fmt.Sprintf("%d", x.CreatedTime))
 
 		slice = append(slice, currentRow)
 	}
 
 	return slice
+}
+
+func (app *Config) refreshOrdersTable() {
+	app.OrdersSlice = app.getOrdersSlice()
+	app.OrdersTable.Refresh()
 }

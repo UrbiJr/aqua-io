@@ -14,12 +14,12 @@ import (
 	"fyne.io/fyne/v2"
 	fyne_app "fyne.io/fyne/v2/app"
 
-	"github.com/UrbiJr/copy-io/internal/captcha"
-	"github.com/UrbiJr/copy-io/internal/client"
-	copy_io "github.com/UrbiJr/copy-io/internal/copy-io"
-	"github.com/UrbiJr/copy-io/internal/resources"
-	"github.com/UrbiJr/copy-io/internal/user"
-	"github.com/UrbiJr/copy-io/internal/utils"
+	aqua_io "github.com/UrbiJr/aqua-io/internal/aqua-io"
+	"github.com/UrbiJr/aqua-io/internal/captcha"
+	"github.com/UrbiJr/aqua-io/internal/client"
+	"github.com/UrbiJr/aqua-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 
@@ -59,7 +59,7 @@ func main() {
 
 	//utils.Info("Booting up...")
 
-	var app copy_io.Config
+	var app aqua_io.Config
 
 	// create a fyne application
 	fyneApp := fyne_app.NewWithID("io.aqua-trading.preferences")
