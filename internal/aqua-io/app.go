@@ -125,7 +125,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	// create order for each trader's position
 	for _, p := range positions {
 		app.Logger.Debug(fmt.Sprintf("creating order for symbol %s for profile %s", p.Symbol, profile.Title))
-		orderId, err := app.createOrder(profile, p.Symbol, "Buy", "Market", p.Amount, p.MarkPrice)
+		orderId, err := app.createOrder(profile, p.Symbol, "Market", p.Amount, p.MarkPrice)
 		if err == nil {
 			app.App.SendNotification(&fyne.Notification{
 				Title:   "Order create success!",
@@ -146,7 +146,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
-	app.refreshOrdersTable()
+	app.refreshCopiedTradersTab()
 
 	return nil
 }

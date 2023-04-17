@@ -13,7 +13,7 @@ type Profile struct {
 	BybitApiKey                          string   `json:"bybit_api_key"`
 	BybitApiSecret                       string   `json:"bybit_api_secret"`
 	MaxBybitBinancePriceDifferentPercent float64  `json:"max_bybit_binance_price_difference_percent"`
-	Leverage                             float64  `json:"leverage"`
+	Leverage                             int64    `json:"leverage"`
 	InitialOpenPercent                   float64  `json:"initial_open_percent"`
 	MaxAddMultiplier                     float64  `json:"max_add_multiplier"`
 	OpenDelay                            float64  `json:"open_delay"`

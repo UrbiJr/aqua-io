@@ -37,7 +37,7 @@ func (repo *SQLiteRepository) Migrate() error {
 			bybit_api_key text null,
 			bybit_api_secret text null,
 			max_bybit_binance_price_difference_percent real null,
-			leverage real null,
+			leverage integer null,
 			initial_open_percent real null,
 			max_add_multiplier real null,
 			open_delay real null,

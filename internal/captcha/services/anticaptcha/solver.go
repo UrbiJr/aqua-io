@@ -62,7 +62,7 @@ func (solver *CaptchaSolver) SolveHCaptcha(captcha *base.HCaptcha) (string, erro
 				return "", err
 			}
 			if response["status"] == "ready" {
-				return response["solution"].(map[string]interface{})["gRecaptchaResponse"].(string), nil
+				return response["solution"].(map[string]any)["gRecaptchaResponse"].(string), nil
 			}
 			check = time.NewTicker(checkInterval)
 		case <-timeout.C:

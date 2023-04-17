@@ -235,7 +235,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 
 	leverage := widget.NewEntry()
 	leverage.SetPlaceHolder("15")
-	leverage.Validator = utils.IsFloat
+	leverage.Validator = utils.IsInteger
 
 	initialOpenPercent := widget.NewEntry()
 	initialOpenPercent.SetPlaceHolder("2.5")
@@ -342,7 +342,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 					TestMode:            testMode.Checked,
 				}
 				p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
-				p.Leverage, _ = strconv.ParseFloat(leverage.Text, 64)
+				p.Leverage, _ = strconv.ParseInt(leverage.Text, 10, 64)
 				p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
 				p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
 				p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
@@ -399,8 +399,8 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	maxBybitBinancePriceDifferentPercent.Validator = utils.IsFloat
 
 	leverage := widget.NewEntry()
-	leverage.SetText(fmt.Sprintf("%.2f", pf.Leverage))
-	leverage.Validator = utils.IsFloat
+	leverage.SetText(fmt.Sprintf("%d", pf.Leverage))
+	leverage.Validator = utils.IsInteger
 
 	initialOpenPercent := widget.NewEntry()
 	initialOpenPercent.SetText(fmt.Sprintf("%.2f", pf.InitialOpenPercent))
@@ -509,7 +509,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 					TestMode:            testMode.Checked,
 				}
 				p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
-				p.Leverage, _ = strconv.ParseFloat(leverage.Text, 64)
+				p.Leverage, _ = strconv.ParseInt(leverage.Text, 10, 64)
 				p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
 				p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
 				p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
@@ -657,13 +657,15 @@ func (app *Config) getProfilesTable() *widget.Table {
 }
 
 func (app *Config) refreshProfilesTable() {
-	app.ProfilesSlice = app.getProfilesSlice()
-	app.ProfilesTable.Refresh()
+	go func() {
+		app.ProfilesSlice = app.getProfilesSlice()
+		app.ProfilesTable.Refresh()
 
-	colWidths := []float32{100, 200, 200, 200, 60}
-	for i, w := range colWidths {
-		app.ProfilesTable.SetColumnWidth(i, w)
-	}
+		colWidths := []float32{100, 200, 200, 200, 60}
+		for i, w := range colWidths {
+			app.ProfilesTable.SetColumnWidth(i, w)
+		}
+	}()
 
 }
 

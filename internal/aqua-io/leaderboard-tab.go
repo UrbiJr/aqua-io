@@ -123,15 +123,11 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	filterByPeriod.SetSelected("WEEKLY")
 
 	sortByStatistics.OnChanged = func(s string) {
-		go func() {
-			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
-		}()
+		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
 
 	}
 	filterByPeriod.OnChanged = func(s string) {
-		go func() {
-			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
-		}()
+		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
 	}
 
 	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
@@ -163,7 +159,7 @@ func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 
 		currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
 
-		currentRow = append(currentRow, fmt.Sprintf("%.3f", math.Abs(x.Amount)))
+		currentRow = append(currentRow, x.Amount)
 
 		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.EntryPrice))
 
@@ -208,6 +204,22 @@ func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
 					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
 				}
 				canvasText.Text = fmt.Sprintf("%.2f", pnl)
+			} else if i.Col == 0 && i.Row != 0 {
+				lbl.Hide()
+				canvasText.Hidden = false
+				amount := app.TraderPositionsSlice[i.Row][1].(float64)
+				if amount > 0 {
+					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
+					canvasText.Text = fmt.Sprintf("%s (Long)", app.TraderPositionsSlice[i.Row][i.Col].(string))
+				} else {
+					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
+					canvasText.Text = fmt.Sprintf("%s (Short)", app.TraderPositionsSlice[i.Row][i.Col].(string))
+				}
+			} else if i.Col == 1 && i.Row != 0 {
+				canvasText.Hide()
+				lbl.Hidden = false
+				lbl.SetText(
+					fmt.Sprintf("%.3f", math.Abs(app.TraderPositionsSlice[i.Row][i.Col].(float64))))
 			} else {
 				canvasText.Hide()
 				lbl.Hidden = false
@@ -369,33 +381,40 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 }
 
 func (app *Config) RefreshLeaderboard(statisticsType, periodType string) {
-	app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
-	cards := app.makeTradersCards()
-	app.LeaderboardTab.CardsContainer.RemoveAll()
-	for _, card := range cards {
-		app.LeaderboardTab.CardsContainer.Add(card)
-	}
-	app.LeaderboardTab.CardsContainer.Refresh()
+	go func() {
+		app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
+		cards := app.makeTradersCards()
+		app.LeaderboardTab.CardsContainer.RemoveAll()
+		for _, card := range cards {
+			app.LeaderboardTab.CardsContainer.Add(card)
+		}
+		app.LeaderboardTab.CardsContainer.Refresh()
+	}()
+
 }
 
 func (app *Config) RefreshLeaderboardWithoutFetch() {
-	cards := app.makeTradersCards()
-	app.LeaderboardTab.CardsContainer.RemoveAll()
-	for _, card := range cards {
-		app.LeaderboardTab.CardsContainer.Add(card)
-	}
-	app.LeaderboardTab.CardsContainer.Refresh()
+	go func() {
+		cards := app.makeTradersCards()
+		app.LeaderboardTab.CardsContainer.RemoveAll()
+		for _, card := range cards {
+			app.LeaderboardTab.CardsContainer.Add(card)
+		}
+		app.LeaderboardTab.CardsContainer.Refresh()
+	}()
 }
 
 func (app *Config) refreshProfileSelector() {
-	var profileGroups []string
-	for _, pfg := range app.User.ProfileManager.Groups {
-		profileGroups = append(profileGroups, pfg.Name)
-	}
-	app.LeaderboardTab.GroupSelector.Options = profileGroups
-	app.LeaderboardTab.GroupSelector.ClearSelected()
-	app.LeaderboardTab.GroupSelector.Refresh()
-	app.LeaderboardTab.ProfileSelector.ClearSelected()
-	app.LeaderboardTab.ProfileSelector.Refresh()
-	app.LeaderboardTab.ProfileSelector.Disable()
+	go func() {
+		var profileGroups []string
+		for _, pfg := range app.User.ProfileManager.Groups {
+			profileGroups = append(profileGroups, pfg.Name)
+		}
+		app.LeaderboardTab.GroupSelector.Options = profileGroups
+		app.LeaderboardTab.GroupSelector.ClearSelected()
+		app.LeaderboardTab.GroupSelector.Refresh()
+		app.LeaderboardTab.ProfileSelector.ClearSelected()
+		app.LeaderboardTab.ProfileSelector.Refresh()
+		app.LeaderboardTab.ProfileSelector.Disable()
+	}()
 }

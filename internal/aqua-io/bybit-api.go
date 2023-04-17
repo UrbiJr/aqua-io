@@ -17,7 +17,7 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price float64) (string, error) {
+func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount, price float64) (string, error) {
 	var url string
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
@@ -50,6 +50,13 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 		timeInForce = "GTC"
 	}
 
+	var side string
+	if amount > 0 {
+		side = "Buy"
+	} else {
+		side = "Sell"
+	}
+
 	postData := fmt.Sprintf(`{
 		"category": "spot",
 		"symbol": "%s",
@@ -58,11 +65,11 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 		"qty": "%.1f",
 		"price": "%s",
 		"timeInForce": "%s",
-		"isLeverage": 0,
+		"isLeverage": "%d",
 		"orderFilter": "Order",
 		"takeProfit": "%s",
 		"stopLoss": "%s"
-	}`, symbol, side, orderType, amount, fmt.Sprintf("%.2f", price), timeInForce, takeProfitStr, stopLossStr)
+	}`, symbol, side, orderType, amount, fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr)
 
 	req, err := http.NewRequest(method, url, strings.NewReader(postData))
 
@@ -102,7 +109,7 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 		return "", err
 	}
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 
 	// Unmarshal or Decode the JSON to the interface.
 	json.Unmarshal(body, &parsed)
@@ -110,7 +117,7 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 	for key, _ := range parsed {
 		if key == "retMsg" {
 			if parsed["retMsg"].(string) == "OK" {
-				result := parsed["result"].(map[string]interface{})
+				result := parsed["result"].(map[string]any)
 				for key, _ = range result {
 					if key == "orderId" {
 						app.Logger.Debug(fmt.Sprintf("successfully created bybit order with id %s", result[key].(string)))
@@ -182,7 +189,7 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 		return nil
 	}
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	var transactions []user.Transaction
 
 	// Unmarshal or Decode the JSON to the interface.
@@ -191,10 +198,10 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	for key, _ := range parsed {
 
 		if key == "result" {
-			result := parsed["result"].(map[string]interface{})
+			result := parsed["result"].(map[string]any)
 			for key, _ := range result {
 				if key == "list" && parsed["list"] != nil {
-					list := parsed["list"].([]map[string]interface{})
+					list := parsed["list"].([]map[string]any)
 					for _, x := range list {
 						tradePrice, err := strconv.ParseFloat(x["tradePrice"].(string), 64)
 						if err != nil {
@@ -285,7 +292,7 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 		return nil
 	}
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	var orders []user.Order
 
 	// Unmarshal or Decode the JSON to the interface.
@@ -294,44 +301,44 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 	for key, _ := range parsed {
 
 		if key == "result" {
-			result := parsed["result"].(map[string]interface{})
+			result := parsed["result"].(map[string]any)
 			for key, _ := range result {
-				if key == "list" && parsed["list"] != nil {
-					list := parsed["list"].([]map[string]interface{})
+				if key == "list" && result["list"] != nil {
+					list := result["list"].([]any)
 					for _, x := range list {
-						price, err := strconv.ParseFloat(x["price"].(string), 64)
-						if err != nil {
-							continue
+						switch o := x.(type) {
+						case map[string]any:
+							price, err := strconv.ParseFloat(o["price"].(string), 64)
+							if err != nil {
+								continue
+							}
+							qty, err := strconv.ParseFloat(o["qty"].(string), 64)
+							if err != nil {
+								continue
+							}
+							isLeverage, err := strconv.ParseInt(o["isLeverage"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							createdTime, err := strconv.ParseInt(o["createdTime"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							orders = append(orders, user.Order{
+								ProfileID:      p.ID,
+								ProfileGroupID: p.GroupID,
+								Symbol:         o["symbol"].(string),
+								OrderID:        o["orderId"].(string),
+								OrderLinkID:    o["orderLinkId"].(string),
+								OrderStatus:    o["orderStatus"].(string),
+								OrderType:      o["orderType"].(string),
+								Price:          price,
+								CreatedTime:    createdTime,
+								Qty:            qty,
+								Side:           o["side"].(string),
+								IsLeverage:     isLeverage,
+							})
 						}
-
-						qty, err := strconv.ParseFloat(x["qty"].(string), 64)
-						if err != nil {
-							continue
-						}
-
-						isLeverage, err := strconv.ParseFloat(x["isLeverage"].(string), 64)
-						if err != nil {
-							continue
-						}
-
-						createdTime, err := strconv.ParseInt(x["createdTime"].(string), 10, 64)
-						if err != nil {
-							continue
-						}
-						orders = append(orders, user.Order{
-							ProfileID:      p.ID,
-							ProfileGroupID: p.GroupID,
-							Symbol:         x["symbol"].(string),
-							OrderID:        x["orderId"].(string),
-							OrderLinkID:    x["orderLinkId"].(string),
-							OrderStatus:    x["orderStatus"].(string),
-							OrderType:      x["orderType"].(string),
-							Price:          price,
-							CreatedTime:    createdTime,
-							Qty:            qty,
-							Side:           x["side"].(string),
-							IsLeverage:     isLeverage,
-						})
 					}
 				}
 			}

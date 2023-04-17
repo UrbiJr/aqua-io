@@ -33,7 +33,7 @@ func (app *Config) fetchTraders(statisticsType, periodType string) ([]user.Trade
 	}
 	binanceApi := "https://www.binance.com/bapi/futures/v3/public/future/leaderboard/getLeaderboardRank"
 
-	postJson := make(map[string]interface{})
+	postJson := make(map[string]any)
 	var postData []byte
 	postJson["tradeType"] = "PERPETUAL"
 	postJson["statisticsType"] = statisticsType
@@ -92,7 +92,7 @@ func (app *Config) fetchTraderPositions(uid string) ([]user.Position, error) {
 
 	binanceApi := "https://www.binance.com/bapi/futures/v1/public/future/leaderboard/getOtherPosition"
 
-	postJson := make(map[string]interface{})
+	postJson := make(map[string]any)
 	var postData []byte
 	postJson["encryptedUid"] = uid
 	postJson["tradeType"] = "PERPETUAL"
@@ -164,7 +164,7 @@ func (app *Config) searchByNickname(nickname string) ([]user.Trader, error) {
 
 	binanceApi := "https://www.binance.com/bapi/futures/v1/public/future/leaderboard/searchNickname"
 
-	postJson := make(map[string]interface{})
+	postJson := make(map[string]any)
 	var postData []byte
 	postJson["nickname"] = nickname
 

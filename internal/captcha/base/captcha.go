@@ -73,7 +73,7 @@ type ReCaptchaV3E struct {
 type NormalCaptcha struct {
 	Language        string
 	Body            []byte
-	Instructions    interface{}
+	Instructions    any
 	Phrase          bool
 	CaseSensitive   bool
 	Numeric         bool

@@ -108,17 +108,19 @@ func (app *Config) getToolbar() *widget.Toolbar {
 }
 
 func (app *Config) refreshGlobalContent() {
-	// refresh custom icons for app tabs
-	app.ProfilesTab.Icon = app.App.Settings().Theme().Icon(resources.IconNameCreditCard)
+	go func() {
+		// refresh custom icons for app tabs
+		app.ProfilesTab.Icon = app.App.Settings().Theme().Icon(resources.IconNameCreditCard)
 
-	app.TopRightToolbar = app.getToolbar()
-	app.GlobalContent.Objects[1] = app.TopRightToolbar
+		app.TopRightToolbar = app.getToolbar()
+		app.GlobalContent.Objects[1] = app.TopRightToolbar
 
-	// resize and position widgets
-	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
-	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
+		// resize and position widgets
+		app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
+		app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
 
-	app.GlobalContent.Refresh()
+		app.GlobalContent.Refresh()
+	}()
 }
 
 func (app *Config) MakeMenu() *fyne.MainMenu {

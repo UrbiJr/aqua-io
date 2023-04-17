@@ -139,7 +139,7 @@ func (solver *CaptchaSolver) SolveGeetest(captcha *base.GeetestCaptcha) (anticap
 
 	var geetestSolution anticaptcha.GeeTestSolution
 
-	// func Unmarshal(data []byte, v interface{}) error
+	// func Unmarshal(data []byte, v any) error
 	err = json.Unmarshal([]byte(code), &geetestSolution)
 	if err != nil {
 		return anticaptcha.GeeTestSolution{}, err

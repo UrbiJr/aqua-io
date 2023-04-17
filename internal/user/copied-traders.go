@@ -60,7 +60,7 @@ type Order struct {
 	Qty            float64 `json:"qty"`
 	Price          float64 `json:"price"`
 	Side           string  `json:"side"`
-	IsLeverage     float64 `json:"isLeverage"`
+	IsLeverage     int64   `json:"isLeverage"`
 }
 
 type CopiedTradersManager struct {
