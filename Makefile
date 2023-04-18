@@ -1,23 +1,26 @@
 # if on Windows
 ifeq ($(OS),Windows_NT)
-BINARY_NAME=Aqua IO.exe
+BINARY_NAME=aqua-io.exe
+MANIFEST_NAME=aqua-io.exe.manifest
 else
 # we're on a Mac
-BINARY_NAME=Aqua IO.app
+BINARY_NAME=aqua-io.app
 endif
 APP_NAME=Aqua.io
-VERSION=1.0.1
+APP_ID=io.aqua-trading.app
+VERSION=0.0.1
 BUILD_NO=1
 
-## build: build binary and package copy_io
+## build: build binary and package app
 build:
 ifeq ($(OS),Windows_NT)
 	@del ${BINARY_NAME}
+	fyne package -os windows -icon Icon.png -appID ${APP_ID} -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 else
 	rm -rf ${BINARY_NAME}
+	fyne package -os darwin -icon Icon.png -appID ${APP_ID} -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 endif
-	fyne package -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
-
+	
 ## run: builds and runs the application
 run:
 ifeq ($(OS),Windows_NT)
@@ -40,6 +43,7 @@ clean:
 	@go clean
 ifeq ($(OS),Windows_NT)
 	@del ${BINARY_NAME}
+	@del ${MANIFEST_NAME}
 else
 	@rm -rf ${BINARY_NAME}
 endif

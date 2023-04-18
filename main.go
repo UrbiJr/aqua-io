@@ -61,8 +61,13 @@ func main() {
 
 	var app aqua_io.Config
 
+	// create needed directories if don't exist
+	path := "downloads"
+	// ignore the error
+	_ = os.Mkdir(path, os.ModePerm)
+
 	// create a fyne application
-	fyneApp := fyne_app.NewWithID("io.aqua-trading.preferences")
+	fyneApp := fyne_app.NewWithID("io.aqua-trading.app")
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.DarkTheme{})
 	app.App = fyneApp
