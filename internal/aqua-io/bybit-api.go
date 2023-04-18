@@ -302,7 +302,7 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 
 		if key == "result" {
 			result := parsed["result"].(map[string]any)
-			for key, _ := range result {
+			for key := range result {
 				if key == "list" && result["list"] != nil {
 					list := result["list"].([]any)
 					for _, x := range list {
@@ -348,4 +348,129 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 	app.Logger.Debug(fmt.Sprintf("Fetched %d orders from bybit", len(orders)))
 
 	return orders
+}
+
+func (app *Config) getPositionInfo(category, symbol string, p user.Profile) []user.PositionInfo {
+	var url string
+
+	if p.TestMode {
+		url = "https://api-testnet.bybit.com/v5/position/list?category=" + category + "&symbol=" + symbol
+	}
+	method := "GET"
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	// create a time variable
+	now := time.Now()
+	// convert to unix time in milliseconds
+	unixMilli := now.UnixMilli()
+
+	// generate hmac for X-BAPI-SIGN
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", "category="+category+"&symbol="+symbol)
+
+	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
+	hm.Write([]byte(str_to_sign))
+	HMAC := hex.EncodeToString(hm.Sum(nil))
+
+	req.Header.Add("X-BAPI-API-KEY", p.BybitApiKey)
+	req.Header.Add("X-BAPI-TIMESTAMP", fmt.Sprintf("%d", unixMilli))
+	req.Header.Add("X-BAPI-RECV-WINDOW", "5000")
+	req.Header.Add("X-BAPI-SIGN", HMAC)
+
+	res, err := app.Client.Do(req)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	var parsed map[string]any
+	var positionInfoArr []user.PositionInfo
+
+	// Unmarshal or Decode the JSON to the interface.
+	json.Unmarshal(body, &parsed)
+
+	for key, _ := range parsed {
+
+		if key == "result" {
+			result := parsed["result"].(map[string]any)
+			for key := range result {
+				if key == "list" && result["list"] != nil {
+					list := result["list"].([]any)
+					for _, x := range list {
+						switch o := x.(type) {
+						case map[string]any:
+							leverage, err := strconv.ParseInt(o["leverage"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							avgPrice, err := strconv.ParseFloat(o["avgPrice"].(string), 64)
+							if err != nil {
+								continue
+							}
+							liqPrice, err := strconv.ParseFloat(o["liqPrice"].(string), 64)
+							if err != nil {
+								continue
+							}
+							positionValue, err := strconv.ParseFloat(o["positionValue"].(string), 64)
+							if err != nil {
+								continue
+							}
+							unrealisedPnl, err := strconv.ParseFloat(o["unrealisedPnl"].(string), 64)
+							if err != nil {
+								continue
+							}
+							cumRealisedPnl, err := strconv.ParseFloat(o["cumRealisedPnl"].(string), 64)
+							if err != nil {
+								continue
+							}
+							markPrice, err := strconv.ParseFloat(o["markPrice"].(string), 64)
+							if err != nil {
+								continue
+							}
+							createdTime, err := strconv.ParseInt(o["createdTime"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							updatedTime, err := strconv.ParseInt(o["updatedTime"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							positionInfoArr = append(positionInfoArr, user.PositionInfo{
+								PositionIdx:    o["positionIdx"].(float64),
+								Symbol:         o["symbol"].(string),
+								Leverage:       leverage,
+								AvgPrice:       avgPrice,
+								LiqPrice:       liqPrice,
+								TakeProfit:     o["takeProfit"],
+								StopLoss:       o["stopLoss"],
+								PositionValue:  positionValue,
+								UnrealisedPnl:  unrealisedPnl,
+								CumRealisedPnl: cumRealisedPnl,
+								MarkPrice:      markPrice,
+								CreatedTime:    createdTime,
+								UpdatedTime:    updatedTime,
+								Side:           o["side"].(string),
+								PositionStatus: o["positionStatus"].(string),
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	app.Logger.Debug(fmt.Sprintf("Fetched %d position info from bybit", len(positionInfoArr)))
+
+	return positionInfoArr
 }

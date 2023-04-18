@@ -63,6 +63,24 @@ type Order struct {
 	IsLeverage     int64   `json:"isLeverage"`
 }
 
+type PositionInfo struct {
+	PositionIdx    float64 `json:"positionIdx"`
+	Symbol         string  `json:"symbol"`
+	Leverage       int64   `json:"leverage"`
+	AvgPrice       float64 `json:"avgPrice"` // Average entry price
+	LiqPrice       float64 `json:"liqPrice"` // Position liquidation price
+	TakeProfit     any     `json:"takeProfit"`
+	StopLoss       any     `json:"stopLoss"`
+	PositionValue  float64 `json:"positionValue"`
+	UnrealisedPnl  float64 `json:"unrealisedPnl"`
+	CumRealisedPnl float64 `json:"cumRealisedPnl"`
+	MarkPrice      float64 `json:"markPrice"`
+	CreatedTime    int64   `json:"createdTime"`
+	UpdatedTime    int64   `json:"updatedTime"`
+	Side           string  `json:"side"`
+	PositionStatus string  `json:"positionStatus"`
+}
+
 type CopiedTradersManager struct {
 	Traders []Trader
 }

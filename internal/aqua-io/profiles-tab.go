@@ -116,6 +116,8 @@ func (app *Config) addProfileGroupDialog() dialog.Dialog {
 			return fmt.Errorf("a group named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a name")
+		} else if strings.Contains(s, "|") {
+			return errors.New("please remove invalid characters")
 		} else {
 			return nil
 		}
@@ -216,6 +218,8 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
+		} else if strings.Contains(s, "|") {
+			return errors.New("please remove invalid characters")
 		} else {
 			return nil
 		}
@@ -381,6 +385,8 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
+		} else if strings.Contains(s, "|") {
+			return errors.New("please remove invalid characters")
 		} else {
 			return nil
 		}

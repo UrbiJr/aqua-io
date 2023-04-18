@@ -3,6 +3,7 @@ package copy_io
 import (
 	"fmt"
 	"image/color"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -76,7 +77,6 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 	// get the show from all profiles checkbox
 	app.CopiedTradersTab.ShowFromAllProfiles = widget.NewCheck("Show From All Profiles", func(b bool) {
-		app.refreshCopiedTradersTab()
 	})
 	// set it to true as default
 	app.CopiedTradersTab.ShowFromAllProfiles.SetChecked(true)
@@ -140,20 +140,81 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 	// get the positions tab
 	app.CopiedTradersTab.positionsLabel = widget.NewLabel("")
+	// get the position info text
+	positionInfoMarkdown := widget.NewRichTextFromMarkdown("Select a symbol to view its positions")
 	// get the positions list
 	app.CopiedTradersTab.SymbolList = app.getSymbolList()
+	app.CopiedTradersTab.SymbolList.UnselectAll()
+	app.CopiedTradersTab.SymbolList.OnSelected = func(id widget.ListItemID) {
+		symbol := app.CopiedTradersTab.symbols[id]
+		positionInfoMarkdown.ParseMarkdown(fmt.Sprintf("Loading %s positions...", symbol))
+		go func() {
+			elements := strings.Split(symbol, "|")
+			group := app.User.ProfileManager.GetGroupByName(elements[0])
+			profile := app.User.ProfileManager.GetProfileByTitle(elements[1], group.ID)
+			positionInfoArr := app.getPositionInfo("linear", elements[2], *profile)
+			markdownText := ""
+			for i, p := range positionInfoArr {
+				//Unix Timestamp to time.Time
+				timeT := time.Unix(0, p.UpdatedTime*int64(time.Millisecond))
+				layout := "02-01-2006 15:04:05"
+				readable := timeT.Format(layout)
+				var mode, side string
+				if p.PositionIdx == 0 {
+					mode = "one-way mode position"
+				} else if p.PositionIdx == 1 {
+					mode = "Buy side of hedge-mode position"
+				} else if p.PositionIdx == 2 {
+					mode = "Sell side of hedge-mode position"
+				}
+				if p.Side == "None" {
+					side = "Empty position"
+				}
+
+				markdownText += fmt.Sprintf("%d. Position", i) + `
+` + "    ```" + `
+    Symbol:                     ` + p.Symbol + `
+	Mode:                       ` + mode + `
+    Leverage:                   ` + fmt.Sprintf("%d", p.Leverage) + `
+    Average Entry Price:        ` + fmt.Sprintf("%.2f", p.AvgPrice) + `
+    Position Liquidation Price: ` + fmt.Sprintf("%.2f", p.LiqPrice) + `
+    Take Profit:                ` + p.TakeProfit.(string) + `
+    Stop Loss:                  ` + p.StopLoss.(string) + `
+    Position Value:             ` + fmt.Sprintf("%.2f", p.PositionValue) + `
+    Unrealised Pnl:             ` + fmt.Sprintf("%.2f", p.UnrealisedPnl) + `
+    Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", p.CumRealisedPnl) + `
+    Market Price:               ` + fmt.Sprintf("%.2f", p.MarkPrice) + `
+    Last Update Time:           ` + readable + `
+    Side (buy/sell/empty):      ` + side + `
+    Position Status:            ` + p.PositionStatus + `
+` + "    ```\n"
+			}
+			positionInfoMarkdown.ParseMarkdown(markdownText)
+		}()
+	}
+	app.CopiedTradersTab.SymbolList.OnUnselected = func(id widget.ListItemID) {
+		positionInfoMarkdown.ParseMarkdown("Select a symbol to view its positions")
+	}
+
 	positionsTab := container.NewBorder(
 		app.CopiedTradersTab.positionsLabel,
 		nil,
-		app.CopiedTradersTab.SymbolList,
 		nil,
-		widget.NewLabel("position info for symbol x go here"))
+		nil,
+		container.NewHSplit(app.CopiedTradersTab.SymbolList, container.NewVScroll(positionInfoMarkdown)))
 
 	// get the tabs container
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Order History", ordersTab),
 		container.NewTabItem("Positions", positionsTab))
 	tabs.SetTabLocation(container.TabLocationTop)
+	tabs.OnSelected = func(ti *container.TabItem) {
+		// when selecting the order history tab...
+		if ti.Text == "Order History" {
+			// ...clear selection from symbol list on the positions tab
+			app.CopiedTradersTab.SymbolList.UnselectAll()
+		}
+	}
 
 	/* LEFT SPLIT */
 
@@ -190,6 +251,11 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 	// refresh the content
 	app.refreshCopiedTradersTab()
+
+	app.CopiedTradersTab.ShowFromAllProfiles.OnChanged = func(b bool) {
+		positionInfoMarkdown.ParseMarkdown("Select a symbol to view its positions")
+		app.refreshCopiedTradersTab()
+	}
 
 	// get the horizontal split
 	return container.NewHSplit(container.NewBorder(
@@ -289,10 +355,12 @@ func (app *Config) getOrders(allProfiles bool, profile *user.Profile) []user.Ord
 
 	for _, o := range allOrders {
 		if o.OrderStatus == "Filled" {
-			// avoid duplicates
-			if !utils.Contains(allSymbols, o.Symbol) {
-				allSymbols = append(allSymbols, o.Symbol)
+			groupName := app.User.ProfileManager.GetGroupByID(o.ProfileGroupID).Name
+			profileName := app.User.ProfileManager.GetProfileByID(o.ProfileID, o.ProfileGroupID).Title
+			if !utils.Contains(allSymbols, fmt.Sprintf("%s|%s|%s", groupName, profileName, o.Symbol)) {
+				allSymbols = append(allSymbols, fmt.Sprintf("%s|%s|%s", groupName, profileName, o.Symbol))
 			}
+
 		}
 	}
 
@@ -308,10 +376,10 @@ func (app *Config) getSymbolList() *widget.List {
 			return len(app.CopiedTradersTab.symbols)
 		},
 		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(theme.VisibilityIcon()), widget.NewLabel("Template Object"))
+			return container.NewMax(widget.NewLabel("Template Object"))
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(app.CopiedTradersTab.symbols[id])
+			item.(*fyne.Container).Objects[0].(*widget.Label).SetText(app.CopiedTradersTab.symbols[id])
 		},
 	)
 
