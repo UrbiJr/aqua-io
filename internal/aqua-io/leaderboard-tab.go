@@ -26,7 +26,6 @@ type LeaderboardTab struct {
 	Traders []user.Trader
 	*container.TabItem
 	ProfileSelector      *widget.Select
-	GroupSelector        *widget.Select
 	SelectedProfile      *user.Profile
 	TraderPositionsSlice [][]any
 	CardsContainer       *fyne.Container
@@ -111,7 +110,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	}
 
 	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
-	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.LeaderboardTab.GroupSelector, app.LeaderboardTab.ProfileSelector)
+	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.LeaderboardTab.ProfileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
 	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
 

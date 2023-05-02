@@ -21,7 +21,6 @@ type CopiedTradersTab struct {
 	OrdersSlice         [][]any
 	OrdersTable         *widget.Table
 	ProfileSelector     *widget.Select
-	GroupSelector       *widget.Select
 	SelectedProfile     *user.Profile
 	ShowFromAllProfiles *widget.Check
 	CopiedTradersList   *widget.List
@@ -69,7 +68,6 @@ func (app *Config) getCopiedTraders() *container.Split {
 		container.NewGridWithColumns(5, app.CopiedTradersTab.ShowFromAllProfiles, canvas.NewText("", nil), canvas.NewText("", nil), canvas.NewText("", nil), topRightToolbar),
 		widget.NewSeparator(),
 		widget.NewLabel("...Or Select Profile"),
-		app.CopiedTradersTab.GroupSelector,
 		app.CopiedTradersTab.ProfileSelector,
 	)
 

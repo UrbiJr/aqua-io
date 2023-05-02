@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
@@ -19,12 +18,10 @@ import (
 
 type ProfilesTab struct {
 	*container.TabItem
-	ProfileGroupsList   *widget.List
-	Top                 *fyne.Container
-	ProfilesTable       *widget.Table
-	ProfilesSlice       [][]any
-	Bottom              *fyne.Container
-	CurrentProfileGroup int64
+	Top           *fyne.Container
+	ProfilesTable *widget.Table
+	ProfilesSlice [][]any
+	Bottom        *fyne.Container
 }
 
 // NewProfilesView returns a view for the profiles management
@@ -33,52 +30,12 @@ func (app *Config) profilesTab() *fyne.Container {
 	app.ProfilesTab.Top = container.NewMax()
 	app.ProfilesTab.Bottom = container.NewHBox()
 
-	// get current profiles and profile groups
+	// get current profiles
 	app.getProfiles()
-	app.getProfileGroups()
-	if len(app.User.ProfileManager.Groups) > 0 {
-		app.CurrentProfileGroup = app.User.ProfileManager.Groups[0].ID
-	}
+
 	app.ProfilesSlice = app.getProfilesSlice()
 
-	// define a list to display profile groups
-	list := widget.NewList(
-		func() int {
-			return len(app.User.ProfileManager.Groups)
-		},
-		func() fyne.CanvasObject {
-			return widget.NewLabel("")
-		},
-		func(idx widget.ListItemID, item fyne.CanvasObject) {
-			if label, ok := item.(*widget.Label); ok {
-				label.SetText(
-					fmt.Sprintf("%s\t (%d)", app.User.ProfileManager.Groups[idx].Name, len(app.User.ProfileManager.FilterByGroupID(app.User.ProfileManager.Groups[idx].ID))))
-			}
-		},
-	)
-	list.OnSelected = func(idx widget.ListItemID) {
-		app.CurrentProfileGroup = app.User.ProfileManager.Groups[idx].ID
-		app.refreshProfilesTopContent()
-		app.refreshProfilesBottomContent()
-		app.refreshProfilesTable()
-	}
-	app.ProfileGroupsList = list
-
-	// define a button to create a new group
-	addProfileGroupButton := widget.NewButtonWithIcon("New Group", theme.ContentAddIcon(), func() {
-		app.addProfileGroupDialog()
-	})
-
-	// define the left container
-	// use a border layout instead of VBox because VBox and HBox collapse their content to minsize with an equal width
-	leftContainer := container.NewBorder(
-		container.NewVBox(canvas.NewText("PROFILE GROUPS", nil), addProfileGroupButton), // top
-		nil,  // bottom
-		nil,  // left
-		nil,  // right
-		list) // scroll content (center)
-
-	// update content based on currently selected group
+	// update content
 	app.refreshProfilesTopContent()
 	app.refreshProfilesBottomContent()
 
@@ -89,11 +46,7 @@ func (app *Config) profilesTab() *fyne.Container {
 	vScroll := container.NewScroll(app.ProfilesTable)
 
 	// define the profilesTab container
-	profilesTabContainer := container.NewWithoutLayout(leftContainer, app.Top, vScroll, app.Bottom)
-
-	// resize and move profilesTab elements
-	leftContainer.Move(fyne.NewPos(10, 10))
-	leftContainer.Resize(fyne.NewSize(280, 600))
+	profilesTabContainer := container.NewWithoutLayout(app.Top, vScroll, app.Bottom)
 
 	vScroll.Move(fyne.NewPos(300, 90))
 	vScroll.Resize(fyne.NewSize(970, 500))
@@ -107,56 +60,6 @@ func (app *Config) profilesTab() *fyne.Container {
 	return profilesTabContainer
 }
 
-func (app *Config) addProfileGroupDialog() dialog.Dialog {
-	nameEntry := widget.NewEntry()
-
-	nameEntry.Validator = func(s string) error {
-		s = strings.TrimSpace(s)
-		if app.User.ProfileManager.GetGroupByName(s) != nil {
-			return fmt.Errorf("a group named %s already exists", s)
-		} else if len(s) <= 0 {
-			return errors.New("please insert a name")
-		} else if strings.Contains(s, "|") {
-			return errors.New("please remove invalid characters")
-		} else {
-			return nil
-		}
-	}
-
-	// create a dialog
-	addForm := dialog.NewForm(
-		"Create Group",
-		"Create",
-		"Cancel",
-		[]*widget.FormItem{
-			{Text: "Group name", Widget: nameEntry},
-		},
-		func(valid bool) {
-			if valid {
-				inserted, err := app.DB.InsertProfileGroup(user.ProfileGroup{
-					Name: nameEntry.Text,
-				})
-
-				if err != nil {
-					app.Logger.Error(err)
-				}
-				app.CurrentProfileGroup = inserted.ID
-				app.refreshProfileGroupsList()
-				app.refreshProfilesTopContent()
-				app.refreshProfilesBottomContent()
-				app.refreshProfilesTable()
-				app.refreshProfileSelector()
-			}
-		},
-		app.MainWindow)
-
-	// size and show the dialog
-	addForm.Resize(fyne.Size{Width: 400})
-	addForm.Show()
-
-	return addForm
-}
-
 func (app *Config) getProfiles() {
 	profiles, err := app.DB.AllProfiles()
 	if err != nil {
@@ -166,55 +69,13 @@ func (app *Config) getProfiles() {
 	app.User.ProfileManager.Profiles = profiles
 }
 
-func (app *Config) getProfileGroups() {
-	groups, err := app.DB.AllProfileGroups()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.ProfileManager.Groups = groups
-}
-
-func (app *Config) refreshProfileGroupsList() {
-	app.getProfiles()
-	app.getProfileGroups()
-	app.ProfileGroupsList.Refresh()
-}
-
-func (app *Config) getProfileGroupToolBar() *widget.Toolbar {
-	toolbar := widget.NewToolbar(
-		widget.NewToolbarSpacer(),
-		widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-		}),
-		widget.NewToolbarAction(theme.DeleteIcon(), func() {
-			dialog.ShowConfirm(
-				"Delete?",
-				fmt.Sprintf("Deleting the group will ALSO delete its %d profiles.", len(app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup))),
-				func(deleted bool) {
-					if deleted {
-						err := app.DB.DeleteProfileGroup(app.CurrentProfileGroup)
-						if err != nil {
-							app.Logger.Error(err)
-						}
-					}
-					app.refreshProfileGroupsList()
-					app.refreshProfilesTopContent()
-					app.refreshProfilesBottomContent()
-					app.refreshProfilesTable()
-					app.refreshProfileSelector()
-				}, app.MainWindow)
-		}))
-
-	return toolbar
-}
-
 func (app *Config) addProfileDialog() dialog.Dialog {
 
 	title := widget.NewEntry()
 	title.SetPlaceHolder("My Profile")
 	title.Validator = func(s string) error {
 		s = strings.TrimSpace(s)
-		if app.User.ProfileManager.GetProfileByTitle(s, app.CurrentProfileGroup) != nil {
+		if app.User.ProfileManager.GetProfileByTitle(s) != nil {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
@@ -337,7 +198,6 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 			if valid {
 				app.Logger.Debug("Form submitted")
 				p := user.Profile{
-					GroupID:             app.CurrentProfileGroup,
 					Title:               title.Text,
 					BybitApiKey:         bybitApiKey.Text,
 					BybitApiSecret:      bybitApiSecret.Text,
@@ -360,7 +220,6 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				if err != nil {
 					app.Logger.Error(err)
 				}
-				app.refreshProfileGroupsList()
 				app.refreshProfilesTopContent()
 				app.refreshProfilesTable()
 				app.refreshProfileSelector()
@@ -381,7 +240,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	title.SetText(pf.Title)
 	title.Validator = func(s string) error {
 		s = strings.TrimSpace(s)
-		if s != pf.Title && app.User.ProfileManager.GetProfileByTitle(s, app.CurrentProfileGroup) != nil {
+		if s != pf.Title && app.User.ProfileManager.GetProfileByTitle(s) != nil {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
@@ -506,7 +365,6 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 			if valid {
 				app.Logger.Debug("Form submitted")
 				p := user.Profile{
-					GroupID:             app.CurrentProfileGroup,
 					Title:               title.Text,
 					BybitApiKey:         bybitApiKey.Text,
 					BybitApiSecret:      bybitApiSecret.Text,
@@ -529,7 +387,6 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 				if err != nil {
 					app.Logger.Error(err)
 				}
-				app.refreshProfileGroupsList()
 				app.refreshProfilesTopContent()
 				app.refreshProfilesTable()
 				app.refreshProfileSelector()
@@ -551,7 +408,7 @@ func (app *Config) getProfilesSlice() [][]any {
 
 	slice = append(slice, []any{"Profile", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
 
-	for _, x := range app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup) {
+	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
 
 		if len(x.Title) > 16 {
@@ -601,21 +458,20 @@ func (app *Config) getProfilesTable() *widget.Table {
 
 				if len(toolbar.Items) == 0 {
 					toolbar.Append(widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
 							_, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
 							}
-							app.refreshProfileGroupsList()
 							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
 							app.refreshProfileSelector()
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
 						if pf != nil {
 							app.editProfileDialog(pf)
 						}
@@ -623,13 +479,12 @@ func (app *Config) getProfilesTable() *widget.Table {
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
 							if deleted {
-								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64), app.CurrentProfileGroup)
+								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
 								err := app.DB.DeleteProfile(pf.ID)
 								if err != nil {
 									app.Logger.Error(err)
 								}
 							}
-							app.refreshProfileGroupsList()
 							app.refreshProfilesTopContent()
 							app.refreshProfilesTable()
 							app.refreshProfileSelector()
@@ -677,37 +532,32 @@ func (app *Config) refreshProfilesTable() {
 
 func (app *Config) refreshProfilesBottomContent() {
 
-	if len(app.User.ProfileManager.Groups) > 0 {
-		btnAdd := widget.NewButtonWithIcon("Add Profile", theme.ContentAddIcon(), func() {
-			app.addProfileDialog()
-		})
-		btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
-			dialog.ShowConfirm(
-				"Delete?",
-				fmt.Sprintf("Do you really want to delete %d profiles?", len(app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup))),
-				func(deleted bool) {
-					if deleted {
-						err := app.DB.DeleteProfilesByGroupID(app.CurrentProfileGroup)
-						if err != nil {
-							app.Logger.Error(err)
-						}
-						app.refreshProfileGroupsList()
-						app.refreshProfilesTopContent()
-						app.refreshProfilesBottomContent()
-						app.refreshProfilesTable()
-						app.refreshProfileSelector()
+	btnAdd := widget.NewButtonWithIcon("Add Profile", theme.ContentAddIcon(), func() {
+		app.addProfileDialog()
+	})
+	btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
+		dialog.ShowConfirm(
+			"Delete all?",
+			fmt.Sprintf("Do you really want to delete %d profiles?", len(app.User.ProfileManager.Profiles)),
+			func(deleted bool) {
+				if deleted {
+					err := app.DB.DeleteAllProfiles()
+					if err != nil {
+						app.Logger.Error(err)
 					}
-				}, app.MainWindow)
-		})
-		btnClear.Importance = widget.DangerImportance
+					app.refreshProfilesTopContent()
+					app.refreshProfilesBottomContent()
+					app.refreshProfilesTable()
+					app.refreshProfileSelector()
+				}
+			}, app.MainWindow)
+	})
+	btnClear.Importance = widget.DangerImportance
 
-		app.Bottom.Objects = []fyne.CanvasObject{
-			layout.NewSpacer(),
-			btnAdd,
-			btnClear,
-		}
-	} else {
-		app.Bottom.Objects = []fyne.CanvasObject{}
+	app.Bottom.Objects = []fyne.CanvasObject{
+		layout.NewSpacer(),
+		btnAdd,
+		btnClear,
 	}
 
 	app.Bottom.Refresh()
@@ -715,21 +565,9 @@ func (app *Config) refreshProfilesBottomContent() {
 
 func (app *Config) refreshProfilesTopContent() {
 
-	if len(app.User.ProfileManager.Groups) > 0 {
-		if app.User.ProfileManager.GetGroupByID(app.CurrentProfileGroup) == nil {
-			app.CurrentProfileGroup = app.User.ProfileManager.Groups[0].ID
-		}
-		txt := widget.NewRichTextFromMarkdown(
-			`# ` + app.User.ProfileManager.GetGroupByID(app.CurrentProfileGroup).Name + `
-
-## ` + strconv.Itoa(len(app.User.ProfileManager.FilterByGroupID(app.CurrentProfileGroup))) + ` Profiles Loaded`)
-		toolbar := app.getProfileGroupToolBar()
-		app.Top.Objects = []fyne.CanvasObject{
-			txt,
-			toolbar,
-		}
-	} else {
-		app.Top.Objects = []fyne.CanvasObject{}
+	txt := widget.NewRichTextFromMarkdown(`## ` + strconv.Itoa(len(app.User.ProfileManager.Profiles)) + ` Profiles Loaded`)
+	app.Top.Objects = []fyne.CanvasObject{
+		txt,
 	}
 
 	app.Top.Refresh()
