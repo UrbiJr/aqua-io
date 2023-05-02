@@ -3,7 +3,6 @@ package copy_io
 import (
 	"fmt"
 	"image/color"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -13,25 +12,19 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/user"
-	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
 type CopiedTradersTab struct {
 	*container.TabItem
-	OrdersSlice         [][]any
-	OrdersTable         *widget.Table
-	ProfileSelector     *widget.Select
-	SelectedProfile     *user.Profile
-	ShowFromAllProfiles *widget.Check
-	CopiedTradersList   *widget.List
-	orders              []user.Order
-	symbols             []string
-	positionsLabel      *widget.Label
-	SymbolList          *widget.List
+	OrdersSlice        [][]any
+	OrdersTable        *widget.Table
+	CopiedTradersList  *widget.List
+	orders             []user.Order
+	positionsLabel     *widget.Label
+	positionsContainer *fyne.Container
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
-	app.getTraders()
 	split := app.getCopiedTraders()
 
 	max := container.NewMax(split)
@@ -41,41 +34,70 @@ func (app *Config) copiedTradersTab() *fyne.Container {
 
 func (app *Config) getCopiedTraders() *container.Split {
 
+	/* LEFT SPLIT */
+
+	// get the copied traders list (profiles with a trader)
+	app.CopiedTradersList = widget.NewList(
+		func() int {
+			return len(app.User.ProfileManager.GetAllProfilesWithTrader())
+		},
+		func() fyne.CanvasObject {
+			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
+		},
+		func(id widget.ListItemID, item fyne.CanvasObject) {
+			// get the current profile...
+			profile := app.User.ProfileManager.GetAllProfilesWithTrader()[id]
+			item.(*fyne.Container).Objects[1].(*widget.Label).SetText("Getting trader info...")
+			go func() {
+				// and fetch the associated trader
+				t, err := app.fetchTraderByUid(profile.TraderID)
+				if err != nil {
+					return
+				}
+				toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
+				if len(toolbar.Items) == 0 {
+					toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
+						app.traderDialog(*t)
+					}))
+					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
+						dialog.ShowConfirm("Stop copying?", "Confirming will close ALL current positions copied from this trader.", func(deleted bool) {
+							err := app.stopCopyingTrader(*t)
+							if err != nil {
+								app.Logger.Error(err)
+							}
+						}, app.MainWindow)
+					}))
+				}
+				item.(*fyne.Container).Objects[1].(*widget.Label).SetText(t.NickName + "\n" + t.EncryptedUid)
+			}()
+		},
+	)
+
+	// set default height for each list item
+	for i := range app.User.ProfileManager.GetAllProfilesWithTrader() {
+		app.CopiedTradersList.SetItemHeight(i, 50)
+	}
+
 	/* RIGTH SPLIT */
 
 	// get the top content
 
-	// get the profile selector
-	app.CopiedTradersTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
-		app.CopiedTradersTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
-		app.refreshCopiedTradersTab()
-	})
-
-	// get the show from all profiles checkbox
-	app.CopiedTradersTab.ShowFromAllProfiles = widget.NewCheck("Show From All Profiles", func(b bool) {
-	})
-	// set it to true as default
-	app.CopiedTradersTab.ShowFromAllProfiles.SetChecked(true)
-
 	// get the refresh toolbar button
 	topRightToolbar := widget.NewToolbar(widget.NewToolbarSpacer(), widget.NewToolbarAction(
 		theme.ViewRefreshIcon(), func() {
-			app.refreshCopiedTradersTab()
+			app.resetCopiedTradersTab()
 		}))
 
 	// wrap the top content in a container
-	top := container.NewVBox(
-		container.NewGridWithColumns(5, app.CopiedTradersTab.ShowFromAllProfiles, canvas.NewText("", nil), canvas.NewText("", nil), canvas.NewText("", nil), topRightToolbar),
-		widget.NewSeparator(),
-		widget.NewLabel("...Or Select Profile"),
-		app.CopiedTradersTab.ProfileSelector,
+	top := container.NewHBox(
+		topRightToolbar,
 	)
 
 	// get the main content
 
 	// get the order history table
 	var slice [][]any
-	slice = append(slice, []any{"Profile", "Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+	slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
 	app.OrdersSlice = slice
 	app.OrdersTable = widget.NewTable(
 		func() (int, int) {
@@ -111,7 +133,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 		})
 
 	// set default columns widths
-	colWidths := []float32{100, 200, 100, 200, 100, 100, 100, 100, 200}
+	colWidths := []float32{200, 100, 200, 100, 100, 100, 100, 200}
 	for i, w := range colWidths {
 		app.OrdersTable.SetColumnWidth(i, w)
 	}
@@ -120,20 +142,38 @@ func (app *Config) getCopiedTraders() *container.Split {
 	ordersTab := container.NewVScroll(app.OrdersTable)
 
 	// get the positions tab
-	app.CopiedTradersTab.positionsLabel = widget.NewLabel("")
-	// get the position info text
-	defaultVboxText := widget.NewLabel("Select a symbol to view its positions")
-	vBox := container.NewVBox(defaultVboxText)
-	// get the positions list
-	app.CopiedTradersTab.SymbolList = app.getSymbolList()
-	app.CopiedTradersTab.SymbolList.UnselectAll()
-	app.CopiedTradersTab.SymbolList.OnSelected = func(id widget.ListItemID) {
-		symbol := app.CopiedTradersTab.symbols[id]
-		defaultVboxText.SetText(fmt.Sprintf("Loading %s positions...", symbol))
+	app.CopiedTradersTab.positionsLabel = widget.NewLabel("Select a trader")
+
+	// get the positions container
+	app.CopiedTradersTab.positionsContainer = container.NewVBox()
+
+	positionsTab := container.NewBorder(
+		app.CopiedTradersTab.positionsLabel,
+		nil,
+		nil,
+		nil,
+		container.NewVScroll(app.CopiedTradersTab.positionsContainer))
+
+	// get the tabs container
+	tabs := container.NewAppTabs(
+		container.NewTabItem("Order History", ordersTab),
+		container.NewTabItem("Positions", positionsTab))
+	tabs.SetTabLocation(container.TabLocationTop)
+
+	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
+		profile := app.User.ProfileManager.GetAllProfilesWithTrader()[id]
+
+		// update order history content
 		go func() {
-			elements := strings.Split(symbol, "|")
-			profile := app.User.ProfileManager.GetProfileByTitle(elements[1])
-			positionInfoArr := app.getPositionInfo("linear", elements[2], *profile)
+			app.getOrders(&profile)
+			app.OrdersSlice = app.getOrderSlice()
+			app.OrdersTable.Refresh()
+		}()
+
+		// update positions content
+		app.CopiedTradersTab.positionsLabel.SetText("Fetching positions...")
+		go func() {
+			positionInfoArr := app.getPositionInfo("linear", profile)
 			markdownText := ""
 			for i, p := range positionInfoArr {
 				//Unix Timestamp to time.Time
@@ -170,9 +210,9 @@ func (app *Config) getCopiedTraders() *container.Split {
     Position Status:            ` + p.PositionStatus + `
 ` + "    ```\n"
 
-				vBox.RemoveAll()
-				vBox.Add(widget.NewRichTextFromMarkdown(markdownText))
-				vBox.Add(container.NewGridWithColumns(3,
+				app.CopiedTradersTab.positionsContainer.RemoveAll()
+				app.CopiedTradersTab.positionsContainer.Add(widget.NewRichTextFromMarkdown(markdownText))
+				app.CopiedTradersTab.positionsContainer.Add(container.NewGridWithColumns(3,
 					widget.NewButtonWithIcon("Set TP", theme.DocumentCreateIcon(), func() {
 
 					}),
@@ -183,80 +223,13 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 					}),
 				))
-				vBox.Add(widget.NewSeparator())
+				app.CopiedTradersTab.positionsContainer.Add(widget.NewSeparator())
 			}
 		}()
 	}
-	app.CopiedTradersTab.SymbolList.OnUnselected = func(id widget.ListItemID) {
-		vBox.Objects = []fyne.CanvasObject{
-			defaultVboxText}
-		defaultVboxText.SetText("Select a symbol to view its positions")
-		vBox.Refresh()
-	}
-
-	positionsTab := container.NewBorder(
-		app.CopiedTradersTab.positionsLabel,
-		nil,
-		nil,
-		nil,
-		container.NewHSplit(app.CopiedTradersTab.SymbolList, container.NewVScroll(vBox)))
-
-	// get the tabs container
-	tabs := container.NewAppTabs(
-		container.NewTabItem("Order History", ordersTab),
-		container.NewTabItem("Positions", positionsTab))
-	tabs.SetTabLocation(container.TabLocationTop)
-	tabs.OnSelected = func(ti *container.TabItem) {
-		// when selecting the order history tab...
-		if ti.Text == "Order History" {
-			// ...clear selection from symbol list on the positions tab
-			app.CopiedTradersTab.SymbolList.UnselectAll()
-		}
-	}
-
-	/* LEFT SPLIT */
-
-	// get the copied traders list
-	app.CopiedTradersList = widget.NewList(
-		func() int {
-			return len(app.User.CopiedTradersManager.Traders)
-		},
-		func() fyne.CanvasObject {
-			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
-		},
-		func(id widget.ListItemID, item fyne.CanvasObject) {
-			// define the icon + trader name + toolbar actions for each trader
-			t := app.User.CopiedTradersManager.Traders[id]
-			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
-			if len(toolbar.Items) == 0 {
-				toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
-					app.traderDialog(t)
-				}))
-				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-					dialog.ShowConfirm("Stop copying?", "Confirming will delete all current positions copied from this trader.", func(deleted bool) {
-						app.stopCopyingTrader(t)
-					}, app.MainWindow)
-				}))
-			}
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(t.NickName + "\n" + t.EncryptedUid)
-		},
-	)
-
-	// set default height for each list item
-	for i := range app.User.CopiedTradersManager.Traders {
-		app.CopiedTradersList.SetItemHeight(i, 50)
-	}
 
 	// refresh the content
-	app.refreshCopiedTradersTab()
-
-	app.CopiedTradersTab.ShowFromAllProfiles.OnChanged = func(b bool) {
-		vBox.Objects = []fyne.CanvasObject{
-			defaultVboxText}
-		defaultVboxText.SetText("Select a symbol to view its positions")
-		vBox.Refresh()
-		app.refreshCopiedTradersTab()
-	}
+	app.resetCopiedTradersTab()
 
 	// get the horizontal split
 	return container.NewHSplit(container.NewBorder(
@@ -273,27 +246,15 @@ func (app *Config) getCopiedTraders() *container.Split {
 		tabs))
 }
 
-func (app *Config) getTraders() {
-	traders, err := app.DB.AllTraders()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.CopiedTradersManager.Traders = traders
-}
-
 func (app *Config) getOrderSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"Profile", "Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+	slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
 
 	for _, x := range app.CopiedTradersTab.orders {
 		var currentRow []any
 
 		if x.OrderStatus == "Filled" {
-			profile := app.User.ProfileManager.GetProfileByID(x.ProfileID)
-
-			currentRow = append(currentRow, profile.Title)
 
 			currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
 
@@ -327,80 +288,34 @@ func (app *Config) getOrderSlice() [][]any {
 	return slice
 }
 
-func (app *Config) getOrders(allProfiles bool, profile *user.Profile) []user.Order {
+func (app *Config) getOrders(profile *user.Profile) []user.Order {
 	var allOrders []user.Order
-	var allSymbols []string
 
-	if allProfiles {
-		for _, p := range app.User.Profiles {
-			//TODO: better check if bybit or binance api key, add binance api key code
-			if p.BybitApiKey != "" {
-				byBitOrders := app.getOrderHistory("spot", p)
-				if byBitOrders != nil {
-					allOrders = append(allOrders, byBitOrders...)
-				}
-			}
-		}
-	} else {
-		if profile != nil {
-			if profile.BybitApiKey != "" {
-				byBitOrders := app.getOrderHistory("spot", *profile)
-				if byBitOrders != nil {
-					allOrders = append(allOrders, byBitOrders...)
-				}
+	if profile != nil {
+		if profile.BybitApiKey != "" {
+			byBitOrders := app.getOrderHistory("spot", *profile)
+			if byBitOrders != nil {
+				allOrders = append(allOrders, byBitOrders...)
 			}
 		}
 	}
 
 	app.CopiedTradersTab.orders = allOrders
 
-	for _, o := range allOrders {
-		if o.OrderStatus == "Filled" {
-			profileName := app.User.ProfileManager.GetProfileByID(o.ProfileID).Title
-			if !utils.Contains(allSymbols, fmt.Sprintf("%s|%s", profileName, o.Symbol)) {
-				allSymbols = append(allSymbols, fmt.Sprintf("%s|%s", profileName, o.Symbol))
-			}
-
-		}
-	}
-
-	app.CopiedTradersTab.symbols = allSymbols
-
 	return allOrders
 }
 
-func (app *Config) getSymbolList() *widget.List {
-
-	list := widget.NewList(
-		func() int {
-			return len(app.CopiedTradersTab.symbols)
-		},
-		func() fyne.CanvasObject {
-			return container.NewMax(widget.NewLabel("Template Object"))
-		},
-		func(id widget.ListItemID, item fyne.CanvasObject) {
-			item.(*fyne.Container).Objects[0].(*widget.Label).SetText(app.CopiedTradersTab.symbols[id])
-		},
-	)
-
-	return list
-}
-
-func (app *Config) refreshCopiedTradersTab() {
+func (app *Config) resetCopiedTradersTab() {
 	go func() {
-		// refresh orders table
-		app.getOrders(app.ShowFromAllProfiles.Checked, app.CopiedTradersTab.SelectedProfile)
-		app.OrdersSlice = app.getOrderSlice()
+		// reset orders table
+		var slice [][]any
+		slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+		app.OrdersSlice = slice
 		app.OrdersTable.Refresh()
 
-		// refresh opened positions title
-		if app.ShowFromAllProfiles.Checked {
-			app.CopiedTradersTab.positionsLabel.SetText("Showing opened positions from all profiles")
-		} else if app.CopiedTradersTab.SelectedProfile != nil {
-			app.CopiedTradersTab.positionsLabel.SetText(fmt.Sprintf("Showing opened positions from profile %s", app.CopiedTradersTab.SelectedProfile.Title))
-		}
+		// reset positions
+		app.CopiedTradersTab.positionsLabel.SetText("Select a trader")
+		app.CopiedTradersTab.positionsContainer.RemoveAll()
 
-		// refresh opened positions list
-		app.CopiedTradersTab.SymbolList.Refresh()
 	}()
 }

@@ -1,9 +1,10 @@
 package user
 
-// Profile contains information specific to a single account of a particular site i.e. BSTN
+// Profile contains information specific to a configuration for a trader
 type Profile struct {
 	ID                                   int64    `json:"id"`
 	Title                                string   `json:"title"`
+	TraderID                             string   `json:"trader_id"` // binance encrypted uid
 	BybitApiKey                          string   `json:"bybit_api_key"`
 	BybitApiSecret                       string   `json:"bybit_api_secret"`
 	MaxBybitBinancePriceDifferentPercent float64  `json:"max_bybit_binance_price_difference_percent"`
@@ -43,6 +44,27 @@ func (pfm *ProfileManager) GetProfileByID(ID int64) *Profile {
 	}
 
 	return nil
+}
+
+func (pfm *ProfileManager) GetProfileByTraderID(traderID string) *Profile {
+	for _, p := range pfm.Profiles {
+		if p.TraderID == traderID {
+			return &p
+		}
+	}
+
+	return nil
+}
+
+func (pfm *ProfileManager) GetAllProfilesWithTrader() []Profile {
+	var profiles []Profile
+	for _, p := range pfm.Profiles {
+		if p.TraderID != "" {
+			profiles = append(profiles, p)
+		}
+	}
+
+	return profiles
 }
 
 func (pfm *ProfileManager) GetAllTitles() []string {

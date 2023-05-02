@@ -1,5 +1,6 @@
 package user
 
+// Trader contains information specific to a trader
 type Trader struct {
 	EncryptedUid   string  `json:"encryptedUid"`
 	FutureUid      any     `json:"futureUid"`
@@ -15,11 +16,11 @@ type Trader struct {
 	TwShared       string  `json:"-"`
 	IsTwTrader     bool    `json:"isTwTrader"`
 	OpenId         any     `json:"openId"`
+	PortfolioId    any     `json:"portfolioId"`
 }
 
 type Position struct {
 	ID              int64   `json:"id"`
-	TraderID        int64   `json:"trader_id"`
 	Symbol          string  `json:"symbol"`
 	EntryPrice      float64 `json:"entryPrice"`
 	MarkPrice       float64 `json:"markPrice"`
@@ -77,26 +78,4 @@ type PositionInfo struct {
 	UpdatedTime    int64   `json:"updatedTime"`
 	Side           string  `json:"side"`
 	PositionStatus string  `json:"positionStatus"`
-}
-
-type CopiedTradersManager struct {
-	Traders []Trader
-}
-
-func (ctm *CopiedTradersManager) GetTraderByUid(encryptedUid string) *Trader {
-	for idx, t := range ctm.Traders {
-		if t.EncryptedUid == encryptedUid {
-			return &ctm.Traders[idx]
-		}
-	}
-
-	return nil
-}
-
-func (ctm *CopiedTradersManager) RemoveTraderByUid(encryptedUid string) {
-	for idx, t := range ctm.Traders {
-		if t.EncryptedUid == encryptedUid {
-			ctm.Traders = append(ctm.Traders[:idx], ctm.Traders[idx+1:]...)
-		}
-	}
 }

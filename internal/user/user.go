@@ -6,7 +6,6 @@ type User struct {
 	Username string
 	UID      string
 	Settings *Settings
-	*CopiedTradersManager
 	*ProfileManager
 }
 

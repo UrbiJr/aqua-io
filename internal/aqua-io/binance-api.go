@@ -3,6 +3,7 @@ package copy_io
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 
@@ -24,6 +25,72 @@ type LeaderboardResponse struct {
 	MessageDetail any           `json:"messageDetail"`
 	Data          []user.Trader `json:"data"`
 	Success       bool          `json:"success"`
+}
+
+type TraderResponse struct {
+	Code          any         `json:"code"`
+	Message       any         `json:"message"`
+	MessageDetail any         `json:"messageDetail"`
+	Data          user.Trader `json:"data"`
+	Success       bool        `json:"success"`
+}
+
+func (app *Config) fetchTraderByUid(encryptedUid string) (*user.Trader, error) {
+
+	binanceApi := "https://www.binance.com/bapi/futures/v2/public/future/leaderboard/getOtherLeaderboardBaseInfo"
+
+	postJson := make(map[string]any)
+	var postData []byte
+	postJson["encryptedUid"] = encryptedUid
+	postData, err := json.MarshalIndent(postJson, " ", "")
+	if err != nil {
+		return nil, err
+	}
+	req, err := fhttp.NewRequest("POST", binanceApi, bytes.NewReader(postData))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Origin", "https://www.binance.com")
+	req.Header.Add("Referer", "https://www.binance.com/en/futures-activity/leaderboard/user/um?encryptedUid="+encryptedUid)
+	req.Header.Add("lang", "en")
+	req.Header.Add("clienttype", "web")
+	req.Header.Add("content-type", "application/json")
+
+	resp, err := app.TLSClient.Do(req)
+	if err != nil {
+		app.Logger.Error("Binance API request failed: " + err.Error())
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var binanceApiResponse TraderResponse
+	err = json.Unmarshal(body, &binanceApiResponse)
+	if err != nil {
+		app.Logger.Error("Error decoding Binance API response " + err.Error())
+		return nil, err
+	}
+
+	switch code := binanceApiResponse.Code.(type) {
+	case float64:
+		if code == 400 {
+			err := errors.New(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			app.Logger.Error(err)
+			return nil, err
+		}
+	default:
+		app.Logger.Debug(fmt.Sprintf("fetched trader with ID from binance API", encryptedUid))
+	}
+
+	binanceApiResponse.Data.EncryptedUid = encryptedUid
+	return &binanceApiResponse.Data, nil
 }
 
 func (app *Config) fetchTraders(statisticsType, periodType string) ([]user.Trader, error) {
@@ -79,7 +146,9 @@ func (app *Config) fetchTraders(statisticsType, periodType string) ([]user.Trade
 	switch code := binanceApiResponse.Code.(type) {
 	case float64:
 		if code == 400 {
-			app.Logger.Debug(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			err := errors.New(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			app.Logger.Error(err)
+			return nil, err
 		}
 	default:
 		app.Logger.Debug(fmt.Sprintf("collected %d traders from binance API", len(binanceApiResponse.Data)))
@@ -135,7 +204,9 @@ func (app *Config) fetchTraderPositions(uid string) ([]user.Position, error) {
 	switch code := binanceApiResponse.Code.(type) {
 	case float64:
 		if code == 400 {
-			app.Logger.Debug(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			err := errors.New(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			app.Logger.Error(err)
+			return nil, err
 		}
 	default:
 		app.Logger.Debug(fmt.Sprintf("collected %d traders from binance API", len(binanceApiResponse.Data)))
@@ -207,7 +278,9 @@ func (app *Config) searchByNickname(nickname string) ([]user.Trader, error) {
 	switch code := binanceApiResponse.Code.(type) {
 	case float64:
 		if code == 400 {
-			app.Logger.Debug(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			err := errors.New(fmt.Sprintf("failed connecting to binance API, status code: %.0f", code))
+			app.Logger.Error(err)
+			return nil, err
 		}
 	default:
 		app.Logger.Debug(fmt.Sprintf("collected %d traders from binance API", len(binanceApiResponse.Data)))

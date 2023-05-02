@@ -136,30 +136,32 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 		}
 	}
 
-	_, err = app.DB.InsertTrader(trader)
-	if err != nil {
-		app.Logger.Error(err)
-	} else {
-		app.User.CopiedTradersManager.Traders = append(app.User.CopiedTradersManager.Traders, trader)
-	}
+	profile.TraderID = trader.EncryptedUid
+	err = app.DB.UpdateProfile(profile.ID, *profile)
 
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
-	app.refreshCopiedTradersTab()
+	app.resetCopiedTradersTab()
 
 	return nil
 }
 
-func (app *Config) stopCopyingTrader(trader user.Trader) {
-	err := app.DB.DeleteTrader(trader.EncryptedUid)
-	if err != nil {
-		app.Logger.Error(err)
+func (app *Config) stopCopyingTrader(trader user.Trader) error {
+	profile := app.User.ProfileManager.GetProfileByTraderID(trader.EncryptedUid)
+	if profile == nil {
+		return fmt.Errorf("no profiles found with trader id %s", trader.EncryptedUid)
 	}
 
-	app.User.CopiedTradersManager.RemoveTraderByUid(trader.EncryptedUid)
+	profile.TraderID = ""
+	err := app.DB.UpdateProfile(profile.ID, *profile)
+	if err != nil {
+		app.Logger.Error(err.Error())
+	}
 
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
+
+	return nil
 }

@@ -115,11 +115,10 @@ func main() {
 
 	// get logged user
 	app.User = &user.User{
-		Email:                "urbijr@app-robotics.eu",
-		Username:             "urbijr",
-		Settings:             &user.Settings{},
-		CopiedTradersManager: &user.CopiedTradersManager{},
-		ProfileManager:       &user.ProfileManager{},
+		Email:          "urbijr@app-robotics.eu",
+		Username:       "urbijr",
+		Settings:       &user.Settings{},
+		ProfileManager: &user.ProfileManager{},
 	}
 
 	// create and size a fyne window

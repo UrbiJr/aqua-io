@@ -1,6 +1,7 @@
 package copy_io
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"math"
@@ -255,17 +256,26 @@ func (app *Config) noProfileSelectedDialog() dialog.Dialog {
 }
 
 func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
-	d := dialog.NewConfirm(
-		"Copy?",
-		fmt.Sprintf("Copy %s", t.NickName),
-		func(b bool) {
-			if b {
-				app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
-			}
-		},
-		app.MainWindow)
-	d.Show()
+	var d dialog.Dialog
 
+	if app.LeaderboardTab.SelectedProfile.TraderID != "" {
+		d = dialog.NewError(
+			errors.New("Selected profile already has a trader.\nPlease select a different profile, then try again."),
+			app.MainWindow,
+		)
+	} else {
+		d = dialog.NewConfirm(
+			"Copy?",
+			fmt.Sprintf("Copy %s", t.NickName),
+			func(b bool) {
+				if b {
+					app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
+				}
+			},
+			app.MainWindow)
+	}
+
+	d.Show()
 	return d
 }
 
@@ -289,7 +299,7 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 	var canvasImage *canvas.Image
 	var btn *widget.Button
 
-	if t := app.User.CopiedTradersManager.GetTraderByUid(trader.EncryptedUid); t != nil {
+	if app.LeaderboardTab.SelectedProfile != nil && app.LeaderboardTab.SelectedProfile.TraderID != "" {
 		btn = widget.NewButton("Stop Copying", func() {
 			app.stopCopyingTraderDialog(trader)
 		})

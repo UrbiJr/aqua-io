@@ -406,7 +406,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"Profile", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
+	slice = append(slice, []any{"Profile", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
 
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
@@ -416,6 +416,8 @@ func (app *Config) getProfilesSlice() [][]any {
 		} else {
 			currentRow = append(currentRow, x.Title)
 		}
+
+		currentRow = append(currentRow, x.TraderID)
 
 		if len(x.BybitApiKey) > 5 {
 			currentRow = append(currentRow, fmt.Sprintf("%s****", x.BybitApiKey[0:4]))
@@ -452,7 +454,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			lbl := container.Objects[0].(*widget.Label)
 			toolbar := container.Objects[1].(*widget.Toolbar)
 
-			if i.Row != 0 && i.Col == 4 {
+			if i.Row != 0 && i.Col == 5 {
 				lbl.Hide()
 				toolbar.Hidden = false
 
@@ -492,7 +494,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 					}))
 				}
 
-			} else if i.Col == 3 && i.Row != 0 {
+			} else if i.Col == 4 && i.Row != 0 {
 				toolbar.Hide()
 				lbl.Hidden = false
 				if app.ProfilesSlice[i.Row][i.Col].(bool) == true {
@@ -509,7 +511,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{100, 200, 200, 200, 60}
+	colWidths := []float32{100, 200, 200, 200, 200, 60}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
 	}
@@ -522,7 +524,7 @@ func (app *Config) refreshProfilesTable() {
 		app.ProfilesSlice = app.getProfilesSlice()
 		app.ProfilesTable.Refresh()
 
-		colWidths := []float32{100, 200, 200, 200, 60}
+		colWidths := []float32{100, 200, 200, 200, 200, 60}
 		for i, w := range colWidths {
 			app.ProfilesTable.SetColumnWidth(i, w)
 		}
@@ -537,13 +539,17 @@ func (app *Config) refreshProfilesBottomContent() {
 	})
 	btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
 		dialog.ShowConfirm(
-			"Delete all?",
-			fmt.Sprintf("Do you really want to delete %d profiles?", len(app.User.ProfileManager.Profiles)),
+			"Delete all profiles?",
+			fmt.Sprintf("Do you really want to delete %d profiles?\nNote that profiles with a trader will NOT be deleted: you have to stop copying the trader first.", len(app.User.ProfileManager.GetAllProfilesWithTrader())),
 			func(deleted bool) {
 				if deleted {
-					err := app.DB.DeleteAllProfiles()
-					if err != nil {
-						app.Logger.Error(err)
+					for _, p := range app.User.ProfileManager.Profiles {
+						if p.TraderID == "" {
+							err := app.DB.DeleteProfile(p.ID)
+							if err != nil {
+								app.Logger.Error(err)
+							}
+						}
 					}
 					app.refreshProfilesTopContent()
 					app.refreshProfilesBottomContent()
