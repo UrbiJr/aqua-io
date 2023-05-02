@@ -33,7 +33,6 @@ type LeaderboardTab struct {
 }
 
 func (app *Config) leaderboardTab() *fyne.Container {
-	var profileGroups []string
 
 	grid := container.NewAdaptiveGrid(3)
 	app.LeaderboardTab.Traders, _ = app.fetchTraders(defaultStatisticsType, defaultPeriodType)
@@ -43,27 +42,8 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	}
 	vScroll := container.NewVScroll(grid)
 
-	for _, pfg := range app.User.ProfileManager.Groups {
-		profileGroups = append(profileGroups, pfg.Name)
-	}
-
-	app.LeaderboardTab.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
-		group := app.User.ProfileManager.GetGroupByName(app.LeaderboardTab.GroupSelector.Selected)
-		if group != nil {
-			app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
-		}
-	})
-	app.LeaderboardTab.ProfileSelector.Disable()
-	app.LeaderboardTab.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
-		app.LeaderboardTab.ProfileSelector.Options = []string{}
-		profiles := app.User.ProfileManager.FilterByGroupName(s)
-		for _, p := range profiles {
-			app.LeaderboardTab.ProfileSelector.Options = append(app.LeaderboardTab.ProfileSelector.Options, p.Title)
-		}
-		if len(app.LeaderboardTab.ProfileSelector.Options) > 0 {
-			app.LeaderboardTab.ProfileSelector.Enable()
-		}
-		app.LeaderboardTab.ProfileSelector.Refresh()
+	app.LeaderboardTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
+		app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
 	})
 
 	searchEntry := widget.NewSelectEntry([]string{})
@@ -406,15 +386,7 @@ func (app *Config) RefreshLeaderboardWithoutFetch() {
 
 func (app *Config) refreshProfileSelector() {
 	go func() {
-		var profileGroups []string
-		for _, pfg := range app.User.ProfileManager.Groups {
-			profileGroups = append(profileGroups, pfg.Name)
-		}
-		app.LeaderboardTab.GroupSelector.Options = profileGroups
-		app.LeaderboardTab.GroupSelector.ClearSelected()
-		app.LeaderboardTab.GroupSelector.Refresh()
 		app.LeaderboardTab.ProfileSelector.ClearSelected()
 		app.LeaderboardTab.ProfileSelector.Refresh()
-		app.LeaderboardTab.ProfileSelector.Disable()
 	}()
 }

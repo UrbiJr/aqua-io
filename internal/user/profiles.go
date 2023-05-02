@@ -1,14 +1,8 @@
 package user
 
-type ProfileGroup struct {
-	ID   int64  `json:"id"`
-	Name string `json:"name"`
-}
-
 // Profile contains information specific to a single account of a particular site i.e. BSTN
 type Profile struct {
 	ID                                   int64    `json:"id"`
-	GroupID                              int64    `json:"group_id"`
 	Title                                string   `json:"title"`
 	BybitApiKey                          string   `json:"bybit_api_key"`
 	BybitApiSecret                       string   `json:"bybit_api_secret"`
@@ -28,70 +22,11 @@ type Profile struct {
 }
 
 type ProfileManager struct {
-	Groups   []ProfileGroup
 	Profiles []Profile
 }
 
-func (pfm *ProfileManager) FilterByGroupName(groupName string) []Profile {
-	var filtered []Profile
-
-	// iterate through proxy groups
-	for _, g := range pfm.Groups {
-		// if group is the one requested
-		if g.Name == groupName {
-			// keep it as current and iterate through proxies
-			for _, p := range pfm.Profiles {
-				// if proxy belongs to current group
-				if p.GroupID == g.ID {
-					// add it to filtered
-					filtered = append(filtered, p)
-				}
-			}
-			return filtered
-		}
-	}
-
-	return filtered
-}
-
-func (pfm *ProfileManager) FilterByGroupID(ID int64) []Profile {
-	var filtered []Profile
-
-	// keep it as current and iterate through proxies
+func (pfm *ProfileManager) GetProfileByTitle(title string) *Profile {
 	for _, p := range pfm.Profiles {
-		// if proxy belongs to current group
-		if p.GroupID == ID {
-			// add it to filtered
-			filtered = append(filtered, p)
-		}
-	}
-
-	return filtered
-}
-
-func (pfm *ProfileManager) GetGroupByID(ID int64) *ProfileGroup {
-	for idx, g := range pfm.Groups {
-		if g.ID == ID {
-			return &pfm.Groups[idx]
-		}
-	}
-
-	return nil
-}
-
-func (pfm *ProfileManager) GetGroupByName(name string) *ProfileGroup {
-	for _, p := range pfm.Groups {
-		if p.Name == name {
-			return &p
-		}
-	}
-
-	return nil
-}
-
-func (pfm *ProfileManager) GetProfileByTitle(title string, groupID int64) *Profile {
-	filtered := pfm.FilterByGroupID(groupID)
-	for _, p := range filtered {
 		if p.Title == title {
 			return &p
 		}
@@ -100,13 +35,21 @@ func (pfm *ProfileManager) GetProfileByTitle(title string, groupID int64) *Profi
 	return nil
 }
 
-func (pfm *ProfileManager) GetProfileByID(ID int64, groupID int64) *Profile {
-	filtered := pfm.FilterByGroupID(groupID)
-	for _, p := range filtered {
+func (pfm *ProfileManager) GetProfileByID(ID int64) *Profile {
+	for _, p := range pfm.Profiles {
 		if p.ID == ID {
 			return &p
 		}
 	}
 
 	return nil
+}
+
+func (pfm *ProfileManager) GetAllTitles() []string {
+	var titles []string
+	for _, p := range pfm.Profiles {
+		titles = append(titles, p.Title)
+	}
+
+	return titles
 }

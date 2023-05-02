@@ -46,33 +46,10 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 	// get the top content
 
-	var profileGroups []string
-	for _, pfg := range app.User.ProfileManager.Groups {
-		profileGroups = append(profileGroups, pfg.Name)
-	}
-
 	// get the profile selector
-	app.CopiedTradersTab.ProfileSelector = widget.NewSelect([]string{}, func(s string) {
-		group := app.User.ProfileManager.GetGroupByName(app.CopiedTradersTab.GroupSelector.Selected)
-		if group != nil {
-			app.CopiedTradersTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s, group.ID)
-			app.refreshCopiedTradersTab()
-		}
-	})
-	app.CopiedTradersTab.ProfileSelector.Disable()
-
-	// get the profile group selector
-	app.CopiedTradersTab.GroupSelector = widget.NewSelect(profileGroups, func(s string) {
-		app.CopiedTradersTab.ProfileSelector.Options = []string{}
-		profiles := app.User.ProfileManager.FilterByGroupName(s)
-		for _, p := range profiles {
-			app.CopiedTradersTab.ProfileSelector.Options = append(app.CopiedTradersTab.ProfileSelector.Options, p.Title)
-		}
-		if len(app.CopiedTradersTab.ProfileSelector.Options) > 0 {
-			app.CopiedTradersTab.ProfileSelector.Enable()
-		}
-		app.CopiedTradersTab.ProfileSelector.ClearSelected()
-		app.CopiedTradersTab.ProfileSelector.Refresh()
+	app.CopiedTradersTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
+		app.CopiedTradersTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
+		app.refreshCopiedTradersTab()
 	})
 
 	// get the show from all profiles checkbox
@@ -81,9 +58,15 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// set it to true as default
 	app.CopiedTradersTab.ShowFromAllProfiles.SetChecked(true)
 
+	// get the refresh toolbar button
+	topRightToolbar := widget.NewToolbar(widget.NewToolbarSpacer(), widget.NewToolbarAction(
+		theme.ViewRefreshIcon(), func() {
+			app.refreshCopiedTradersTab()
+		}))
+
 	// wrap the top content in a container
 	top := container.NewVBox(
-		app.CopiedTradersTab.ShowFromAllProfiles,
+		container.NewGridWithColumns(5, app.CopiedTradersTab.ShowFromAllProfiles, canvas.NewText("", nil), canvas.NewText("", nil), canvas.NewText("", nil), topRightToolbar),
 		widget.NewSeparator(),
 		widget.NewLabel("...Or Select Profile"),
 		app.CopiedTradersTab.GroupSelector,
@@ -141,17 +124,17 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the positions tab
 	app.CopiedTradersTab.positionsLabel = widget.NewLabel("")
 	// get the position info text
-	positionInfoMarkdown := widget.NewRichTextFromMarkdown("Select a symbol to view its positions")
+	defaultVboxText := widget.NewLabel("Select a symbol to view its positions")
+	vBox := container.NewVBox(defaultVboxText)
 	// get the positions list
 	app.CopiedTradersTab.SymbolList = app.getSymbolList()
 	app.CopiedTradersTab.SymbolList.UnselectAll()
 	app.CopiedTradersTab.SymbolList.OnSelected = func(id widget.ListItemID) {
 		symbol := app.CopiedTradersTab.symbols[id]
-		positionInfoMarkdown.ParseMarkdown(fmt.Sprintf("Loading %s positions...", symbol))
+		defaultVboxText.SetText(fmt.Sprintf("Loading %s positions...", symbol))
 		go func() {
 			elements := strings.Split(symbol, "|")
-			group := app.User.ProfileManager.GetGroupByName(elements[0])
-			profile := app.User.ProfileManager.GetProfileByTitle(elements[1], group.ID)
+			profile := app.User.ProfileManager.GetProfileByTitle(elements[1])
 			positionInfoArr := app.getPositionInfo("linear", elements[2], *profile)
 			markdownText := ""
 			for i, p := range positionInfoArr {
@@ -188,12 +171,29 @@ func (app *Config) getCopiedTraders() *container.Split {
     Side (buy/sell/empty):      ` + side + `
     Position Status:            ` + p.PositionStatus + `
 ` + "    ```\n"
+
+				vBox.RemoveAll()
+				vBox.Add(widget.NewRichTextFromMarkdown(markdownText))
+				vBox.Add(container.NewGridWithColumns(3,
+					widget.NewButtonWithIcon("Set TP", theme.DocumentCreateIcon(), func() {
+
+					}),
+					widget.NewButtonWithIcon("Set SL", theme.DocumentCreateIcon(), func() {
+
+					}),
+					widget.NewButtonWithIcon("Close", theme.DeleteIcon(), func() {
+
+					}),
+				))
+				vBox.Add(widget.NewSeparator())
 			}
-			positionInfoMarkdown.ParseMarkdown(markdownText)
 		}()
 	}
 	app.CopiedTradersTab.SymbolList.OnUnselected = func(id widget.ListItemID) {
-		positionInfoMarkdown.ParseMarkdown("Select a symbol to view its positions")
+		vBox.Objects = []fyne.CanvasObject{
+			defaultVboxText}
+		defaultVboxText.SetText("Select a symbol to view its positions")
+		vBox.Refresh()
 	}
 
 	positionsTab := container.NewBorder(
@@ -201,7 +201,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 		nil,
 		nil,
 		nil,
-		container.NewHSplit(app.CopiedTradersTab.SymbolList, container.NewVScroll(positionInfoMarkdown)))
+		container.NewHSplit(app.CopiedTradersTab.SymbolList, container.NewVScroll(vBox)))
 
 	// get the tabs container
 	tabs := container.NewAppTabs(
@@ -253,7 +253,10 @@ func (app *Config) getCopiedTraders() *container.Split {
 	app.refreshCopiedTradersTab()
 
 	app.CopiedTradersTab.ShowFromAllProfiles.OnChanged = func(b bool) {
-		positionInfoMarkdown.ParseMarkdown("Select a symbol to view its positions")
+		vBox.Objects = []fyne.CanvasObject{
+			defaultVboxText}
+		defaultVboxText.SetText("Select a symbol to view its positions")
+		vBox.Refresh()
 		app.refreshCopiedTradersTab()
 	}
 
@@ -290,7 +293,7 @@ func (app *Config) getOrderSlice() [][]any {
 		var currentRow []any
 
 		if x.OrderStatus == "Filled" {
-			profile := app.User.ProfileManager.GetProfileByID(x.ProfileID, x.ProfileGroupID)
+			profile := app.User.ProfileManager.GetProfileByID(x.ProfileID)
 
 			currentRow = append(currentRow, profile.Title)
 
@@ -355,10 +358,9 @@ func (app *Config) getOrders(allProfiles bool, profile *user.Profile) []user.Ord
 
 	for _, o := range allOrders {
 		if o.OrderStatus == "Filled" {
-			groupName := app.User.ProfileManager.GetGroupByID(o.ProfileGroupID).Name
-			profileName := app.User.ProfileManager.GetProfileByID(o.ProfileID, o.ProfileGroupID).Title
-			if !utils.Contains(allSymbols, fmt.Sprintf("%s|%s|%s", groupName, profileName, o.Symbol)) {
-				allSymbols = append(allSymbols, fmt.Sprintf("%s|%s|%s", groupName, profileName, o.Symbol))
+			profileName := app.User.ProfileManager.GetProfileByID(o.ProfileID).Title
+			if !utils.Contains(allSymbols, fmt.Sprintf("%s|%s", profileName, o.Symbol)) {
+				allSymbols = append(allSymbols, fmt.Sprintf("%s|%s", profileName, o.Symbol))
 			}
 
 		}

@@ -225,7 +225,6 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 						}
 						transactions = append(transactions, user.Transaction{
 							ProfileID:       p.ID,
-							ProfileGroupID:  p.GroupID,
 							OrderID:         x["orderId"].(string),
 							TradeID:         x["tradeId"].(string),
 							Symbol:          x["symbol"].(string),
@@ -325,18 +324,17 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 								continue
 							}
 							orders = append(orders, user.Order{
-								ProfileID:      p.ID,
-								ProfileGroupID: p.GroupID,
-								Symbol:         o["symbol"].(string),
-								OrderID:        o["orderId"].(string),
-								OrderLinkID:    o["orderLinkId"].(string),
-								OrderStatus:    o["orderStatus"].(string),
-								OrderType:      o["orderType"].(string),
-								Price:          price,
-								CreatedTime:    createdTime,
-								Qty:            qty,
-								Side:           o["side"].(string),
-								IsLeverage:     isLeverage,
+								ProfileID:   p.ID,
+								Symbol:      o["symbol"].(string),
+								OrderID:     o["orderId"].(string),
+								OrderLinkID: o["orderLinkId"].(string),
+								OrderStatus: o["orderStatus"].(string),
+								OrderType:   o["orderType"].(string),
+								Price:       price,
+								CreatedTime: createdTime,
+								Qty:         qty,
+								Side:        o["side"].(string),
+								IsLeverage:  isLeverage,
 							})
 						}
 					}
