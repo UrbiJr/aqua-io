@@ -49,7 +49,7 @@ func (repo *SQLiteRepository) Migrate() error {
 }
 
 func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, error) {
-	stmt := "insert into profiles (title, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmt := "insert into profiles (title, trader_id, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	var blackListCoins string
 	var blockAddsAboveEntry, testMode int
 
@@ -82,7 +82,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 }
 
 func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
-	query := "select id, title, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode from profiles order by title"
+	query := "select id, title, trader_id, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode from profiles order by title"
 
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
@@ -100,6 +100,7 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 		err := rows.Scan(
 			&p.ID,
 			&p.Title,
+			&p.TraderID,
 			&p.BybitApiKey,
 			&p.BybitApiSecret,
 			&p.MaxBybitBinancePriceDifferentPercent,

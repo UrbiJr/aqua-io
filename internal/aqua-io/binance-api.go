@@ -86,7 +86,7 @@ func (app *Config) fetchTraderByUid(encryptedUid string) (*user.Trader, error) {
 			return nil, err
 		}
 	default:
-		app.Logger.Debug(fmt.Sprintf("fetched trader with ID from binance API", encryptedUid))
+		app.Logger.Debug(fmt.Sprintf("%s from binance API", encryptedUid))
 	}
 
 	binanceApiResponse.Data.EncryptedUid = encryptedUid

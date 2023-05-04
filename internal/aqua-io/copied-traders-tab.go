@@ -3,6 +3,7 @@ package copy_io
 import (
 	"fmt"
 	"image/color"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -23,6 +24,7 @@ type CopiedTradersTab struct {
 	positionsLabel       *widget.Label
 	positionsContainer   *fyne.Container
 	selectedCopiedTrader *user.Profile
+	tradersList          []string
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
@@ -40,43 +42,38 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the copied traders list (profiles with a trader)
 	app.CopiedTradersList = widget.NewList(
 		func() int {
-			return len(app.User.ProfileManager.GetAllProfilesWithTrader())
+			return len(app.CopiedTradersTab.tradersList)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
-			// get the current profile...
-			profile := app.User.ProfileManager.GetAllProfilesWithTrader()[id]
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText("Getting trader info...")
-			go func() {
-				// and fetch the associated trader
-				t, err := app.fetchTraderByUid(profile.TraderID)
-				if err != nil {
-					return
-				}
-				toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
-				if len(toolbar.Items) == 0 {
-					toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
-						app.traderDialog(*t)
-					}))
-					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-						dialog.ShowConfirm("Stop copying?", "Doing that will NOT close positions copied from this trader.", func(deleted bool) {
-							err := app.stopCopyingTrader(*t)
-							if err != nil {
-								app.Logger.Error(err)
-							}
-						}, app.MainWindow)
-					}))
-				}
-				// display profile title and trader nickname
-				item.(*fyne.Container).Objects[1].(*widget.Label).SetText(profile.Title + "\n" + t.NickName)
-			}()
+			// get the current trader...
+			trader := app.CopiedTradersTab.tradersList[id]
+			traderID := strings.Split(trader, "\n")[1]
+
+			// display profile title and trader nickname
+			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(trader)
+
+			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
+			if len(toolbar.Items) == 0 {
+				toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
+					app.traderDialog(*t)
+				}))
+				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
+					dialog.ShowConfirm("Stop copying?", "Doing that will NOT close positions copied from this trader.", func(deleted bool) {
+						err := app.stopCopyingTrader(*t)
+						if err != nil {
+							app.Logger.Error(err)
+						}
+					}, app.MainWindow)
+				}))
+			}
 		},
 	)
 
 	// set default height for each list item
-	for i := range app.User.ProfileManager.GetAllProfilesWithTrader() {
+	for i := range app.CopiedTradersTab.tradersList {
 		app.CopiedTradersList.SetItemHeight(i, 50)
 	}
 
@@ -165,15 +162,17 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// when a trader is selected...
 	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
 		// ... get the selected item (profile)
-		profile := app.User.ProfileManager.GetAllProfilesWithTrader()[id]
-		app.CopiedTradersTab.selectedCopiedTrader = &profile
+		trader := app.CopiedTradersTab.tradersList[id]
+		traderID := strings.Split(trader, "\n")[1]
+		profile := app.User.ProfileManager.GetProfileByTraderID(traderID)
+		app.CopiedTradersTab.selectedCopiedTrader = profile
 
 		// update order history
-		app.updateOrderHistoryContent(&profile)
+		app.updateOrderHistoryContent(profile)
 
 		// update positions
 		app.CopiedTradersTab.positionsLabel.SetText("Fetching positions...")
-		app.updatePositionsContent(&profile)
+		app.updatePositionsContent(profile)
 	}
 
 	// refresh the content

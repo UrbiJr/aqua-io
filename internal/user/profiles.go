@@ -36,6 +36,30 @@ func (pfm *ProfileManager) GetProfileByTitle(title string) *Profile {
 	return nil
 }
 
+func (pfm *ProfileManager) UpdateProfile(ID int64, updated Profile) *Profile {
+	for _, p := range pfm.Profiles {
+		if p.ID == ID {
+			p.Title = updated.Title
+			p.TraderID = updated.TraderID
+			p.BybitApiKey = updated.BybitApiKey
+			p.BybitApiSecret = updated.BybitApiSecret
+			p.MaxBybitBinancePriceDifferentPercent = updated.MaxBybitBinancePriceDifferentPercent
+			p.Leverage = updated.Leverage
+			p.InitialOpenPercent = updated.InitialOpenPercent
+			p.MaxAddMultiplier = updated.MaxAddMultiplier
+			p.OpenDelay = updated.OpenDelay
+			p.OneCoinMaxPercent = updated.OneCoinMaxPercent
+			p.BlacklistCoins = updated.BlacklistCoins
+			p.MaxOpenPositions = updated.MaxOpenPositions
+			p.AutoTP = updated.AutoTP
+			p.AutoSL = updated.AutoSL
+			p.TestMode = updated.TestMode
+		}
+	}
+
+	return nil
+}
+
 func (pfm *ProfileManager) GetProfileByID(ID int64) *Profile {
 	for _, p := range pfm.Profiles {
 		if p.ID == ID {

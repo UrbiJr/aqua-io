@@ -33,7 +33,9 @@ func (app *Config) profilesTab() *fyne.Container {
 	// get current profiles
 	app.getProfiles()
 
-	app.ProfilesSlice = app.getProfilesSlice()
+	go func() {
+		app.ProfilesSlice = app.getProfilesSlice()
+	}()
 
 	// update content
 	app.refreshProfilesTopContent()
@@ -402,6 +404,9 @@ func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 
 	slice = append(slice, []any{"Profile Title", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
+	// since we're going to make http request and it could take a while,
+	// assign a slice with only headers for now
+	app.ProfilesSlice = slice
 
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
@@ -412,7 +417,17 @@ func (app *Config) getProfilesSlice() [][]any {
 			currentRow = append(currentRow, x.Title)
 		}
 
-		currentRow = append(currentRow, x.TraderID)
+		if x.TraderID != "" {
+			// fetch trader info
+			t, err := app.fetchTraderByUid(x.TraderID)
+			if err != nil {
+				currentRow = append(currentRow, "Error getting info")
+			} else {
+				currentRow = append(currentRow, (t.NickName + "\n" + t.EncryptedUid))
+			}
+		} else {
+			currentRow = append(currentRow, "Unset")
+		}
 
 		if len(x.BybitApiKey) > 5 {
 			currentRow = append(currentRow, fmt.Sprintf("%s****", x.BybitApiKey[0:4]))
@@ -484,13 +499,6 @@ func (app *Config) getProfilesTable() *widget.Table {
 						}, app.MainWindow)
 					}))
 				}
-			} else if i.Col == 1 && i.Row != 0 {
-				toolbar.Hide()
-				lbl.Hidden = false
-				traderID := app.ProfilesSlice[i.Row][i.Col].(string)
-				if traderID == "" {
-					lbl.SetText("Unset")
-				}
 			} else if i.Col == 4 && i.Row != 0 {
 				toolbar.Hide()
 				lbl.Hidden = false
@@ -508,7 +516,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{120, 200, 200, 200, 200, 60}
+	colWidths := []float32{120, 270, 200, 200, 200, 40}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
 	}
@@ -521,7 +529,7 @@ func (app *Config) refreshProfilesTable() {
 		app.ProfilesSlice = app.getProfilesSlice()
 		app.ProfilesTable.Refresh()
 
-		colWidths := []float32{120, 200, 200, 200, 200, 60}
+		colWidths := []float32{120, 270, 200, 200, 200, 40}
 		for i, w := range colWidths {
 			app.ProfilesTable.SetColumnWidth(i, w)
 		}

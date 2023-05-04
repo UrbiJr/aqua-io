@@ -51,6 +51,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	// get the profile selector
 	app.LeaderboardTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
 		app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
+		app.RefreshLeaderboardWithoutFetch()
 	})
 
 	// get the search filter

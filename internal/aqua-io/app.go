@@ -152,6 +152,8 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	err = app.DB.UpdateProfile(profile.ID, *profile)
 	if err != nil {
 		app.Logger.Error(err)
+	} else {
+		app.User.ProfileManager.UpdateProfile(profile.ID, *profile)
 	}
 
 	// refresh affected widgets
@@ -173,11 +175,15 @@ func (app *Config) stopCopyingTrader(trader user.Trader) error {
 	err := app.DB.UpdateProfile(profile.ID, *profile)
 	if err != nil {
 		app.Logger.Error(err.Error())
+	} else {
+		app.User.ProfileManager.UpdateProfile(profile.ID, *profile)
 	}
 
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
+	app.refreshCopiedTradersTab()
+	app.refreshProfilesTab()
 
 	return nil
 }
