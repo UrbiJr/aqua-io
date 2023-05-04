@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	fyne.io/fyne/v2 v2.3.2
+	fyne.io/x/fyne v0.0.0-20230411205836-1ca0ead20763
 	github.com/2captcha/2captcha-go v1.0.1
 	github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186
 	github.com/bogdanfinn/fhttp v0.5.19
@@ -37,6 +38,7 @@ require (
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230126093431-47fa9a501578 // indirect
 	github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76 // indirect

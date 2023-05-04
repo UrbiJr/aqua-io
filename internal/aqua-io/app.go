@@ -84,10 +84,22 @@ func (app *Config) SetupDB(sqldb *sql.DB) {
 	}
 }
 
-func (app *Config) downloadFile(URL, fileName string) error {
+/*
+Downloads a file and stores it locally.
+
+URL is the download target.
+filename is used to rename the file locally.
+ext is the original file extension.
+*/
+func (app *Config) downloadFile(URL, fileName, ext string) error {
 
 	if URL == "" {
 		return errors.New("empty URL")
+	}
+
+	// check if file extension is supported
+	if ext != ".jpg" && ext != ".png" && ext != ".gif" {
+		return errors.New("unsupported file type")
 	}
 
 	// get the response bytes from calling a url
@@ -101,7 +113,7 @@ func (app *Config) downloadFile(URL, fileName string) error {
 	}
 
 	//open a file for writing
-	file, err := os.Create(fmt.Sprintf("downloads/%s.jpg", fileName))
+	file, err := os.Create(fmt.Sprintf("downloads/%s%s", fileName, ext))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -138,11 +150,15 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 
 	profile.TraderID = trader.EncryptedUid
 	err = app.DB.UpdateProfile(profile.ID, *profile)
+	if err != nil {
+		app.Logger.Error(err)
+	}
 
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
-	app.resetCopiedTradersTab()
+	app.refreshCopiedTradersTab()
+	app.refreshProfilesTab()
 
 	return nil
 }

@@ -6,13 +6,16 @@ import (
 	"image/color"
 	"math"
 	"net/url"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	x_widget "fyne.io/x/fyne/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
@@ -35,17 +38,22 @@ type LeaderboardTab struct {
 func (app *Config) leaderboardTab() *fyne.Container {
 
 	grid := container.NewAdaptiveGrid(3)
+	// fetch the traders from binance
 	app.LeaderboardTab.Traders, _ = app.fetchTraders(defaultStatisticsType, defaultPeriodType)
+	// get the leaderboard
 	cards := app.makeTradersCards()
 	for _, card := range cards {
 		grid.Add(card)
 	}
+	// make it scrollable
 	vScroll := container.NewVScroll(grid)
 
+	// get the profile selector
 	app.LeaderboardTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
 		app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
 	})
 
+	// get the search filter
 	searchEntry := widget.NewSelectEntry([]string{})
 	searchEntry.SetPlaceHolder("Search by nickname...")
 	searchResults := fyne.NewMenu("")
@@ -97,11 +105,11 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	btn.SetIcon(theme.SearchIcon())
 	searchEntry.ActionItem = btn
 
+	// get the other filters
 	sortByStatistics := widget.NewSelect([]string{"ROI", "PNL"}, nil)
 	sortByStatistics.SetSelected("ROI")
 	filterByPeriod := widget.NewSelect([]string{"DAILY", "WEEKLY", "MONTHLY", "TOTAL"}, nil)
 	filterByPeriod.SetSelected("WEEKLY")
-
 	sortByStatistics.OnChanged = func(s string) {
 		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
 
@@ -110,6 +118,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
 	}
 
+	// display and resize content
 	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
 	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.LeaderboardTab.ProfileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
@@ -153,12 +162,16 @@ func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 	return slice
 }
 
+// traderDialog represents the "Trader Overview" which allows user to copy the trader and view its positions
 func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
 
+	// get the trader card (nickname + image + copy button)
+	traderCard, gif := app.getTraderCard(t, true, false)
+
+	// get the positions table
 	var slice [][]any
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
 	app.TraderPositionsSlice = slice
-	traderCard := app.getTraderCard(t, true, false)
 	positionsTable := widget.NewTable(
 		func() (int, int) {
 			return len(app.TraderPositionsSlice), len(app.TraderPositionsSlice[0])
@@ -217,9 +230,17 @@ func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
 		positionsTable.Refresh()
 	}()
 
-	grid := container.NewGridWithRows(2, traderCard, positionsCard)
+	var grid *fyne.Container
+	if gif != nil {
+		grid = container.NewGridWithRows(3, container.NewMax(gif), traderCard, positionsCard)
+		gif.Start()
+	} else {
+		grid = container.NewGridWithRows(2, traderCard, positionsCard)
+	}
+
 	scrollContent := container.NewVScroll(grid)
 
+	// merge everything
 	traderDialog := dialog.NewCustom(
 		"Trader Overview",
 		"Close",
@@ -232,13 +253,12 @@ func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
 	return traderDialog
 }
 
+// makeTradersCards returns a list of cards to be displayed in the leaderboard
 func (app *Config) makeTradersCards() []*widget.Card {
 	var cards []*widget.Card
 
 	for _, trader := range app.LeaderboardTab.Traders {
-
-		card := app.getTraderCard(trader, false, true)
-		//card.SetImage(canvasImage)
+		card, _ := app.getTraderCard(trader, false, true)
 		cards = append(cards, card)
 	}
 
@@ -294,7 +314,9 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) *widget.Card {
+// getTraderCard returns a card widget containing information about the trader and relative actions,
+// it eventually also returns a pointer to a GIF widget if the trader image is a GIF (as this cannot be displayed in the card)
+func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
 	var btn *widget.Button
@@ -350,23 +372,37 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 	}
 
 	if showImage {
-		if utils.DoesFileExist(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid)) {
-			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid))
-		} else {
-			err := app.downloadFile(trader.UserPhotoUrl, trader.EncryptedUid)
+		ext := filepath.Ext(trader.UserPhotoUrl)
+		if !utils.DoesFileExist(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)) {
+			// image not stored locally, download it
+			err := app.downloadFile(trader.UserPhotoUrl, trader.EncryptedUid, ext)
 			if err != nil {
 				// return bundled error image
 				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
-			} else {
-				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s.jpg", trader.EncryptedUid))
+				canvasImage.SetMinSize(fyne.NewSize(25, 25))
+				canvasImage.FillMode = canvas.ImageFillContain
+				card.SetImage(canvasImage)
+			}
+		} else {
+			switch ext {
+			case ".jpg", ".png":
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext))
+				canvasImage.SetMinSize(fyne.NewSize(25, 25))
+				canvasImage.FillMode = canvas.ImageFillContain
+				card.SetImage(canvasImage)
+			case ".gif":
+				gif, err := x_widget.NewAnimatedGif(storage.NewFileURI(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)))
+				if err != nil {
+					app.Logger.Error(err)
+				} else {
+					return card, gif
+				}
 			}
 		}
-		canvasImage.SetMinSize(fyne.NewSize(25, 25))
-		canvasImage.FillMode = canvas.ImageFillContain
-		card.SetImage(canvasImage)
+
 	}
 
-	return card
+	return card, nil
 }
 
 func (app *Config) RefreshLeaderboard(statisticsType, periodType string) {

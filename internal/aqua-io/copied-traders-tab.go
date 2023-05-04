@@ -16,12 +16,13 @@ import (
 
 type CopiedTradersTab struct {
 	*container.TabItem
-	OrdersSlice        [][]any
-	OrdersTable        *widget.Table
-	CopiedTradersList  *widget.List
-	orders             []user.Order
-	positionsLabel     *widget.Label
-	positionsContainer *fyne.Container
+	OrdersSlice          [][]any
+	OrdersTable          *widget.Table
+	CopiedTradersList    *widget.List
+	orders               []user.Order
+	positionsLabel       *widget.Label
+	positionsContainer   *fyne.Container
+	selectedCopiedTrader *user.Profile
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
@@ -60,7 +61,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 						app.traderDialog(*t)
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-						dialog.ShowConfirm("Stop copying?", "Confirming will close ALL current positions copied from this trader.", func(deleted bool) {
+						dialog.ShowConfirm("Stop copying?", "Doing that will NOT close positions copied from this trader.", func(deleted bool) {
 							err := app.stopCopyingTrader(*t)
 							if err != nil {
 								app.Logger.Error(err)
@@ -68,7 +69,8 @@ func (app *Config) getCopiedTraders() *container.Split {
 						}, app.MainWindow)
 					}))
 				}
-				item.(*fyne.Container).Objects[1].(*widget.Label).SetText(t.NickName + "\n" + t.EncryptedUid)
+				// display profile title and trader nickname
+				item.(*fyne.Container).Objects[1].(*widget.Label).SetText(profile.Title + "\n" + t.NickName)
 			}()
 		},
 	)
@@ -85,7 +87,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the refresh toolbar button
 	topRightToolbar := widget.NewToolbar(widget.NewToolbarSpacer(), widget.NewToolbarAction(
 		theme.ViewRefreshIcon(), func() {
-			app.resetCopiedTradersTab()
+			app.refreshCopiedTradersTab()
 		}))
 
 	// wrap the top content in a container
@@ -160,80 +162,26 @@ func (app *Config) getCopiedTraders() *container.Split {
 		container.NewTabItem("Positions", positionsTab))
 	tabs.SetTabLocation(container.TabLocationTop)
 
+	// when a trader is selected...
 	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
+		// ... get the selected item (profile)
 		profile := app.User.ProfileManager.GetAllProfilesWithTrader()[id]
+		app.CopiedTradersTab.selectedCopiedTrader = &profile
 
-		// update order history content
-		go func() {
-			app.getOrders(&profile)
-			app.OrdersSlice = app.getOrderSlice()
-			app.OrdersTable.Refresh()
-		}()
+		// update order history
+		app.updateOrderHistoryContent(&profile)
 
-		// update positions content
+		// update positions
 		app.CopiedTradersTab.positionsLabel.SetText("Fetching positions...")
-		go func() {
-			positionInfoArr := app.getPositionInfo("linear", profile)
-			markdownText := ""
-			for i, p := range positionInfoArr {
-				//Unix Timestamp to time.Time
-				timeT := time.Unix(0, p.UpdatedTime*int64(time.Millisecond))
-				layout := "02-01-2006 15:04:05"
-				readable := timeT.Format(layout)
-				var mode, side string
-				if p.PositionIdx == 0 {
-					mode = "one-way mode position"
-				} else if p.PositionIdx == 1 {
-					mode = "Buy side of hedge-mode position"
-				} else if p.PositionIdx == 2 {
-					mode = "Sell side of hedge-mode position"
-				}
-				if p.Side == "None" {
-					side = "Empty position"
-				}
-
-				markdownText += fmt.Sprintf("%d. Position", i) + `
-` + "    ```" + `
-    Symbol:                     ` + p.Symbol + `
-	Mode:                       ` + mode + `
-    Leverage:                   ` + fmt.Sprintf("%d", p.Leverage) + `
-    Average Entry Price:        ` + fmt.Sprintf("%.2f", p.AvgPrice) + `
-    Position Liquidation Price: ` + fmt.Sprintf("%.2f", p.LiqPrice) + `
-    Take Profit:                ` + p.TakeProfit.(string) + `
-    Stop Loss:                  ` + p.StopLoss.(string) + `
-    Position Value:             ` + fmt.Sprintf("%.2f", p.PositionValue) + `
-    Unrealised Pnl:             ` + fmt.Sprintf("%.2f", p.UnrealisedPnl) + `
-    Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", p.CumRealisedPnl) + `
-    Market Price:               ` + fmt.Sprintf("%.2f", p.MarkPrice) + `
-    Last Update Time:           ` + readable + `
-    Side (buy/sell/empty):      ` + side + `
-    Position Status:            ` + p.PositionStatus + `
-` + "    ```\n"
-
-				app.CopiedTradersTab.positionsContainer.RemoveAll()
-				app.CopiedTradersTab.positionsContainer.Add(widget.NewRichTextFromMarkdown(markdownText))
-				app.CopiedTradersTab.positionsContainer.Add(container.NewGridWithColumns(3,
-					widget.NewButtonWithIcon("Set TP", theme.DocumentCreateIcon(), func() {
-
-					}),
-					widget.NewButtonWithIcon("Set SL", theme.DocumentCreateIcon(), func() {
-
-					}),
-					widget.NewButtonWithIcon("Close", theme.DeleteIcon(), func() {
-
-					}),
-				))
-				app.CopiedTradersTab.positionsContainer.Add(widget.NewSeparator())
-			}
-		}()
+		app.updatePositionsContent(&profile)
 	}
 
 	// refresh the content
-	app.resetCopiedTradersTab()
+	app.refreshCopiedTradersTab()
 
 	// get the horizontal split
 	return container.NewHSplit(container.NewBorder(
-		widget.NewLabelWithStyle("Copied Traders", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle("Profiles", fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		nil,
 		nil,
 		nil,
@@ -305,17 +253,87 @@ func (app *Config) getOrders(profile *user.Profile) []user.Order {
 	return allOrders
 }
 
-func (app *Config) resetCopiedTradersTab() {
+func (app *Config) updateOrderHistoryContent(profile *user.Profile) {
 	go func() {
-		// reset orders table
-		var slice [][]any
-		slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
-		app.OrdersSlice = slice
+		app.getOrders(profile)
+		app.OrdersSlice = app.getOrderSlice()
 		app.OrdersTable.Refresh()
+	}()
+}
 
-		// reset positions
-		app.CopiedTradersTab.positionsLabel.SetText("Select a trader")
-		app.CopiedTradersTab.positionsContainer.RemoveAll()
+func (app *Config) updatePositionsContent(profile *user.Profile) {
+	go func() {
+		positionInfoArr := app.getPositionInfo("linear", *profile)
+		markdownText := ""
+		for i, p := range positionInfoArr {
+			//Unix Timestamp to time.Time
+			timeT := time.Unix(0, p.UpdatedTime*int64(time.Millisecond))
+			layout := "02-01-2006 15:04:05"
+			readable := timeT.Format(layout)
+			var mode, side string
+			if p.PositionIdx == 0 {
+				mode = "one-way mode position"
+			} else if p.PositionIdx == 1 {
+				mode = "Buy side of hedge-mode position"
+			} else if p.PositionIdx == 2 {
+				mode = "Sell side of hedge-mode position"
+			}
+			if p.Side == "None" {
+				side = "Empty position"
+			}
 
+			markdownText += fmt.Sprintf("%d. Position", i) + `
+` + "    ```" + `
+Symbol:                     ` + p.Symbol + `
+Mode:                       ` + mode + `
+Leverage:                   ` + fmt.Sprintf("%d", p.Leverage) + `
+Average Entry Price:        ` + fmt.Sprintf("%.2f", p.AvgPrice) + `
+Position Liquidation Price: ` + fmt.Sprintf("%.2f", p.LiqPrice) + `
+Take Profit:                ` + p.TakeProfit.(string) + `
+Stop Loss:                  ` + p.StopLoss.(string) + `
+Position Value:             ` + fmt.Sprintf("%.2f", p.PositionValue) + `
+Unrealised Pnl:             ` + fmt.Sprintf("%.2f", p.UnrealisedPnl) + `
+Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", p.CumRealisedPnl) + `
+Market Price:               ` + fmt.Sprintf("%.2f", p.MarkPrice) + `
+Last Update Time:           ` + readable + `
+Side (buy/sell/empty):      ` + side + `
+Position Status:            ` + p.PositionStatus + `
+` + "    ```\n"
+
+			app.CopiedTradersTab.positionsContainer.RemoveAll()
+			app.CopiedTradersTab.positionsContainer.Add(widget.NewRichTextFromMarkdown(markdownText))
+			app.CopiedTradersTab.positionsContainer.Add(container.NewGridWithColumns(3,
+				widget.NewButtonWithIcon("Set TP", theme.DocumentCreateIcon(), func() {
+
+				}),
+				widget.NewButtonWithIcon("Set SL", theme.DocumentCreateIcon(), func() {
+
+				}),
+				widget.NewButtonWithIcon("Close", theme.DeleteIcon(), func() {
+
+				}),
+			))
+			app.CopiedTradersTab.positionsContainer.Add(widget.NewSeparator())
+		}
+	}()
+}
+
+func (app *Config) refreshCopiedTradersTab() {
+	go func() {
+		if app.CopiedTradersTab.selectedCopiedTrader == nil {
+			// reset orders table
+			var slice [][]any
+			slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+			app.OrdersSlice = slice
+			app.OrdersTable.Refresh()
+
+			// reset positions
+			app.CopiedTradersTab.positionsLabel.SetText("Select a profile")
+			app.CopiedTradersTab.positionsContainer.RemoveAll()
+		} else {
+			// update content based on the current selection
+			app.updateOrderHistoryContent(app.CopiedTradersTab.selectedCopiedTrader)
+			app.updatePositionsContent(app.CopiedTradersTab.selectedCopiedTrader)
+		}
 	}()
 }

@@ -48,13 +48,13 @@ func (app *Config) profilesTab() *fyne.Container {
 	// define the profilesTab container
 	profilesTabContainer := container.NewWithoutLayout(app.Top, vScroll, app.Bottom)
 
-	vScroll.Move(fyne.NewPos(300, 90))
-	vScroll.Resize(fyne.NewSize(970, 500))
+	app.Top.Move(fyne.NewPos(10, 10))
+	app.Top.Resize(fyne.NewSize(1280, 40))
 
-	app.Top.Move(fyne.NewPos(300, 10))
-	app.Top.Resize(fyne.NewSize(900, 64))
+	vScroll.Move(fyne.NewPos(10, 60))
+	vScroll.Resize(fyne.NewSize(1280, 500))
 
-	app.Bottom.Move(fyne.NewPos(300, 600))
+	app.Bottom.Move(fyne.NewPos(300, 580))
 	app.Bottom.Resize(fyne.NewSize(900, 50))
 
 	return profilesTabContainer
@@ -196,7 +196,6 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 			}
 
 			if valid {
-				app.Logger.Debug("Form submitted")
 				p := user.Profile{
 					Title:               title.Text,
 					BybitApiKey:         bybitApiKey.Text,
@@ -220,9 +219,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				if err != nil {
 					app.Logger.Error(err)
 				}
-				app.refreshProfilesTopContent()
-				app.refreshProfilesTable()
-				app.refreshProfileSelector()
+				app.refreshProfilesTab()
 			}
 		},
 		app.MainWindow,
@@ -387,9 +384,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 				if err != nil {
 					app.Logger.Error(err)
 				}
-				app.refreshProfilesTopContent()
-				app.refreshProfilesTable()
-				app.refreshProfileSelector()
+				app.refreshProfilesTab()
 			}
 		},
 		app.MainWindow,
@@ -406,7 +401,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"Profile", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
+	slice = append(slice, []any{"Profile Title", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
 
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
@@ -460,20 +455,18 @@ func (app *Config) getProfilesTable() *widget.Table {
 
 				if len(toolbar.Items) == 0 {
 					toolbar.Append(widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
 							_, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
 							}
-							app.refreshProfilesTopContent()
-							app.refreshProfilesTable()
-							app.refreshProfileSelector()
+							app.refreshProfilesTab()
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							app.editProfileDialog(pf)
 						}
@@ -481,26 +474,30 @@ func (app *Config) getProfilesTable() *widget.Table {
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
 							if deleted {
-								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][4].(int64))
+								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 								err := app.DB.DeleteProfile(pf.ID)
 								if err != nil {
 									app.Logger.Error(err)
 								}
 							}
-							app.refreshProfilesTopContent()
-							app.refreshProfilesTable()
-							app.refreshProfileSelector()
+							app.refreshProfilesTab()
 						}, app.MainWindow)
 					}))
 				}
-
+			} else if i.Col == 1 && i.Row != 0 {
+				toolbar.Hide()
+				lbl.Hidden = false
+				traderID := app.ProfilesSlice[i.Row][i.Col].(string)
+				if traderID == "" {
+					lbl.SetText("Unset")
+				}
 			} else if i.Col == 4 && i.Row != 0 {
 				toolbar.Hide()
 				lbl.Hidden = false
 				if app.ProfilesSlice[i.Row][i.Col].(bool) == true {
-					lbl.SetText("Test")
+					lbl.SetText("Yes")
 				} else {
-					lbl.SetText("Real")
+					lbl.SetText("No")
 				}
 			} else {
 				toolbar.Hide()
@@ -511,7 +508,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{100, 200, 200, 200, 200, 60}
+	colWidths := []float32{120, 200, 200, 200, 200, 60}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
 	}
@@ -524,7 +521,7 @@ func (app *Config) refreshProfilesTable() {
 		app.ProfilesSlice = app.getProfilesSlice()
 		app.ProfilesTable.Refresh()
 
-		colWidths := []float32{100, 200, 200, 200, 200, 60}
+		colWidths := []float32{120, 200, 200, 200, 200, 60}
 		for i, w := range colWidths {
 			app.ProfilesTable.SetColumnWidth(i, w)
 		}
@@ -551,10 +548,7 @@ func (app *Config) refreshProfilesBottomContent() {
 							}
 						}
 					}
-					app.refreshProfilesTopContent()
-					app.refreshProfilesBottomContent()
-					app.refreshProfilesTable()
-					app.refreshProfileSelector()
+					app.refreshProfilesTab()
 				}
 			}, app.MainWindow)
 	})
@@ -577,4 +571,11 @@ func (app *Config) refreshProfilesTopContent() {
 	}
 
 	app.Top.Refresh()
+}
+
+func (app *Config) refreshProfilesTab() {
+	app.getProfiles()
+	app.refreshProfilesTopContent()
+	app.refreshProfilesTable()
+	app.refreshProfileSelector()
 }
