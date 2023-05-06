@@ -80,7 +80,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					roi := trader.Roi
 					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
 						app.Logger.Debug("Selected trader " + n)
-						app.traderDialog(user.Trader{
+						app.traderDialog(&user.Trader{
 							NickName:      n,
 							UserPhotoUrl:  photoUrl,
 							EncryptedUid:  uid,
@@ -88,7 +88,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 							TwitterUrl:    twitterUrl,
 							Pnl:           pnl,
 							Roi:           roi,
-						})
+						}, "")
 					}))
 				}
 			}
@@ -135,7 +135,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	return releasesContainer
 }
 
-func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
+func (app *Config) getTraderPositionsSlice(t *user.Trader) [][]any {
 	var slice [][]any
 
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
@@ -164,7 +164,20 @@ func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 }
 
 // traderDialog represents the "Trader Overview" which allows user to copy the trader and view its positions
-func (app *Config) traderDialog(t user.Trader) dialog.Dialog {
+func (app *Config) traderDialog(t *user.Trader, traderID string) dialog.Dialog {
+
+	if t == nil {
+		if traderID != "" {
+			// fetch trader
+			traderInfo, err := app.fetchTraderByUid(traderID)
+			if err != nil {
+				return nil
+			}
+			t = traderInfo
+		} else {
+			return nil
+		}
+	}
 
 	// get the trader card (nickname + image + copy button)
 	traderCard, gif := app.getTraderCard(t, true, false)
@@ -259,7 +272,7 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	var cards []*widget.Card
 
 	for _, trader := range app.LeaderboardTab.Traders {
-		card, _ := app.getTraderCard(trader, false, true)
+		card, _ := app.getTraderCard(&trader, false, true)
 		cards = append(cards, card)
 	}
 
@@ -276,7 +289,7 @@ func (app *Config) noProfileSelectedDialog() dialog.Dialog {
 	return d
 }
 
-func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
+func (app *Config) copyTraderDialog(t *user.Trader) dialog.Dialog {
 	var d dialog.Dialog
 
 	if app.LeaderboardTab.SelectedProfile.TraderID != "" {
@@ -300,13 +313,13 @@ func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
+func (app *Config) stopCopyingTraderDialog(t *user.Trader) dialog.Dialog {
 	d := dialog.NewConfirm(
 		"Stop Copying?",
 		fmt.Sprintf("Stop Copying %s", t.NickName),
 		func(b bool) {
 			if b {
-				app.stopCopyingTrader(t)
+				app.stopCopyingTrader(t, "")
 			}
 		},
 		app.MainWindow)
@@ -317,12 +330,12 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 
 // getTraderCard returns a card widget containing information about the trader and relative actions,
 // it eventually also returns a pointer to a GIF widget if the trader image is a GIF (as this cannot be displayed in the card)
-func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
+func (app *Config) getTraderCard(trader *user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
 	var btn *widget.Button
 
-	if app.LeaderboardTab.SelectedProfile != nil && app.LeaderboardTab.SelectedProfile.TraderID != "" {
+	if app.LeaderboardTab.SelectedProfile != nil && app.LeaderboardTab.SelectedProfile.TraderID == trader.EncryptedUid {
 		btn = widget.NewButton("Stop Copying", func() {
 			app.stopCopyingTraderDialog(trader)
 		})
@@ -359,7 +372,7 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 			fmt.Sprintf("%d Followers", trader.FollowerCount),
 			container.NewGridWithColumns(2,
 				widget.NewButtonWithIcon("View Positions", theme.VisibilityIcon(), func() {
-					app.traderDialog(trader)
+					app.traderDialog(trader, "")
 				}), widget.NewLabel(""),
 				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
 				container.NewHBox(binanceLink, twitterLink), btn))

@@ -128,24 +128,32 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 	return nil
 }
 
-func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
+func (app *Config) copyTrader(trader *user.Trader, profile *user.Profile) error {
 	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
 	if err != nil {
 		return err
 	}
 
 	// create order for each trader's position
+	success := 0
 	for _, p := range positions {
 		app.Logger.Debug(fmt.Sprintf("creating order for symbol %s for profile %s", p.Symbol, profile.Title))
-		orderId, err := app.createOrder(profile, p.Symbol, "Market", p.Amount, p.MarkPrice)
+		_, err := app.createOrder(profile, p.Symbol, "Market", p.Amount, p.MarkPrice)
 		if err == nil {
-			app.App.SendNotification(&fyne.Notification{
-				Title:   "Order create success!",
-				Content: fmt.Sprintf("Create order with ID %s", orderId),
-			})
+			success += 1
 		} else {
+			app.App.SendNotification(&fyne.Notification{
+				Title:   "Order create fail :-(",
+				Content: err.Error(),
+			})
 			app.Logger.Error(err.Error())
 		}
+	}
+	if success > 0 {
+		app.App.SendNotification(&fyne.Notification{
+			Title:   "Orders create success! :D",
+			Content: fmt.Sprintf("Successfully created %d orders", success),
+		})
 	}
 
 	profile.TraderID = trader.EncryptedUid
@@ -159,13 +167,26 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
-	app.refreshCopiedTradersTab()
+	app.refreshCopiedTradersTab(true)
 	app.refreshProfilesTab()
 
 	return nil
 }
 
-func (app *Config) stopCopyingTrader(trader user.Trader) error {
+func (app *Config) stopCopyingTrader(trader *user.Trader, traderID string) error {
+	if trader == nil {
+		if traderID != "" {
+			// fetch trader
+			traderInfo, err := app.fetchTraderByUid(traderID)
+			if err != nil {
+				return err
+			}
+			trader = traderInfo
+		} else {
+			return errors.New("no trader provided")
+		}
+	}
+
 	profile := app.User.ProfileManager.GetProfileByTraderID(trader.EncryptedUid)
 	if profile == nil {
 		return fmt.Errorf("no profiles found with trader id %s", trader.EncryptedUid)
@@ -182,7 +203,7 @@ func (app *Config) stopCopyingTrader(trader user.Trader) error {
 	// refresh affected widgets
 	app.CopiedTradersList.Refresh()
 	app.RefreshLeaderboardWithoutFetch()
-	app.refreshCopiedTradersTab()
+	app.refreshCopiedTradersTab(false)
 	app.refreshProfilesTab()
 
 	return nil

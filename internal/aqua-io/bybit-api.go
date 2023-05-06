@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"fyne.io/fyne/v2"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
@@ -127,17 +127,9 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 			} else {
 				if strings.Contains(parsed["retMsg"].(string), "Timestamp for this request is outside of the recvWindow.") {
 					// send notification to adjust system time
-					app.App.SendNotification(&fyne.Notification{
-						Title:   "Create order failed",
-						Content: "Timestamp not synchronized: please sync your system time and try again",
-					})
-				} else {
-					app.App.SendNotification(&fyne.Notification{
-						Title:   "Create order failed",
-						Content: parsed["retMsg"].(string),
-					})
+					return "", errors.New("Timestamp not synchronized: please sync your system time and try again")
 				}
-				return "", fmt.Errorf("create order failed: %s", parsed["retMsg"].(string))
+				return "", errors.New(parsed["retMsg"].(string))
 			}
 		}
 	}
