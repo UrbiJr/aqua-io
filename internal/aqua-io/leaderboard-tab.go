@@ -57,7 +57,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	// get the search filter
 	searchEntry := widget.NewSelectEntry([]string{})
 	searchEntry.SetPlaceHolder("Search by nickname...")
-	searchResults := fyne.NewMenu("")
+	searchResults := fyne.NewMenu("Search results")
 	onSearchSubmitted := func() {
 		go func() {
 			searchResults.Items = []*fyne.MenuItem{}
@@ -65,9 +65,8 @@ func (app *Config) leaderboardTab() *fyne.Container {
 			if err != nil {
 				searchResults.Items = append(searchResults.Items, fyne.NewMenuItem("API error", func() {}))
 			} else {
-				var options []string
 				for _, trader := range filtered {
-					if len(options) > 5 {
+					if len(searchResults.Items) > 5 {
 						break
 					}
 
@@ -80,15 +79,18 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					roi := trader.Roi
 					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
 						app.Logger.Debug("Selected trader " + n)
-						app.traderDialog(&user.Trader{
-							NickName:      n,
-							UserPhotoUrl:  photoUrl,
-							EncryptedUid:  uid,
-							FollowerCount: followers,
-							TwitterUrl:    twitterUrl,
-							Pnl:           pnl,
-							Roi:           roi,
-						}, "")
+						go func() {
+							app.traderDialog(user.Trader{
+								NickName:      n,
+								UserPhotoUrl:  photoUrl,
+								EncryptedUid:  uid,
+								FollowerCount: followers,
+								TwitterUrl:    twitterUrl,
+								Pnl:           pnl,
+								Roi:           roi,
+							}, "")
+						}()
+
 					}))
 				}
 			}
@@ -112,11 +114,15 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	filterByPeriod := widget.NewSelect([]string{"DAILY", "WEEKLY", "MONTHLY", "TOTAL"}, nil)
 	filterByPeriod.SetSelected("WEEKLY")
 	sortByStatistics.OnChanged = func(s string) {
-		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		go func() {
+			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		}()
 
 	}
 	filterByPeriod.OnChanged = func(s string) {
-		app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		go func() {
+			app.RefreshLeaderboard(sortByStatistics.Selected, filterByPeriod.Selected)
+		}()
 	}
 
 	// display and resize content
@@ -135,7 +141,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	return releasesContainer
 }
 
-func (app *Config) getTraderPositionsSlice(t *user.Trader) [][]any {
+func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 	var slice [][]any
 
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
@@ -164,16 +170,16 @@ func (app *Config) getTraderPositionsSlice(t *user.Trader) [][]any {
 }
 
 // traderDialog represents the "Trader Overview" which allows user to copy the trader and view its positions
-func (app *Config) traderDialog(t *user.Trader, traderID string) dialog.Dialog {
+func (app *Config) traderDialog(t user.Trader, traderID string) dialog.Dialog {
 
-	if t == nil {
+	if t.EncryptedUid == "" {
 		if traderID != "" {
 			// fetch trader
 			traderInfo, err := app.fetchTraderByUid(traderID)
 			if err != nil {
 				return nil
 			}
-			t = traderInfo
+			t = *traderInfo
 		} else {
 			return nil
 		}
@@ -272,7 +278,7 @@ func (app *Config) makeTradersCards() []*widget.Card {
 	var cards []*widget.Card
 
 	for _, trader := range app.LeaderboardTab.Traders {
-		card, _ := app.getTraderCard(&trader, false, true)
+		card, _ := app.getTraderCard(trader, false, true)
 		cards = append(cards, card)
 	}
 
@@ -289,12 +295,12 @@ func (app *Config) noProfileSelectedDialog() dialog.Dialog {
 	return d
 }
 
-func (app *Config) copyTraderDialog(t *user.Trader) dialog.Dialog {
+func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 	var d dialog.Dialog
 
 	if app.LeaderboardTab.SelectedProfile.TraderID != "" {
 		d = dialog.NewError(
-			errors.New("Selected profile already has a trader.\nPlease select a different profile, then try again."),
+			errors.New("Selected profile already has a trader.\nPlease select a different profile, then try again"),
 			app.MainWindow,
 		)
 	} else {
@@ -313,7 +319,7 @@ func (app *Config) copyTraderDialog(t *user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) stopCopyingTraderDialog(t *user.Trader) dialog.Dialog {
+func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	d := dialog.NewConfirm(
 		"Stop Copying?",
 		fmt.Sprintf("Stop Copying %s", t.NickName),
@@ -330,7 +336,7 @@ func (app *Config) stopCopyingTraderDialog(t *user.Trader) dialog.Dialog {
 
 // getTraderCard returns a card widget containing information about the trader and relative actions,
 // it eventually also returns a pointer to a GIF widget if the trader image is a GIF (as this cannot be displayed in the card)
-func (app *Config) getTraderCard(trader *user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
+func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
 	var btn *widget.Button
@@ -372,7 +378,9 @@ func (app *Config) getTraderCard(trader *user.Trader, showImage bool, showPopUpB
 			fmt.Sprintf("%d Followers", trader.FollowerCount),
 			container.NewGridWithColumns(2,
 				widget.NewButtonWithIcon("View Positions", theme.VisibilityIcon(), func() {
-					app.traderDialog(trader, "")
+					go func() {
+						app.traderDialog(trader, "")
+					}()
 				}), widget.NewLabel(""),
 				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
 				container.NewHBox(binanceLink, twitterLink), btn))
@@ -420,32 +428,25 @@ func (app *Config) getTraderCard(trader *user.Trader, showImage bool, showPopUpB
 }
 
 func (app *Config) RefreshLeaderboard(statisticsType, periodType string) {
-	go func() {
-		app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
-		cards := app.makeTradersCards()
-		app.LeaderboardTab.CardsContainer.RemoveAll()
-		for _, card := range cards {
-			app.LeaderboardTab.CardsContainer.Add(card)
-		}
-		app.LeaderboardTab.CardsContainer.Refresh()
-	}()
-
+	app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
+	cards := app.makeTradersCards()
+	app.LeaderboardTab.CardsContainer.RemoveAll()
+	for _, card := range cards {
+		app.LeaderboardTab.CardsContainer.Add(card)
+	}
+	app.LeaderboardTab.CardsContainer.Refresh()
 }
 
 func (app *Config) RefreshLeaderboardWithoutFetch() {
-	go func() {
-		cards := app.makeTradersCards()
-		app.LeaderboardTab.CardsContainer.RemoveAll()
-		for _, card := range cards {
-			app.LeaderboardTab.CardsContainer.Add(card)
-		}
-		app.LeaderboardTab.CardsContainer.Refresh()
-	}()
+	cards := app.makeTradersCards()
+	app.LeaderboardTab.CardsContainer.RemoveAll()
+	for _, card := range cards {
+		app.LeaderboardTab.CardsContainer.Add(card)
+	}
+	app.LeaderboardTab.CardsContainer.Refresh()
 }
 
 func (app *Config) refreshProfileSelector() {
-	go func() {
-		app.LeaderboardTab.ProfileSelector.ClearSelected()
-		app.LeaderboardTab.ProfileSelector.Refresh()
-	}()
+	app.LeaderboardTab.ProfileSelector.ClearSelected()
+	app.LeaderboardTab.ProfileSelector.Refresh()
 }

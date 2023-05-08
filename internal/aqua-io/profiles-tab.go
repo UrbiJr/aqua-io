@@ -30,9 +30,6 @@ func (app *Config) profilesTab() *fyne.Container {
 	app.ProfilesTab.Top = container.NewMax()
 	app.ProfilesTab.Bottom = container.NewHBox()
 
-	// get current profiles
-	app.getProfiles()
-
 	go func() {
 		app.ProfilesSlice = app.getProfilesSlice()
 	}()
@@ -60,15 +57,6 @@ func (app *Config) profilesTab() *fyne.Container {
 	app.Bottom.Resize(fyne.NewSize(900, 50))
 
 	return profilesTabContainer
-}
-
-func (app *Config) getProfiles() {
-	profiles, err := app.DB.AllProfiles()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.ProfileManager.Profiles = profiles
 }
 
 func (app *Config) addProfileDialog() dialog.Dialog {
@@ -545,7 +533,7 @@ func (app *Config) refreshProfilesBottomContent() {
 	btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
 		dialog.ShowConfirm(
 			"Delete all profiles?",
-			fmt.Sprintf("Do you really want to delete %d profiles?\nNote that profiles with a trader will NOT be deleted: you have to stop copying the trader first.", len(app.User.ProfileManager.GetAllProfilesWithTrader())),
+			fmt.Sprintf("Do you really want to delete %d profiles?\nNote that profiles with a trader will NOT be deleted: you have to stop copying the trader first.", len(app.User.ProfileManager.GetProfilesWithTrader())),
 			func(deleted bool) {
 				if deleted {
 					for _, p := range app.User.ProfileManager.Profiles {
@@ -582,7 +570,6 @@ func (app *Config) refreshProfilesTopContent() {
 }
 
 func (app *Config) refreshProfilesTab() {
-	app.getProfiles()
 	app.refreshProfilesTopContent()
 	app.refreshProfilesTable()
 	app.refreshProfileSelector()

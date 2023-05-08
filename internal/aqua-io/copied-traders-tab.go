@@ -28,7 +28,7 @@ type CopiedTradersTab struct {
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
-	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.GetAllProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
 	split := app.getCopiedTraders()
 
 	max := container.NewMax(split)
@@ -67,12 +67,12 @@ func (app *Config) getCopiedTraders() *container.Split {
 			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
 			if len(toolbar.Items) == 0 {
 				toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
-					app.traderDialog(nil, traderID)
+					app.traderDialog(user.Trader{}, traderID)
 				}))
 				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 					dialog.ShowConfirm("Stop copying?", "Doing that will NOT close positions copied from this trader.", func(deleted bool) {
 						if deleted {
-							err := app.stopCopyingTrader(nil, traderID)
+							err := app.stopCopyingTrader(user.Trader{}, traderID)
 							if err != nil {
 								app.Logger.Error(err)
 							}
@@ -327,25 +327,25 @@ Position Status:            ` + p.PositionStatus + `
 }
 
 func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
-	go func() {
-		if isCopiedTraderSelected && app.CopiedTradersTab.selectedCopiedTrader != nil {
-			// update content based on the current selection
+	if isCopiedTraderSelected && app.CopiedTradersTab.selectedCopiedTrader != nil {
+		// update content based on the current selection
+		go func() {
 			app.updateOrderHistoryContent(app.CopiedTradersTab.selectedCopiedTrader)
 			app.updatePositionsContent(app.CopiedTradersTab.selectedCopiedTrader)
-		} else {
-			// reset orders table
-			var slice [][]any
-			slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
-			app.OrdersSlice = slice
-			app.OrdersTable.Refresh()
+		}()
+	} else {
+		// reset orders table
+		var slice [][]any
+		slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+		app.OrdersSlice = slice
+		app.OrdersTable.Refresh()
 
-			// reset positions
-			app.CopiedTradersTab.positionsLabel.SetText("Select a profile")
-			app.CopiedTradersTab.positionsContainer.RemoveAll()
-		}
-	}()
+		// reset positions
+		app.CopiedTradersTab.positionsLabel.SetText("Select a profile")
+		app.CopiedTradersTab.positionsContainer.RemoveAll()
+	}
 
-	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.GetAllProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.ProfileManager.GetProfilesWithTrader())
 	// set default height for each list item
 	for i := range app.CopiedTradersTab.profilesWithTraderNames {
 		app.CopiedTradersList.SetItemHeight(i, 50)

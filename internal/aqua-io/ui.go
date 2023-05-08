@@ -60,7 +60,9 @@ func (app *Config) MakeDesktopUI() {
 	app.AnalyticsTab = &AnalyticsTab{}
 	app.ProfilesTab = &ProfilesTab{}
 
-	profilesTabContent := app.profilesTab() // important: load profiles tab content before anyone else!
+	// load profiles
+	app.getProfiles()
+	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.copiedTradersTab()
 	leaderboardContent := app.leaderboardTab()
@@ -126,6 +128,7 @@ func (app *Config) refreshGlobalContent() {
 func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	setDarkThemeItem := fyne.NewMenuItem("Dark", func() {
+		// set dark theme and refresh widgets
 		app.App.Settings().SetTheme(&resources.DarkTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()
@@ -136,6 +139,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.refreshGlobalContent()
 	})
 	setLightThemeItem := fyne.NewMenuItem("Light", func() {
+		// set light theme and refresh widgets
 		app.App.Settings().SetTheme(&resources.LightTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()

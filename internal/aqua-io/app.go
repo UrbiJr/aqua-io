@@ -128,7 +128,7 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 	return nil
 }
 
-func (app *Config) copyTrader(trader *user.Trader, profile *user.Profile) error {
+func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
 	if err != nil {
 		return err
@@ -173,15 +173,15 @@ func (app *Config) copyTrader(trader *user.Trader, profile *user.Profile) error 
 	return nil
 }
 
-func (app *Config) stopCopyingTrader(trader *user.Trader, traderID string) error {
-	if trader == nil {
+func (app *Config) stopCopyingTrader(trader user.Trader, traderID string) error {
+	if trader.EncryptedUid == "" {
 		if traderID != "" {
 			// fetch trader
 			traderInfo, err := app.fetchTraderByUid(traderID)
 			if err != nil {
 				return err
 			}
-			trader = traderInfo
+			trader = *traderInfo
 		} else {
 			return errors.New("no trader provided")
 		}
@@ -207,4 +207,13 @@ func (app *Config) stopCopyingTrader(trader *user.Trader, traderID string) error
 	app.refreshProfilesTab()
 
 	return nil
+}
+
+func (app *Config) getProfiles() {
+	profiles, err := app.DB.AllProfiles()
+	if err != nil {
+		app.Logger.Error(err)
+		app.Quit()
+	}
+	app.User.ProfileManager.Profiles = profiles
 }

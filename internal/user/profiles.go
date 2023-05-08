@@ -37,23 +37,24 @@ func (pfm *ProfileManager) GetProfileByTitle(title string) *Profile {
 }
 
 func (pfm *ProfileManager) UpdateProfile(ID int64, updated Profile) *Profile {
-	for _, p := range pfm.Profiles {
+	for i, p := range pfm.Profiles {
 		if p.ID == ID {
-			p.Title = updated.Title
-			p.TraderID = updated.TraderID
-			p.BybitApiKey = updated.BybitApiKey
-			p.BybitApiSecret = updated.BybitApiSecret
-			p.MaxBybitBinancePriceDifferentPercent = updated.MaxBybitBinancePriceDifferentPercent
-			p.Leverage = updated.Leverage
-			p.InitialOpenPercent = updated.InitialOpenPercent
-			p.MaxAddMultiplier = updated.MaxAddMultiplier
-			p.OpenDelay = updated.OpenDelay
-			p.OneCoinMaxPercent = updated.OneCoinMaxPercent
-			p.BlacklistCoins = updated.BlacklistCoins
-			p.MaxOpenPositions = updated.MaxOpenPositions
-			p.AutoTP = updated.AutoTP
-			p.AutoSL = updated.AutoSL
-			p.TestMode = updated.TestMode
+			pfm.Profiles[i].Title = updated.Title
+			pfm.Profiles[i].TraderID = updated.TraderID
+			pfm.Profiles[i].BybitApiKey = updated.BybitApiKey
+			pfm.Profiles[i].BybitApiSecret = updated.BybitApiSecret
+			pfm.Profiles[i].MaxBybitBinancePriceDifferentPercent = updated.MaxBybitBinancePriceDifferentPercent
+			pfm.Profiles[i].Leverage = updated.Leverage
+			pfm.Profiles[i].InitialOpenPercent = updated.InitialOpenPercent
+			pfm.Profiles[i].MaxAddMultiplier = updated.MaxAddMultiplier
+			pfm.Profiles[i].OpenDelay = updated.OpenDelay
+			pfm.Profiles[i].OneCoinMaxPercent = updated.OneCoinMaxPercent
+			pfm.Profiles[i].BlacklistCoins = updated.BlacklistCoins
+			pfm.Profiles[i].MaxOpenPositions = updated.MaxOpenPositions
+			pfm.Profiles[i].AutoTP = updated.AutoTP
+			pfm.Profiles[i].AutoSL = updated.AutoSL
+			pfm.Profiles[i].TestMode = updated.TestMode
+			return &pfm.Profiles[i]
 		}
 	}
 
@@ -80,7 +81,7 @@ func (pfm *ProfileManager) GetProfileByTraderID(traderID string) *Profile {
 	return nil
 }
 
-func (pfm *ProfileManager) GetAllProfilesWithTrader() []Profile {
+func (pfm *ProfileManager) GetProfilesWithTrader() []Profile {
 	var profiles []Profile
 	for _, p := range pfm.Profiles {
 		if p.TraderID != "" {

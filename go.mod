@@ -12,7 +12,6 @@ require (
 	github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082
 	github.com/glebarez/go-sqlite v1.20.3
 	github.com/mitchellh/go-ps v1.0.0
-	github.com/wcharczuk/go-chart/v2 v2.1.0
 )
 
 require (
@@ -32,7 +31,6 @@ require (
 	github.com/go-text/typesetting v0.0.0-20221212183139-1eb938670a1f // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
