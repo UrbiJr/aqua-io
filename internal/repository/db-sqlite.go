@@ -49,7 +49,7 @@ func (repo *SQLiteRepository) Migrate() error {
 }
 
 func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, error) {
-	stmt := "insert into profiles (title, trader_id, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	stmt := "insert into profiles (title, trader_id, bybit_api_key, bybit_api_secret, max_bybit_binance_price_difference_percent, leverage, initial_open_percent, max_add_multiplier, open_delay, one_coin_max_percent, blacklist_coins, add_prevention_percent, block_adds_above_entry, max_open_positions, auto_tp, auto_sl, test_mode) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	var blackListCoins string
 	var blockAddsAboveEntry, testMode int
 
@@ -67,7 +67,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 
 	blackListCoins = strings.Join(p.BlacklistCoins, ",")
 
-	res, err := repo.Conn.Exec(stmt, p.Title, p.BybitApiKey, p.BybitApiSecret, p.MaxBybitBinancePriceDifferentPercent, p.Leverage, p.InitialOpenPercent, p.MaxAddMultiplier, p.OpenDelay, p.OneCoinMaxPercent, blackListCoins, p.AddPreventionPercent, blockAddsAboveEntry, p.MaxOpenPositions, p.AutoTP, p.AutoSL, testMode)
+	res, err := repo.Conn.Exec(stmt, p.Title, p.TraderID, p.BybitApiKey, p.BybitApiSecret, p.MaxBybitBinancePriceDifferentPercent, p.Leverage, p.InitialOpenPercent, p.MaxAddMultiplier, p.OpenDelay, p.OneCoinMaxPercent, blackListCoins, p.AddPreventionPercent, blockAddsAboveEntry, p.MaxOpenPositions, p.AutoTP, p.AutoSL, testMode)
 	if err != nil {
 		return nil, err
 	}

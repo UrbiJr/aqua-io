@@ -30,9 +30,7 @@ func (app *Config) profilesTab() *fyne.Container {
 	app.ProfilesTab.Top = container.NewMax()
 	app.ProfilesTab.Bottom = container.NewHBox()
 
-	go func() {
-		app.ProfilesSlice = app.getProfilesSlice()
-	}()
+	app.ProfilesSlice = app.getProfilesSlice()
 
 	// update content
 	app.refreshProfilesTopContent()
@@ -204,10 +202,12 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				p.AutoSL, _ = strconv.ParseFloat(autoSL.Text, 64)
 				p.MaxOpenPositions, _ = strconv.ParseInt(maxOpenPositions.Text, 10, 64)
 
-				_, err := app.DB.InsertProfile(p)
+				inserted, err := app.DB.InsertProfile(p)
 
 				if err != nil {
 					app.Logger.Error(err)
+				} else {
+					app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 				}
 				app.refreshProfilesTab()
 			}
@@ -350,7 +350,6 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 			}
 
 			if valid {
-				app.Logger.Debug("Form submitted")
 				p := user.Profile{
 					Title:               title.Text,
 					BybitApiKey:         bybitApiKey.Text,
@@ -373,6 +372,8 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 				if err != nil {
 					app.Logger.Error(err)
+				} else {
+					app.User.ProfileManager.UpdateProfile(pf.ID, p)
 				}
 				app.refreshProfilesTab()
 			}
@@ -390,11 +391,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
-
 	slice = append(slice, []any{"Profile Title", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
-	// since we're going to make http request and it could take a while,
-	// assign a slice with only headers for now
-	app.ProfilesSlice = slice
 
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
@@ -406,13 +403,7 @@ func (app *Config) getProfilesSlice() [][]any {
 		}
 
 		if x.TraderID != "" {
-			// fetch trader info
-			t, err := app.fetchTraderByUid(x.TraderID)
-			if err != nil {
-				currentRow = append(currentRow, "Error getting info")
-			} else {
-				currentRow = append(currentRow, (t.NickName + "\n" + t.EncryptedUid))
-			}
+			currentRow = append(currentRow, x.TraderID)
 		} else {
 			currentRow = append(currentRow, "Unset")
 		}
@@ -461,9 +452,11 @@ func (app *Config) getProfilesTable() *widget.Table {
 						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
-							_, err := app.DB.InsertProfile(*pf)
+							inserted, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
+							} else {
+								app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 							}
 							app.refreshProfilesTab()
 						}
@@ -478,9 +471,13 @@ func (app *Config) getProfilesTable() *widget.Table {
 						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
 							if deleted {
 								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
-								err := app.DB.DeleteProfile(pf.ID)
-								if err != nil {
-									app.Logger.Error(err)
+								if pf != nil {
+									err := app.DB.DeleteProfile(pf.ID)
+									if err != nil {
+										app.Logger.Error(err)
+									} else {
+										app.User.ProfileManager.DeleteProfile(pf.ID)
+									}
 								}
 							}
 							app.refreshProfilesTab()
@@ -513,16 +510,13 @@ func (app *Config) getProfilesTable() *widget.Table {
 }
 
 func (app *Config) refreshProfilesTable() {
-	go func() {
-		app.ProfilesSlice = app.getProfilesSlice()
-		app.ProfilesTable.Refresh()
+	app.ProfilesSlice = app.getProfilesSlice()
+	app.ProfilesTable.Refresh()
 
-		colWidths := []float32{120, 270, 200, 200, 200, 40}
-		for i, w := range colWidths {
-			app.ProfilesTable.SetColumnWidth(i, w)
-		}
-	}()
-
+	colWidths := []float32{120, 270, 200, 200, 200, 40}
+	for i, w := range colWidths {
+		app.ProfilesTable.SetColumnWidth(i, w)
+	}
 }
 
 func (app *Config) refreshProfilesBottomContent() {
@@ -541,6 +535,8 @@ func (app *Config) refreshProfilesBottomContent() {
 							err := app.DB.DeleteProfile(p.ID)
 							if err != nil {
 								app.Logger.Error(err)
+							} else {
+								app.User.ProfileManager.DeleteProfile(p.ID)
 							}
 						}
 					}

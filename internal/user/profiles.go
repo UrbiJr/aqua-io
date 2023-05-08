@@ -61,6 +61,15 @@ func (pfm *ProfileManager) UpdateProfile(ID int64, updated Profile) *Profile {
 	return nil
 }
 
+func (pfm *ProfileManager) DeleteProfile(ID int64) {
+	for i, p := range pfm.Profiles {
+		if p.ID == ID {
+			pfm.Profiles = append(pfm.Profiles[:i], pfm.Profiles[i+1:]...)
+			break
+		}
+	}
+}
+
 func (pfm *ProfileManager) GetProfileByID(ID int64) *Profile {
 	for _, p := range pfm.Profiles {
 		if p.ID == ID {
