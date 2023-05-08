@@ -8,8 +8,8 @@ BINARY_NAME=aqua-io.app
 endif
 APP_NAME=Aqua.io
 APP_ID=io.aqua-trading.app
-VERSION=0.0.1
-BUILD_NO=1
+VERSION=0.0.2
+BUILD_NO=2
 
 ## build: build binary and package app
 build:
