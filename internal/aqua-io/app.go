@@ -53,6 +53,13 @@ func NewApp() *Config {
 // Quit exits the app gracefully
 func (app *Config) Quit() {
 	app.Logger.QuitLogger()
+	if app.LoginWindow != nil {
+		app.LoginWindow.Close()
+	}
+	if app.MainWindow != nil {
+		app.MainWindow.Close()
+	}
+	os.Exit(0)
 }
 
 func (app *Config) ConnectSQL() (*sql.DB, error) {

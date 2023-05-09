@@ -18,7 +18,6 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/captcha"
 	"github.com/UrbiJr/aqua-io/internal/client"
 	"github.com/UrbiJr/aqua-io/internal/resources"
-	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
 	"github.com/UrbiJr/aqua-io/internal/whop"
 
@@ -117,28 +116,17 @@ func main() {
 	app.Whop = whopSettings
 
 	// create the login page
+	// TODO: retrieve login info from db and check automatically validate license
 	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
-	authResult, isPersitent := app.LoginDialog()
-	if !authResult.Success {
-		app.App.SendNotification(&fyne.Notification{
-			Title:   "Login Failed",
-			Content: authResult.ErrorMessage,
-		})
+	app.LoginDialog()
+	app.LoginWindow.Resize(fyne.NewSize(600, 600))
+	app.LoginWindow.CenterOnScreen()
+	app.LoginWindow.SetFixedSize(true)
+	app.LoginWindow.SetIcon(resources.ResourceIconPng)
+	app.LoginWindow.SetOnClosed(func() {
 		app.Quit()
-	}
+	})
 	app.LoginWindow.ShowAndRun()
-
-	// get logged user
-	app.User = &user.User{
-		Email:           authResult.Email,
-		Discord:         authResult.Discord,
-		Username:        "",
-		LicenseKey:      authResult.LicenseKey,
-		ExpiresAt:       authResult.ExpiresAt,
-		PersistentLogin: isPersitent,
-		Settings:        &user.Settings{},
-		ProfileManager:  &user.ProfileManager{},
-	}
 
 	// create and size a fyne window
 	win := fyneApp.NewWindow("Aqua.io")
