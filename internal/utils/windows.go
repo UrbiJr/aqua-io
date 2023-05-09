@@ -48,3 +48,13 @@ func IsProcRunning(names ...string) (bool, error) {
 
 	return false, nil
 }
+
+func GetDeviceID() string {
+	out, err := exec.Command("cmd", "/C", "wmic csproduct get uuid").Output()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	results := regexp.MustCompile(`(?m)[[:xdigit:]]{8}-([[:xdigit:]]{4}-){3}[[:xdigit:]]{12}`).FindAllString(string(out), -1)
+	return results[0]
+}

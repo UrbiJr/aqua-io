@@ -18,12 +18,15 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/sites"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
+	"github.com/UrbiJr/aqua-io/internal/whop"
 )
 
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
 	App             fyne.App
+	Whop            *whop.Whop
 	DB              repository.Repository
+	LoginWindow     fyne.Window
 	MainWindow      fyne.Window
 	TopRightToolbar *widget.Toolbar
 	GlobalContent   *fyne.Container

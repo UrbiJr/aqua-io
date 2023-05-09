@@ -20,6 +20,7 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
+	"github.com/UrbiJr/aqua-io/internal/whop"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 
@@ -111,14 +112,32 @@ func main() {
 	// create a database repository
 	app.SetupDB(sqlDB)
 
+	// get Whop config
+	whopSettings := whop.InitWhop()
+	app.Whop = whopSettings
+
 	// create the login page
+	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
+	authResult, isPersitent := app.LoginDialog()
+	if !authResult.Success {
+		app.App.SendNotification(&fyne.Notification{
+			Title:   "Login Failed",
+			Content: authResult.ErrorMessage,
+		})
+		app.Quit()
+	}
+	app.LoginWindow.ShowAndRun()
 
 	// get logged user
 	app.User = &user.User{
-		Email:          "urbijr@app-robotics.eu",
-		Username:       "urbijr",
-		Settings:       &user.Settings{},
-		ProfileManager: &user.ProfileManager{},
+		Email:           authResult.Email,
+		Discord:         authResult.Discord,
+		Username:        "",
+		LicenseKey:      authResult.LicenseKey,
+		ExpiresAt:       authResult.ExpiresAt,
+		PersistentLogin: isPersitent,
+		Settings:        &user.Settings{},
+		ProfileManager:  &user.ProfileManager{},
 	}
 
 	// create and size a fyne window

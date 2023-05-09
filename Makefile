@@ -20,6 +20,10 @@ else
 	rm -rf ${BINARY_NAME}
 	fyne package -os darwin -icon Icon.png -appID ${APP_ID} -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 endif
+
+## cross compile the app for different architecture than the development machine (requires https://github.com/fyne-io/fyne-cross & docker)
+cross-darwin-amd64:
+fyne-cross darwin -arch=amd64 -app-id=${APP_ID}
 	
 ## run: builds and runs the application
 run:
