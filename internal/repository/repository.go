@@ -14,8 +14,14 @@ var (
 type Repository interface {
 	Migrate() error
 	InsertProfile(p user.Profile) (*user.Profile, error)
+	InsertUser(u user.User) (*user.User, error)
 	AllProfiles() ([]user.Profile, error)
+	GetUser(ID int64) (*user.User, error)
+	GetAllUsers() (*user.User, error)
 	UpdateProfile(id int64, updated user.Profile) error
+	UpdateUser(id int64, updated user.User) error
 	DeleteProfile(id int64) error
+	DeleteUser(id int64) error
 	DeleteAllProfiles() error
+	DeleteAllUsers() error
 }

@@ -2,6 +2,8 @@ package copy_io
 
 import (
 	"fmt"
+	"image/color"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -13,12 +15,13 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/whop"
 )
 
-// loginDialog shows a login form dialog and eventually authenticates user provided licenseKey.
-// Returns license authentication result data and true if login is persistent, false otherwise
-func (app *Config) ShowLogin() {
+// MakeLoginWindow creates content for the login window and eventually authenticates user provided licenseKey.
+// If authenticated, hides the login window and show the main window. Otherwise, quits the app
+func (app *Config) MakeLoginWindow() {
 	licenseKey := widget.NewEntry()
+	licenseKey.SetPlaceHolder("Your license key")
 	licenseKey.Validator = validation.NewRegexp(`^(BETA|AQUA)-[0-9A-F]{6}-[0-9A-F]{8}-[0-9A-F]{6}`, "wrong license key format")
-	errorMsgLabel := widget.NewLabel("")
+	errorText := canvas.NewText("", color.RGBA{R: 255, G: 50, B: 50, A: 255})
 	isPersitent := false
 	rememberMe := widget.NewCheck("Remember Me", func(checked bool) {
 		isPersitent = checked
@@ -31,10 +34,9 @@ func (app *Config) ShowLogin() {
 	vBox := container.NewVBox(
 		container.NewCenter(
 			container.NewHBox(widget.NewRichTextFromMarkdown(`## User Login`), appLogo)),
-		widget.NewLabel("License Key"),
 		licenseKey,
 		rememberMe,
-		errorMsgLabel,
+		errorText,
 		container.NewCenter(
 			container.NewHBox(
 				widget.NewButton("Sign In", func() {
@@ -50,22 +52,40 @@ func (app *Config) ShowLogin() {
 						if authResult.ErrorMessage == "" {
 							authResult.ErrorMessage = "application error"
 						}
-						errorMsgLabel.SetText(fmt.Sprintf("Login Error: %s", authResult.ErrorMessage))
+						errorText.Text = fmt.Sprintf("Login Error: %s", authResult.ErrorMessage)
+						errorText.Refresh()
 					} else {
 						// get logged user
-						app.User = &user.User{
-							Email:           authResult.Email,
-							Discord:         authResult.Discord,
-							Username:        "",
-							LicenseKey:      authResult.LicenseKey,
-							ExpiresAt:       authResult.ExpiresAt,
-							PersistentLogin: isPersitent,
-							Settings:        &user.Settings{},
-							ProfileManager:  &user.ProfileManager{},
+						discordID := ""
+						username := strings.Split(authResult.Email, "@")[0]
+						profilePicture := ""
+						if authResult.Discord != nil {
+							discordInfo := authResult.Discord.(map[string]any)
+							discordID = discordInfo["id"].(string)
+							username = discordInfo["username"].(string)
+							profilePicture = discordInfo["image_url"].(string)
 						}
-						app.LoginWindow.Close()
+
+						loggedUser := user.NewUser(
+							authResult.Email,
+							discordID,
+							username,
+							profilePicture,
+							authResult.LicenseKey,
+							authResult.ExpiresAt,
+							isPersitent)
+
+						// save user to sqlite DB
+						app.DB.DeleteAllUsers()
+						inserted, err := app.DB.InsertUser(*loggedUser)
+						if err != nil {
+							app.Logger.Error(err)
+							app.Quit()
+						}
+						app.User = inserted
 						app.MakeDesktopUI()
 						app.MainWindow.Show()
+						app.LoginWindow.Hide()
 					}
 				}),
 				widget.NewButton("Cancel", func() {

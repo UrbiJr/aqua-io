@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -18,6 +20,7 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/captcha"
 	"github.com/UrbiJr/aqua-io/internal/client"
 	"github.com/UrbiJr/aqua-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
 	"github.com/UrbiJr/aqua-io/internal/whop"
 
@@ -118,7 +121,7 @@ func main() {
 	// create the login page
 	// TODO: retrieve login info from db and check automatically validate license
 	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
-	app.ShowLogin()
+	app.MakeLoginWindow()
 	app.LoginWindow.Resize(fyne.NewSize(300, 300))
 	app.LoginWindow.CenterOnScreen()
 	app.LoginWindow.SetFixedSize(true)
@@ -149,11 +152,66 @@ func main() {
 	}
 
 	win.SetMainMenu(app.MakeMenu())
-
 	win.SetIcon(resources.ResourceIconPng)
 
+	// retrieve user if stored locally
+	dbUser, err := app.DB.GetAllUsers()
+	showLogin := false
+	if err != nil {
+		app.Logger.Error(err)
+		showLogin = true
+	} else if dbUser != nil && dbUser.PersistentLogin {
+		// and attempt automatic login if persistent was set
+		authResult, err := app.Whop.ValidateLicense(dbUser.LicenseKey)
+		if err != nil {
+			app.Logger.Error(err)
+			showLogin = true
+		} else {
+			if !authResult.Success {
+				app.App.SendNotification(fyne.NewNotification(
+					"Auto-Login Failed",
+					fmt.Sprintf("Error: %s", authResult.ErrorMessage),
+				))
+				showLogin = true
+			} else {
+				// get logged user
+				discordID := ""
+				username := strings.Split(authResult.Email, "@")[0]
+				profilePicture := ""
+				if authResult.Discord != nil {
+					discordInfo := authResult.Discord.(map[string]any)
+					discordID = discordInfo["id"].(string)
+					username = discordInfo["username"].(string)
+					profilePicture = discordInfo["image_url"].(string)
+				}
+
+				loggedUser := user.NewUser(
+					authResult.Email,
+					discordID,
+					username,
+					profilePicture,
+					authResult.LicenseKey,
+					authResult.ExpiresAt,
+					dbUser.PersistentLogin)
+				loggedUser.ID = dbUser.ID
+				err = app.DB.UpdateUser(loggedUser.ID, *loggedUser)
+				if err != nil {
+					app.Logger.Error(err)
+				}
+				app.User = loggedUser
+			}
+		}
+	} else {
+		showLogin = true
+	}
+
+	// otherwise show login window
+	if showLogin {
+		app.LoginWindow.Show()
+	} else {
+		app.MakeDesktopUI()
+		app.MainWindow.Show()
+	}
 	// show and run the application (blocking function)
-	win.Hide()
-	app.LoginWindow.Show()
 	app.App.Run()
 }

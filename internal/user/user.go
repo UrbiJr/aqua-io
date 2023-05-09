@@ -2,23 +2,27 @@ package user
 
 // User is a type associated with users of this software.
 type User struct {
-	Email           string
-	Discord         any
-	Username        string
-	LicenseKey      string
-	ExpiresAt       int64
-	PersistentLogin bool
-	Settings        *Settings
+	ID              int64   `json:"id"`
+	Email           string  `json:"-"`
+	DiscordID       string  `json:"-"`
+	Username        string  `json:"-"`
+	ProfilePicture  string  `json:"-"`
+	LicenseKey      string  `json:"license_key"`
+	ExpiresAt       float64 `json:"-"`
+	PersistentLogin bool    `json:"persistent_login"`
 	*ProfileManager
 }
 
 // NewUser creates an instance of the User class
-func NewUser(email, uid, username, licenseKey string, discord any, expiresAt int64) *User {
+func NewUser(email, discordID, username, profilePicture, licenseKey string, expiresAt float64, persistentLogin bool) *User {
 	return &User{
-		Email:      email,
-		Discord:    discord,
-		Username:   username,
-		LicenseKey: licenseKey,
-		ExpiresAt:  expiresAt,
+		Email:           email,
+		DiscordID:       discordID,
+		Username:        username,
+		ProfilePicture:  profilePicture,
+		LicenseKey:      licenseKey,
+		ExpiresAt:       expiresAt,
+		PersistentLogin: persistentLogin,
+		ProfileManager:  &ProfileManager{},
 	}
 }

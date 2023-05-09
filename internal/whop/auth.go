@@ -46,7 +46,7 @@ type AuthResult struct {
 	Email        string
 	LicenseKey   string
 	Discord      any
-	ExpiresAt    int64
+	ExpiresAt    float64
 	ErrorMessage string
 }
 
@@ -109,7 +109,7 @@ func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
 			result.Discord = parsed["discord"]
 		}
 		if key == "expires_at" {
-			result.ExpiresAt = parsed["expires_at"].(int64)
+			result.ExpiresAt = parsed["expires_at"].(float64)
 		}
 	}
 

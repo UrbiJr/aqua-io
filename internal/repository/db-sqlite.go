@@ -19,6 +19,7 @@ func NewSQLiteRepository(db *sql.DB) *SQLiteRepository {
 }
 
 func (repo *SQLiteRepository) Migrate() error {
+
 	query := `
 		create table if not exists profiles(
 			id integer primary key autoincrement,
@@ -41,6 +42,17 @@ func (repo *SQLiteRepository) Migrate() error {
 			test_mode boolean null);
 	`
 	_, err := repo.Conn.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	query = `
+		create table if not exists users(
+			id integer primary key autoincrement,
+			license_key text not null,
+			persistent_login boolean null);
+	`
+	_, err = repo.Conn.Exec(query)
 	if err != nil {
 		return err
 	}
@@ -79,6 +91,30 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 
 	p.ID = id
 	return &p, nil
+}
+
+func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
+	stmt := "insert into users (license_key, persistent_login) values (?, ?)"
+	var persistent int
+
+	if u.PersistentLogin {
+		persistent = 1
+	} else {
+		persistent = 0
+	}
+
+	res, err := repo.Conn.Exec(stmt, u.LicenseKey, persistent)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	u.ID = id
+	return &u, nil
 }
 
 func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
@@ -139,6 +175,72 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 	return all, nil
 }
 
+func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
+	query := "select id, license_key, persistent_login from users where id = ?"
+
+	rows, err := repo.Conn.Query(query, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var u *user.User
+	for rows.Next() {
+		var persistent int
+
+		err := rows.Scan(
+			&u.ID,
+			&u.LicenseKey,
+			&persistent,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if persistent == 0 {
+			u.PersistentLogin = false
+		} else {
+			u.PersistentLogin = true
+		}
+	}
+
+	return u, nil
+}
+
+func (repo *SQLiteRepository) GetAllUsers() (*user.User, error) {
+	query := "select id, license_key, persistent_login from users"
+
+	rows, err := repo.Conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var u user.User
+	for rows.Next() {
+		var persistent int
+
+		err := rows.Scan(
+			&u.ID,
+			&u.LicenseKey,
+			&persistent,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if persistent == 0 {
+			u.PersistentLogin = false
+		} else {
+			u.PersistentLogin = true
+		}
+	}
+
+	return &u, nil
+}
+
 func (repo *SQLiteRepository) UpdateProfile(id int64, updated user.Profile) error {
 	if id <= 0 {
 		return errors.New("invalid updated id")
@@ -177,6 +279,37 @@ func (repo *SQLiteRepository) UpdateProfile(id int64, updated user.Profile) erro
 	return nil
 }
 
+func (repo *SQLiteRepository) UpdateUser(id int64, updated user.User) error {
+	if id <= 0 {
+		return errors.New("invalid updated id")
+	}
+
+	var persistent int
+
+	if updated.PersistentLogin {
+		persistent = 1
+	} else {
+		persistent = 0
+	}
+
+	stmt := "update users set license_key = ?,  persistent_login = ? where id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.LicenseKey, persistent, id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errUpdateFailed
+	}
+
+	return nil
+}
+
 func (repo *SQLiteRepository) DeleteProfile(id int64) error {
 	res, err := repo.Conn.Exec("delete from profiles where id = ?", id)
 	if err != nil {
@@ -195,8 +328,44 @@ func (repo *SQLiteRepository) DeleteProfile(id int64) error {
 	return nil
 }
 
+func (repo *SQLiteRepository) DeleteUser(id int64) error {
+	res, err := repo.Conn.Exec("delete from users where id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
 func (repo *SQLiteRepository) DeleteAllProfiles() error {
 	res, err := repo.Conn.Exec("delete from profiles where 1 = 1")
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeleteAllUsers() error {
+	res, err := repo.Conn.Exec("delete from users where 1 = 1")
 	if err != nil {
 		return err
 	}
