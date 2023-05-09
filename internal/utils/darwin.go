@@ -5,11 +5,10 @@ package utils
 
 import "C"
 import (
-	"fmt"
-	"os"
-	"regexp"
+	"log"
 	"strings"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/mitchellh/go-ps"
 )
 
@@ -38,25 +37,10 @@ func IsProcRunning(names ...string) (bool, error) {
 }
 
 func GetDeviceID() string {
-	machineUUIDStr := ""
-	p, err := os.Open("ioreg -rd1 -c IOPlatformExpertDevice | grep -E '(UUID)'")
+	id, err := machineid.ID()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer p.Close()
-
-	for {
-		line := make([]byte, 1024)
-		_, err := p.Read(line)
-		if err != nil {
-			break
-		}
-		machineUUIDStr += string(line)
+		log.Fatal(err)
 	}
 
-	matchObj := regexp.MustCompile("[A-Z,0-9]{8,8}-[A-Z,0-9]{4,4}-[A-Z,0-9]{4,4}-[A-Z,0-9]{4,4}-[A-Z,0-9]{12,12}")
-	results := matchObj.FindAllString(machineUUIDStr, -1)
-
-	return results[0]
+	return id
 }

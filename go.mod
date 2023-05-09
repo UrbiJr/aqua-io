@@ -20,6 +20,7 @@ require (
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/bogdanfinn/utls v1.5.15 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/denisbrodbeck/machineid v1.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect

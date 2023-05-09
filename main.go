@@ -118,15 +118,14 @@ func main() {
 	// create the login page
 	// TODO: retrieve login info from db and check automatically validate license
 	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
-	app.LoginDialog()
-	app.LoginWindow.Resize(fyne.NewSize(600, 600))
+	app.ShowLogin()
+	app.LoginWindow.Resize(fyne.NewSize(300, 300))
 	app.LoginWindow.CenterOnScreen()
 	app.LoginWindow.SetFixedSize(true)
 	app.LoginWindow.SetIcon(resources.ResourceIconPng)
 	app.LoginWindow.SetOnClosed(func() {
 		app.Quit()
 	})
-	app.LoginWindow.ShowAndRun()
 
 	// create and size a fyne window
 	win := fyneApp.NewWindow("Aqua.io")
@@ -138,18 +137,15 @@ func main() {
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeDesktopUI()
 	case "darwin":
 		win.Resize(fyne.NewSize(1280, 720))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeDesktopUI()
 	default:
 		win.Resize(fyne.NewSize(415, 890))
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeMobileUI()
 	}
 
 	win.SetMainMenu(app.MakeMenu())
@@ -157,5 +153,7 @@ func main() {
 	win.SetIcon(resources.ResourceIconPng)
 
 	// show and run the application (blocking function)
-	win.ShowAndRun()
+	win.Hide()
+	app.LoginWindow.Show()
+	app.App.Run()
 }

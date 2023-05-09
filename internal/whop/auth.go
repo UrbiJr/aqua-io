@@ -77,7 +77,7 @@ func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode >= 500 {
 		return nil, fmt.Errorf("HTTP status code %d", resp.StatusCode)
 	}
 

@@ -1,67 +1,78 @@
 package copy_io
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/validation"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/whop"
 )
 
 // loginDialog shows a login form dialog and eventually authenticates user provided licenseKey.
 // Returns license authentication result data and true if login is persistent, false otherwise
-func (app *Config) LoginDialog() {
+func (app *Config) ShowLogin() {
 	licenseKey := widget.NewEntry()
 	licenseKey.Validator = validation.NewRegexp(`^(BETA|AQUA)-[0-9A-F]{6}-[0-9A-F]{8}-[0-9A-F]{6}`, "wrong license key format")
-
+	errorMsgLabel := widget.NewLabel("")
 	isPersitent := false
-	items := []*widget.FormItem{
-		widget.NewFormItem("License Key", licenseKey),
-		widget.NewFormItem("Remember me", widget.NewCheck("", func(checked bool) {
-			isPersitent = checked
-		})),
-	}
+	rememberMe := widget.NewCheck("Remember Me", func(checked bool) {
+		isPersitent = checked
+	})
 
+	appLogo := canvas.NewImageFromResource(resources.ResourceIconPng)
+	appLogo.SetMinSize(fyne.NewSize(25, 25))
+	appLogo.FillMode = canvas.ImageFillContain
 	authResult := &whop.AuthResult{}
-	loginForm := dialog.NewForm("Login...", "Log In", "Cancel", items, func(b bool) {
-		if !b {
-			return
-		}
+	vBox := container.NewVBox(
+		container.NewCenter(
+			container.NewHBox(widget.NewRichTextFromMarkdown(`## User Login`), appLogo)),
+		widget.NewLabel("License Key"),
+		licenseKey,
+		rememberMe,
+		errorMsgLabel,
+		container.NewCenter(
+			container.NewHBox(
+				widget.NewButton("Sign In", func() {
+					result, err := app.Whop.ValidateLicense(licenseKey.Text)
+					if err != nil {
+						authResult.Success = false
+						app.Logger.Error(err)
+					} else {
+						authResult = result
+					}
 
-		result, err := app.Whop.ValidateLicense(licenseKey.Text)
-		if err != nil {
-			authResult.Success = false
-			app.Logger.Error(err)
-		} else {
-			authResult = result
-		}
+					if !authResult.Success {
+						if authResult.ErrorMessage == "" {
+							authResult.ErrorMessage = "application error"
+						}
+						errorMsgLabel.SetText(fmt.Sprintf("Login Error: %s", authResult.ErrorMessage))
+					} else {
+						// get logged user
+						app.User = &user.User{
+							Email:           authResult.Email,
+							Discord:         authResult.Discord,
+							Username:        "",
+							LicenseKey:      authResult.LicenseKey,
+							ExpiresAt:       authResult.ExpiresAt,
+							PersistentLogin: isPersitent,
+							Settings:        &user.Settings{},
+							ProfileManager:  &user.ProfileManager{},
+						}
+						app.LoginWindow.Close()
+						app.MakeDesktopUI()
+						app.MainWindow.Show()
+					}
+				}),
+				widget.NewButton("Cancel", func() {
+					app.Quit()
+				}),
+			)),
+	)
 
-		if !authResult.Success {
-			if authResult.ErrorMessage == "" {
-				authResult.ErrorMessage = "application error"
-			}
-			app.App.SendNotification(&fyne.Notification{
-				Title:   "Login Failed",
-				Content: authResult.ErrorMessage,
-			})
-			app.Quit()
-		}
-
-		// get logged user
-		app.User = &user.User{
-			Email:           authResult.Email,
-			Discord:         authResult.Discord,
-			Username:        "",
-			LicenseKey:      authResult.LicenseKey,
-			ExpiresAt:       authResult.ExpiresAt,
-			PersistentLogin: isPersitent,
-			Settings:        &user.Settings{},
-			ProfileManager:  &user.ProfileManager{},
-		}
-
-	}, app.LoginWindow)
-
-	loginForm.Resize(fyne.NewSize(500, 500))
-	loginForm.Show()
+	app.LoginWindow.SetContent(vBox)
 }
