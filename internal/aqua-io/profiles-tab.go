@@ -352,6 +352,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 			if valid {
 				p := user.Profile{
 					Title:               title.Text,
+					TraderID:            pf.TraderID,
 					BybitApiKey:         bybitApiKey.Text,
 					BybitApiSecret:      bybitApiSecret.Text,
 					BlacklistCoins:      strings.Split(blackListCoins.Text, ","),
@@ -376,6 +377,8 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 					app.User.ProfileManager.UpdateProfile(pf.ID, p)
 				}
 				app.refreshProfilesTab()
+				app.RefreshLeaderboardWithoutFetch()
+				app.refreshCopiedTradersTab(true)
 			}
 		},
 		app.MainWindow,
@@ -468,10 +471,17 @@ func (app *Config) getProfilesTable() *widget.Table {
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
-							if deleted {
-								pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
-								if pf != nil {
+						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
+						if pf == nil {
+							return
+						}
+						if pf.TraderID != "" {
+							dialog.ShowError(
+								fmt.Errorf("You must first stop copying trader %s.\nYou can do that from Copied Traders tab.", pf.TraderID),
+								app.MainWindow)
+						} else {
+							dialog.ShowConfirm("Delete?", "", func(deleted bool) {
+								if deleted {
 									err := app.DB.DeleteProfile(pf.ID)
 									if err != nil {
 										app.Logger.Error(err)
@@ -479,9 +489,11 @@ func (app *Config) getProfilesTable() *widget.Table {
 										app.User.ProfileManager.DeleteProfile(pf.ID)
 									}
 								}
-							}
-							app.refreshProfilesTab()
-						}, app.MainWindow)
+								app.refreshProfilesTab()
+								app.RefreshLeaderboardWithoutFetch()
+							}, app.MainWindow)
+						}
+
 					}))
 				}
 			} else if i.Col == 4 && i.Row != 0 {

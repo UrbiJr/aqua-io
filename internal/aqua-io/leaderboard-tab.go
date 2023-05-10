@@ -304,9 +304,11 @@ func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 			app.MainWindow,
 		)
 	} else {
-		d = dialog.NewConfirm(
+		d = dialog.NewCustomConfirm(
 			"Copy?",
-			fmt.Sprintf("Copy %s", t.NickName),
+			"Confirm",
+			"Cancel",
+			widget.NewLabelWithStyle(fmt.Sprintf("Copy %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 			func(b bool) {
 				if b {
 					app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
@@ -320,15 +322,18 @@ func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 }
 
 func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
-	d := dialog.NewConfirm(
+	d := dialog.NewCustomConfirm(
 		"Stop Copying?",
-		fmt.Sprintf("Stop Copying %s", t.NickName),
+		"Confirm",
+		"Cancel",
+		widget.NewLabelWithStyle(fmt.Sprintf("Stop Copying %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		func(b bool) {
 			if b {
 				app.stopCopyingTrader(t, "")
 			}
 		},
 		app.MainWindow)
+
 	d.Show()
 
 	return d

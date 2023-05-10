@@ -270,7 +270,7 @@ func (app *Config) updatePositionsContent(profile *user.Profile) {
 	go func() {
 		positionInfoArr := app.getPositionInfo("linear", *profile)
 		if len(positionInfoArr) == 0 {
-			app.CopiedTradersTab.positionsLabel.SetText("0 positions found")
+			app.CopiedTradersTab.positionsLabel.SetText("0 copied positions found")
 		}
 		markdownText := ""
 		for i, p := range positionInfoArr {
