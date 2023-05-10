@@ -50,7 +50,8 @@ func (repo *SQLiteRepository) Migrate() error {
 		create table if not exists users(
 			id integer primary key autoincrement,
 			license_key text not null,
-			persistent_login boolean null);
+			persistent_login boolean null,
+			theme text null);
 	`
 	_, err = repo.Conn.Exec(query)
 	if err != nil {
@@ -94,7 +95,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 }
 
 func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
-	stmt := "insert into users (license_key, persistent_login) values (?, ?)"
+	stmt := "insert into users (license_key, persistent_login, theme) values (?, ?, ?)"
 	var persistent int
 
 	if u.PersistentLogin {
@@ -103,7 +104,7 @@ func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
 		persistent = 0
 	}
 
-	res, err := repo.Conn.Exec(stmt, u.LicenseKey, persistent)
+	res, err := repo.Conn.Exec(stmt, u.LicenseKey, persistent, u.Theme)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +177,7 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 }
 
 func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
-	query := "select id, license_key, persistent_login from users where id = ?"
+	query := "select id, license_key, persistent_login, theme from users where id = ?"
 
 	rows, err := repo.Conn.Query(query, ID)
 	if err != nil {
@@ -193,6 +194,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 			&u.ID,
 			&u.LicenseKey,
 			&persistent,
+			&u.Theme,
 		)
 		if err != nil {
 			return nil, err
@@ -209,7 +211,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 }
 
 func (repo *SQLiteRepository) GetAllUsers() (*user.User, error) {
-	query := "select id, license_key, persistent_login from users"
+	query := "select id, license_key, persistent_login, theme from users"
 
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
@@ -226,6 +228,7 @@ func (repo *SQLiteRepository) GetAllUsers() (*user.User, error) {
 			&u.ID,
 			&u.LicenseKey,
 			&persistent,
+			&u.Theme,
 		)
 		if err != nil {
 			return nil, err
@@ -292,8 +295,8 @@ func (repo *SQLiteRepository) UpdateUser(id int64, updated user.User) error {
 		persistent = 0
 	}
 
-	stmt := "update users set license_key = ?,  persistent_login = ? where id = ?"
-	res, err := repo.Conn.Exec(stmt, updated.LicenseKey, persistent, id)
+	stmt := "update users set license_key = ?,  persistent_login = ?, theme = ? where id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.LicenseKey, persistent, updated.Theme, id)
 	if err != nil {
 		return err
 	}

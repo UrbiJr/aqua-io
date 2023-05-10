@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/validation"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/user"
@@ -39,7 +40,7 @@ func (app *Config) MakeLoginWindow() {
 		errorText,
 		container.NewCenter(
 			container.NewHBox(
-				widget.NewButton("Sign In", func() {
+				widget.NewButtonWithIcon("Sign In", theme.LoginIcon(), func() {
 					result, err := app.Whop.ValidateLicense(licenseKey.Text)
 					if err != nil {
 						authResult.Success = false
@@ -77,6 +78,7 @@ func (app *Config) MakeLoginWindow() {
 
 						// save user to sqlite DB
 						app.DB.DeleteAllUsers()
+						loggedUser.Theme = "light"
 						inserted, err := app.DB.InsertUser(*loggedUser)
 						if err != nil {
 							app.Logger.Error(err)
@@ -88,7 +90,7 @@ func (app *Config) MakeLoginWindow() {
 						app.LoginWindow.Hide()
 					}
 				}),
-				widget.NewButton("Cancel", func() {
+				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 					app.Quit()
 				}),
 			)),

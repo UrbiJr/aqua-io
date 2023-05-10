@@ -10,6 +10,7 @@ type User struct {
 	LicenseKey      string  `json:"license_key"`
 	ExpiresAt       float64 `json:"-"`
 	PersistentLogin bool    `json:"persistent_login"`
+	Theme           string  `json:"theme"`
 	*ProfileManager
 }
 

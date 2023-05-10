@@ -72,7 +72,7 @@ func main() {
 	// create a fyne application
 	fyneApp := fyne_app.NewWithID("io.aqua-trading.app")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+	fyneApp.Settings().SetTheme(&resources.LightTheme{})
 	app.App = fyneApp
 
 	clientOptions := &client.ClientOptions{
@@ -119,7 +119,6 @@ func main() {
 	app.Whop = whopSettings
 
 	// create the login page
-	// TODO: retrieve login info from db and check automatically validate license
 	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
 	app.MakeLoginWindow()
 	app.LoginWindow.Resize(fyne.NewSize(300, 300))
@@ -152,6 +151,7 @@ func main() {
 	}
 
 	win.SetMainMenu(app.MakeMenu())
+	app.MakeTray()
 	win.SetIcon(resources.ResourceIconPng)
 
 	// retrieve user if stored locally
@@ -193,7 +193,14 @@ func main() {
 					authResult.LicenseKey,
 					authResult.ExpiresAt,
 					dbUser.PersistentLogin)
+
+				loggedUser.Theme = dbUser.Theme
+				// only check for dark since light is set as default
+				if loggedUser.Theme == "dark" {
+					fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+				}
 				loggedUser.ID = dbUser.ID
+				// update db with info fetched from whop
 				err = app.DB.UpdateUser(loggedUser.ID, *loggedUser)
 				if err != nil {
 					app.Logger.Error(err)

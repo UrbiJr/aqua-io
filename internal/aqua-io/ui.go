@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
@@ -129,6 +130,8 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 
 	setDarkThemeItem := fyne.NewMenuItem("Dark", func() {
 		// set dark theme and refresh widgets
+		app.User.Theme = "dark"
+		app.DB.UpdateUser(app.User.ID, *app.User)
 		app.App.Settings().SetTheme(&resources.DarkTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()
@@ -140,6 +143,8 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 	})
 	setLightThemeItem := fyne.NewMenuItem("Light", func() {
 		// set light theme and refresh widgets
+		app.User.Theme = "light"
+		app.DB.UpdateUser(app.User.ID, *app.User)
 		app.App.Settings().SetTheme(&resources.LightTheme{})
 		app.HomeTab.Content.Refresh()
 		app.CopiedTradersTab.Content.Refresh()
@@ -168,4 +173,16 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 	)
 
 	return main
+}
+
+func (app *Config) MakeTray() {
+	if desk, ok := app.App.(desktop.App); ok {
+		h := fyne.NewMenuItem("Logout", func() {})
+		h.Icon = theme.LogoutIcon()
+		menu := fyne.NewMenu("", h)
+		h.Action = func() {
+			app.Logger.Debug("logging out")
+		}
+		desk.SetSystemTrayMenu(menu)
+	}
 }
