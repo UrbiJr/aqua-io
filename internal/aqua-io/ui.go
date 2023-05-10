@@ -181,8 +181,9 @@ func (app *Config) MakeTray() {
 		h.Icon = theme.LogoutIcon()
 		menu := fyne.NewMenu("", h)
 		h.Action = func() {
-			app.Logger.Debug("logging out")
+			app.Logout()
 		}
+		desk.SetSystemTrayIcon(resources.ResourceIconPng)
 		desk.SetSystemTrayMenu(menu)
 	}
 }

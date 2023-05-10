@@ -62,6 +62,18 @@ func (app *Config) Quit() {
 	os.Exit(0)
 }
 
+// Logout exits the current user and shows the login window
+func (app *Config) Logout() {
+	app.Logger.Debug("logging out")
+	err := app.DB.DeleteAllUsers()
+	if err != nil {
+		app.Logger.Error(err)
+		app.Quit()
+	}
+	app.LoginWindow.Show()
+	app.MainWindow.Hide()
+}
+
 func (app *Config) ConnectSQL() (*sql.DB, error) {
 
 	path := ""
