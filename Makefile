@@ -7,7 +7,7 @@ else
 BINARY_NAME=aqua-io.app
 endif
 APP_NAME=Aqua.io
-APP_ID=io.aqua-trading.app
+APP_ID=trading.aqua-io.app
 VERSION=0.0.2
 BUILD_NO=2
 

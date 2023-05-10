@@ -70,7 +70,7 @@ func main() {
 	_ = os.Mkdir(path, os.ModePerm)
 
 	// create a fyne application
-	fyneApp := fyne_app.NewWithID("io.aqua-trading.app")
+	fyneApp := fyne_app.NewWithID("trading.aqua-io.app")
 	// set custom theme
 	fyneApp.Settings().SetTheme(&resources.LightTheme{})
 	app.App = fyneApp
@@ -151,7 +151,6 @@ func main() {
 	}
 
 	win.SetMainMenu(app.MakeMenu())
-	app.MakeTray()
 	win.SetIcon(resources.ResourceIconPng)
 
 	// retrieve user if stored locally
@@ -200,6 +199,7 @@ func main() {
 					fyneApp.Settings().SetTheme(&resources.DarkTheme{})
 				}
 				loggedUser.ID = dbUser.ID
+				loggedUser.ProfilePicturePath = dbUser.ProfilePicturePath
 				// update db with info fetched from whop
 				err = app.DB.UpdateUser(loggedUser.ID, *loggedUser)
 				if err != nil {
@@ -213,12 +213,14 @@ func main() {
 	}
 
 	// otherwise show login window
+	app.MakeTray()
 	if showLogin {
 		app.LoginWindow.Show()
 	} else {
 		app.MakeDesktopUI()
 		app.MainWindow.Show()
 	}
+
 	// show and run the application (blocking function)
 	app.App.Run()
 }

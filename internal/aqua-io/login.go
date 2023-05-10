@@ -32,6 +32,62 @@ func (app *Config) MakeLoginWindow() {
 	appLogo.SetMinSize(fyne.NewSize(25, 25))
 	appLogo.FillMode = canvas.ImageFillContain
 	authResult := &whop.AuthResult{}
+	signInButton := widget.NewButtonWithIcon("Sign In", theme.LoginIcon(), func() {
+		result, err := app.Whop.ValidateLicense(licenseKey.Text)
+		if err != nil {
+			authResult.Success = false
+			app.Logger.Error(err)
+		} else {
+			authResult = result
+		}
+
+		if !authResult.Success {
+			if authResult.ErrorMessage == "" {
+				authResult.ErrorMessage = "application error"
+			}
+			errorText.Text = fmt.Sprintf("Login Error: %s", authResult.ErrorMessage)
+			errorText.Refresh()
+		} else {
+			// get logged user
+			discordID := ""
+			username := strings.Split(authResult.Email, "@")[0]
+			profilePicture := ""
+			if authResult.Discord != nil {
+				discordInfo := authResult.Discord.(map[string]any)
+				discordID = discordInfo["id"].(string)
+				username = discordInfo["username"].(string)
+				profilePicture = discordInfo["image_url"].(string)
+			}
+
+			loggedUser := user.NewUser(
+				authResult.Email,
+				discordID,
+				username,
+				profilePicture,
+				authResult.LicenseKey,
+				authResult.ExpiresAt,
+				isPersitent)
+
+			// save user to sqlite DB
+			app.DB.DeleteAllUsers()
+			loggedUser.Theme = "light"
+			inserted, err := app.DB.InsertUser(*loggedUser)
+			if err != nil {
+				app.Logger.Error(err)
+				app.Quit()
+			}
+			app.User = inserted
+			app.MakeTray()
+			app.MakeDesktopUI()
+			app.MainWindow.Show()
+			app.LoginWindow.Hide()
+		}
+	})
+	cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+		app.Quit()
+	})
+	signInButton.Importance = widget.HighImportance
+	cancelButton.Importance = widget.DangerImportance
 	vBox := container.NewVBox(
 		container.NewCenter(
 			container.NewHBox(widget.NewRichTextFromMarkdown(`## User Login`), appLogo)),
@@ -40,59 +96,8 @@ func (app *Config) MakeLoginWindow() {
 		errorText,
 		container.NewCenter(
 			container.NewHBox(
-				widget.NewButtonWithIcon("Sign In", theme.LoginIcon(), func() {
-					result, err := app.Whop.ValidateLicense(licenseKey.Text)
-					if err != nil {
-						authResult.Success = false
-						app.Logger.Error(err)
-					} else {
-						authResult = result
-					}
-
-					if !authResult.Success {
-						if authResult.ErrorMessage == "" {
-							authResult.ErrorMessage = "application error"
-						}
-						errorText.Text = fmt.Sprintf("Login Error: %s", authResult.ErrorMessage)
-						errorText.Refresh()
-					} else {
-						// get logged user
-						discordID := ""
-						username := strings.Split(authResult.Email, "@")[0]
-						profilePicture := ""
-						if authResult.Discord != nil {
-							discordInfo := authResult.Discord.(map[string]any)
-							discordID = discordInfo["id"].(string)
-							username = discordInfo["username"].(string)
-							profilePicture = discordInfo["image_url"].(string)
-						}
-
-						loggedUser := user.NewUser(
-							authResult.Email,
-							discordID,
-							username,
-							profilePicture,
-							authResult.LicenseKey,
-							authResult.ExpiresAt,
-							isPersitent)
-
-						// save user to sqlite DB
-						app.DB.DeleteAllUsers()
-						loggedUser.Theme = "light"
-						inserted, err := app.DB.InsertUser(*loggedUser)
-						if err != nil {
-							app.Logger.Error(err)
-							app.Quit()
-						}
-						app.User = inserted
-						app.MakeDesktopUI()
-						app.MainWindow.Show()
-						app.LoginWindow.Hide()
-					}
-				}),
-				widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-					app.Quit()
-				}),
+				signInButton,
+				cancelButton,
 			)),
 	)
 

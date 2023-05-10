@@ -49,6 +49,7 @@ func (repo *SQLiteRepository) Migrate() error {
 	query = `
 		create table if not exists users(
 			id integer primary key autoincrement,
+			profile_picture_path text null,
 			license_key text not null,
 			persistent_login boolean null,
 			theme text null);
@@ -95,7 +96,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 }
 
 func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
-	stmt := "insert into users (license_key, persistent_login, theme) values (?, ?, ?)"
+	stmt := "insert into users (profile_picture_path, license_key, persistent_login, theme) values (?, ?, ?, ?)"
 	var persistent int
 
 	if u.PersistentLogin {
@@ -104,7 +105,7 @@ func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
 		persistent = 0
 	}
 
-	res, err := repo.Conn.Exec(stmt, u.LicenseKey, persistent, u.Theme)
+	res, err := repo.Conn.Exec(stmt, u.ProfilePicturePath, u.LicenseKey, persistent, u.Theme)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +178,7 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 }
 
 func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
-	query := "select id, license_key, persistent_login, theme from users where id = ?"
+	query := "select id, profile_picture_path, license_key, persistent_login, theme from users where id = ?"
 
 	rows, err := repo.Conn.Query(query, ID)
 	if err != nil {
@@ -192,6 +193,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 
 		err := rows.Scan(
 			&u.ID,
+			&u.ProfilePicturePath,
 			&u.LicenseKey,
 			&persistent,
 			&u.Theme,
@@ -211,7 +213,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 }
 
 func (repo *SQLiteRepository) GetAllUsers() (*user.User, error) {
-	query := "select id, license_key, persistent_login, theme from users"
+	query := "select id, profile_picture_path, license_key, persistent_login, theme from users"
 
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
@@ -226,6 +228,7 @@ func (repo *SQLiteRepository) GetAllUsers() (*user.User, error) {
 
 		err := rows.Scan(
 			&u.ID,
+			&u.ProfilePicturePath,
 			&u.LicenseKey,
 			&persistent,
 			&u.Theme,
@@ -295,8 +298,8 @@ func (repo *SQLiteRepository) UpdateUser(id int64, updated user.User) error {
 		persistent = 0
 	}
 
-	stmt := "update users set license_key = ?,  persistent_login = ?, theme = ? where id = ?"
-	res, err := repo.Conn.Exec(stmt, updated.LicenseKey, persistent, updated.Theme, id)
+	stmt := "update users set profile_picture_path = ?, license_key = ?,  persistent_login = ?, theme = ? where id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.ProfilePicturePath, updated.LicenseKey, persistent, updated.Theme, id)
 	if err != nil {
 		return err
 	}

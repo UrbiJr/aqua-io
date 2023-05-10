@@ -70,6 +70,8 @@ func (app *Config) Logout() {
 		app.Logger.Error(err)
 		app.Quit()
 	}
+	app.User = nil
+	app.MakeTray()
 	app.LoginWindow.Show()
 	app.MainWindow.Hide()
 }
@@ -137,14 +139,14 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 	//open a file for writing
 	file, err := os.Create(fmt.Sprintf("downloads/%s%s", fileName, ext))
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer file.Close()
 
 	// Use io.Copy to just dump the response body to the file. This supports huge files
 	_, err = io.Copy(file, response.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil

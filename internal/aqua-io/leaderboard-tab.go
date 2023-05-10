@@ -404,21 +404,21 @@ func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpBu
 				canvasImage.SetMinSize(fyne.NewSize(25, 25))
 				canvasImage.FillMode = canvas.ImageFillContain
 				card.SetImage(canvasImage)
+				return card, nil
 			}
-		} else {
-			switch ext {
-			case ".jpg", ".png":
-				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext))
-				canvasImage.SetMinSize(fyne.NewSize(25, 25))
-				canvasImage.FillMode = canvas.ImageFillContain
-				card.SetImage(canvasImage)
-			case ".gif":
-				gif, err := x_widget.NewAnimatedGif(storage.NewFileURI(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)))
-				if err != nil {
-					app.Logger.Error(err)
-				} else {
-					return card, gif
-				}
+		}
+		switch ext {
+		case ".jpg", ".png":
+			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext))
+			canvasImage.SetMinSize(fyne.NewSize(25, 25))
+			canvasImage.FillMode = canvas.ImageFillContain
+			card.SetImage(canvasImage)
+		case ".gif":
+			gif, err := x_widget.NewAnimatedGif(storage.NewFileURI(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)))
+			if err != nil {
+				app.Logger.Error(err)
+			} else {
+				return card, gif
 			}
 		}
 
