@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -19,6 +20,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 	x_widget "fyne.io/x/fyne/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
 // UI contains fyne elements
@@ -51,15 +53,18 @@ func (app *Config) MakeMobileUI() {
 func (app *Config) MakeDesktopUI() {
 
 	greetings := []string{
-		"how can Aqua.io assist you today? :-)",
-		"how are you going to use Aqua.io today? :-)",
-		"ready to have some fun with Aqua.io?",
-		"Aqua.io is at your service :salute:",
-		"it's been a while.",
-		"time to make the checkout feed go brrr.",
-		"everyday is a perfect day to run Aqua.io!",
+		"how can Aqua.io💧 assist you today? :-)",
+		"how are you going to use Aqua.io💧 today? :-)",
+		"ready to have some fun with Aqua.io💧?",
+		"Aqua.io💧 at your service 🫡",
+		"I was about to get worried.",
+		"everyday is a perfect day to run Aqua.io💧 !",
+		"here's a good reminder to skyrocket your profits:\n“Do more of what works and less of what doesn’t.” - Steve Clark 💬",
+		"did you ever hear this?\n“The market can stay irrational longer than you can stay solvent.” - John Maynard Keynes 💬",
+		"here's a good reminder to skyrocket your profits:\n“Don’t worry about what the markets are going to do, worry about what you are going to do in response to the markets.” - Michael Carr 💬",
+		"you may find this interesting:\n“I get real, real concerned when I see trading strategies with too many rules (you should too).” - Larry Connors 💬",
 	}
-	msg := fmt.Sprintf("Hello %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
+	msg := fmt.Sprintf("Hey👋 %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
 
 	// get app tabs content
 	app.HomeTab = &HomeTab{}
@@ -187,7 +192,35 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 
 	ext := filepath.Ext(app.User.ProfilePicturePath)
 	switch ext {
-	case ".jpg", ".png":
+	case ".png":
+		if !strings.Contains(app.User.ProfilePicturePath, "_circle") {
+			// make circle image
+			err := utils.MakeCirclePNG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			if err != nil {
+				app.Logger.Error(err)
+				// rename file so it won't try to make the image round again
+				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			}
+			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext)
+		}
+		resource, err := fyne.LoadResourceFromPath(app.User.ProfilePicturePath)
+		if err != nil {
+			app.Logger.Error(err)
+			// return default account icon
+			return theme.AccountIcon(), nil
+		}
+		return resource, nil
+	case ".jpg", ".jpeg":
+		if !strings.Contains(app.User.ProfilePicturePath, "_circle") {
+			// make circle image
+			err := utils.MakeCircleJPG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			if err != nil {
+				app.Logger.Error(err)
+				// rename file so it won't try to make the image round again
+				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			}
+			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext)
+		}
 		resource, err := fyne.LoadResourceFromPath(app.User.ProfilePicturePath)
 		if err != nil {
 			app.Logger.Error(err)

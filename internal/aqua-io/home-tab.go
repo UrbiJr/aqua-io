@@ -2,8 +2,8 @@ package copy_io
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 )
 
 type HomeTab struct {
@@ -13,14 +13,10 @@ type HomeTab struct {
 
 func (app *Config) homeTab(greetingMsg string) *fyne.Container {
 
-	greetingMsgTitle := canvas.NewText(greetingMsg, nil)
+	greetingMsgTitle := widget.NewLabelWithStyle(greetingMsg, fyne.TextAlignLeading, fyne.TextStyle{Italic: true})
 
 	// define the homeTabContainer
-	homeTabContainer := container.NewWithoutLayout(greetingMsgTitle)
-
-	// resize and move the homeTab elements
-	greetingMsgTitle.Move(fyne.NewPos(10, 10))
-	greetingMsgTitle.Resize(fyne.NewSize(100, 50))
+	homeTabContainer := container.NewVBox(greetingMsgTitle)
 
 	return homeTabContainer
 }
