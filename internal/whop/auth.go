@@ -119,3 +119,34 @@ func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
 
 	return result, nil
 }
+
+func (settings *Whop) ResetLicense(licenseKey string) error {
+	url := fmt.Sprintf("%smemberships/%s", settings.APIBaseEndpoint, licenseKey)
+	data := map[string]interface{}{
+		"metadata": map[string]interface{}{},
+	}
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+settings.AuthAPIKey)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf("HTTP status code %d", resp.StatusCode)
+	}
+
+	return nil
+}

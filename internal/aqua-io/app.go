@@ -29,6 +29,7 @@ type Config struct {
 	LoginWindow     fyne.Window
 	MainWindow      fyne.Window
 	TopRightToolbar *widget.Toolbar
+	AccountMenu     *fyne.Container
 	GlobalContent   *fyne.Container
 	*HomeTab
 	*CopiedTradersTab
@@ -167,7 +168,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 			success += 1
 		} else {
 			app.App.SendNotification(&fyne.Notification{
-				Title:   "Order create fail :-(",
+				Title:   "❌ Error Creating Order",
 				Content: err.Error(),
 			})
 			app.Logger.Error(err.Error())
@@ -175,7 +176,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	}
 	if success > 0 {
 		app.App.SendNotification(&fyne.Notification{
-			Title:   "Orders create success! :D",
+			Title:   "🤑 Success!",
 			Content: fmt.Sprintf("Successfully created %d orders", success),
 		})
 	}

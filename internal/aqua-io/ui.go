@@ -3,6 +3,7 @@ package copy_io
 import (
 	"errors"
 	"fmt"
+	"image/color"
 	"io"
 	"math/rand"
 	"net/url"
@@ -96,18 +97,53 @@ func (app *Config) MakeDesktopUI() {
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
+	// get account menu
+	accountMenu := container.NewVBox(
+		widget.NewButtonWithIcon("Reset Key", theme.MediaReplayIcon(), func() {
+			err := app.Whop.ResetLicense(app.User.LicenseKey)
+			if err != nil {
+				app.App.SendNotification(fyne.NewNotification(
+					"❌ Key Reset Failed",
+					err.Error(),
+				))
+				app.Logger.Error(err)
+				return
+			}
+			app.App.SendNotification(fyne.NewNotification(
+				"✅ Key Reset Successfully",
+				"You can now use Aqua.io on a different device",
+			))
+		}),
+		widget.NewButtonWithIcon("Logout", theme.LogoutIcon(), func() {
+			app.Logout()
+		}),
+	)
+	app.AccountMenu = accountMenu
+	tabs.OnSelected = func(ti *container.TabItem) {
+		app.AccountMenu.Hide()
+	}
+
 	// populate window
 	app.TopRightToolbar = app.getToolbar()
-	app.GlobalContent = container.NewWithoutLayout(tabs, app.TopRightToolbar)
+	app.GlobalContent = container.NewWithoutLayout(tabs, app.TopRightToolbar, accountMenu)
 
 	// resize and position widgets
 	tabs.Resize(fyne.NewSize(1280, 720))
 	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
 	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
+	accountMenu.Resize(fyne.NewSize(100, 200))
+	accountMenu.Move(fyne.NewPos(1148, 45))
+	accountMenu.Hide()
 
 	app.MainWindow.SetContent(app.GlobalContent)
 
+}
+
+func (app *Config) makeCell() fyne.CanvasObject {
+	rect := canvas.NewRectangle(&color.NRGBA{128, 128, 128, 255})
+	rect.SetMinSize(fyne.NewSize(1, 1))
+	return rect
 }
 
 // getAccountIcon returns either a static image or an animated gif for the current user image
@@ -249,6 +285,11 @@ func (app *Config) getToolbar() *widget.Toolbar {
 		return widget.NewToolbar(
 			widget.NewToolbarSpacer(),
 			widget.NewToolbarAction(accIcon, func() {
+				if app.AccountMenu.Visible() {
+					app.AccountMenu.Hide()
+				} else {
+					app.AccountMenu.Show()
+				}
 			}),
 			widget.NewToolbarSpacer())
 	} else {
@@ -256,6 +297,11 @@ func (app *Config) getToolbar() *widget.Toolbar {
 			widget.NewToolbarSpacer(),
 			// AnimatedGif does not implement fyne.Resource so we cannot use it as toolabr icon :(
 			widget.NewToolbarAction(theme.AccountIcon(), func() {
+				if app.AccountMenu.Visible() {
+					app.AccountMenu.Hide()
+				} else {
+					app.AccountMenu.Show()
+				}
 			}),
 			widget.NewToolbarSpacer())
 	}

@@ -168,7 +168,7 @@ func main() {
 		} else {
 			if !authResult.Success {
 				app.App.SendNotification(fyne.NewNotification(
-					"Auto-Login Failed",
+					"⚠️ Auto-Login Failed",
 					fmt.Sprintf("Error: %s", authResult.ErrorMessage),
 				))
 				showLogin = true
