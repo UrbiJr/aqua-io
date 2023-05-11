@@ -39,6 +39,8 @@ func (m DarkTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color
 	case theme.ColorNamePrimary:
 		// rgb(88, 166, 255);
 		return &color.RGBA{R: 88, G: 166, B: 255, A: 255}
+	case theme.ColorNameShadow:
+		return &color.RGBA{R: 60, G: 60, B: 60, A: 105}
 	case theme.ColorNameHover, theme.ColorNameFocus:
 		return &color.RGBA{A: 100}
 	case theme.ColorNameInputBackground:
@@ -103,6 +105,8 @@ func (m LightTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Colo
 		return &color.RGBA{R: 200, G: 200, B: 200, A: 255}
 	case theme.ColorNameHover, theme.ColorNameFocus:
 		return &color.RGBA{A: 42}
+	case theme.ColorNameShadow:
+		return &color.RGBA{A: 105}
 	case theme.ColorNamePrimary:
 		// rgb(9, 105, 218);
 		return &color.RGBA{R: 9, G: 105, B: 218, A: 255}

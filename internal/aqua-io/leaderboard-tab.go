@@ -37,7 +37,7 @@ type LeaderboardTab struct {
 
 func (app *Config) leaderboardTab() *fyne.Container {
 
-	grid := container.NewAdaptiveGrid(3)
+	grid := container.NewAdaptiveGrid(4)
 	// fetch the traders from binance
 	app.LeaderboardTab.Traders, _ = app.fetchTraders(defaultStatisticsType, defaultPeriodType)
 	// get the leaderboard
@@ -126,19 +126,19 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	}
 
 	// display and resize content
-	leftTopContainer := container.NewVBox(widget.NewLabel("Filter and sort"), container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
+	leftTopContainer := container.NewVBox(container.NewHBox(widget.NewLabel("Time"), filterByPeriod, widget.NewLabel("Sort by"), sortByStatistics), searchEntry)
 	rightTopContainer := container.NewVBox(widget.NewLabel("Select Profile"), app.LeaderboardTab.ProfileSelector)
 	topContainer := container.NewAdaptiveGrid(2, leftTopContainer, rightTopContainer)
-	releasesContainer := container.NewWithoutLayout(vScroll, topContainer)
+	mainContainer := container.NewWithoutLayout(vScroll, topContainer)
 
 	topContainer.Move(fyne.NewPos(10, 10))
 	topContainer.Resize(fyne.NewSize(1260, 50))
-	vScroll.Move(fyne.NewPos(10, 130))
-	vScroll.Resize(fyne.NewSize(1260, 540))
+	vScroll.Move(fyne.NewPos(0, 90))
+	vScroll.Resize(fyne.NewSize(1310, 540))
 
 	app.LeaderboardTab.CardsContainer = grid
 
-	return releasesContainer
+	return mainContainer
 }
 
 func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
