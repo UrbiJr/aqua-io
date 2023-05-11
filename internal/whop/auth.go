@@ -46,12 +46,13 @@ import (
 */
 
 type AuthResult struct {
-	Success      bool
-	Email        string
-	LicenseKey   string
-	Discord      any
-	ExpiresAt    float64
-	ErrorMessage string
+	Success             bool
+	Email               string
+	LicenseKey          string
+	ManageMembershipURL string
+	Discord             any
+	ExpiresAt           float64
+	ErrorMessage        string
 }
 
 func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
@@ -114,6 +115,9 @@ func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
 		}
 		if key == "expires_at" {
 			result.ExpiresAt = parsed["expires_at"].(float64)
+		}
+		if key == "manage_url" {
+			result.ManageMembershipURL = parsed["manage_url"].(string)
 		}
 	}
 

@@ -22,6 +22,7 @@ import (
 	x_widget "fyne.io/x/fyne/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/utils"
+	"github.com/skratchdot/open-golang/open"
 )
 
 // UI contains fyne elements
@@ -97,8 +98,23 @@ func (app *Config) MakeDesktopUI() {
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
+	manageMembershipButton := widget.NewButtonWithIcon("Manage Account", theme.SettingsIcon(), nil)
+	manageLink, err := url.Parse(app.User.ManageMembershipURL)
+	if err != nil {
+		manageMembershipButton.Disable()
+	} else {
+		manageMembershipButton.OnTapped = func() {
+			err := open.Run(manageLink.String())
+			if err != nil {
+				app.Logger.Error(err)
+			}
+			app.AccountMenu.Hide()
+		}
+	}
+
 	// get account menu
 	accountMenu := container.NewVBox(
+		manageMembershipButton,
 		widget.NewButtonWithIcon("Reset Key", theme.MediaReplayIcon(), func() {
 			err := app.Whop.ResetLicense(app.User.LicenseKey)
 			if err != nil {
@@ -107,12 +123,14 @@ func (app *Config) MakeDesktopUI() {
 					err.Error(),
 				))
 				app.Logger.Error(err)
+				app.AccountMenu.Hide()
 				return
 			}
 			app.App.SendNotification(fyne.NewNotification(
 				"✅ Key Reset Successfully",
 				"You can now use Aqua.io on a different device",
 			))
+			app.AccountMenu.Hide()
 		}),
 		widget.NewButtonWithIcon("Logout", theme.LogoutIcon(), func() {
 			app.Logout()
@@ -132,8 +150,8 @@ func (app *Config) MakeDesktopUI() {
 	app.TopRightToolbar.Resize(fyne.NewSize(100, 30))
 	tabs.Move(fyne.NewPos(0, 0))
 	app.TopRightToolbar.Move(fyne.NewPos(1180, 0))
-	accountMenu.Resize(fyne.NewSize(100, 200))
-	accountMenu.Move(fyne.NewPos(1148, 45))
+	accountMenu.Resize(fyne.NewSize(180, 200))
+	accountMenu.Move(fyne.NewPos(1084, 50))
 	accountMenu.Hide()
 
 	app.MainWindow.SetContent(app.GlobalContent)

@@ -13,6 +13,7 @@ require (
 	github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082
 	github.com/glebarez/go-sqlite v1.20.3
 	github.com/mitchellh/go-ps v1.0.0
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 )
 
 require (

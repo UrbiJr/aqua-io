@@ -65,6 +65,7 @@ func (app *Config) MakeLoginWindow() {
 				username,
 				profilePicture,
 				authResult.LicenseKey,
+				authResult.ManageMembershipURL,
 				authResult.ExpiresAt,
 				isPersitent)
 

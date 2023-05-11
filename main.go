@@ -190,6 +190,7 @@ func main() {
 					username,
 					profilePicture,
 					authResult.LicenseKey,
+					authResult.ManageMembershipURL,
 					authResult.ExpiresAt,
 					dbUser.PersistentLogin)
 
