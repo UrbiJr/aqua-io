@@ -210,6 +210,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 					app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 				}
 				app.refreshProfilesTab()
+				app.RefreshLeaderboardWithoutFetch()
 			}
 		},
 		app.MainWindow,
@@ -455,6 +456,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
+							pf.TraderID = ""
 							inserted, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
@@ -462,6 +464,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 								app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 							}
 							app.refreshProfilesTab()
+							app.RefreshLeaderboardWithoutFetch()
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
@@ -553,6 +556,7 @@ func (app *Config) refreshProfilesBottomContent() {
 						}
 					}
 					app.refreshProfilesTab()
+					app.RefreshLeaderboardWithoutFetch()
 				}
 			}, app.MainWindow)
 	})

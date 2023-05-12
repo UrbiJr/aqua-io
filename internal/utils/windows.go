@@ -3,13 +3,16 @@
 
 package utils
 
+import "C"
 import (
 	"bytes"
+	"log"
 	"os/exec"
 	"runtime"
 	"strings"
 	"syscall"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/mitchellh/go-ps"
 )
 

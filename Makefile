@@ -1,15 +1,15 @@
+APP_NAME=Aqua.io
+APP_ID=trading.aqua-io.app
+VERSION=0.0.3
+BUILD_NO=3
 # if on Windows
 ifeq ($(OS),Windows_NT)
-BINARY_NAME=aqua-io.exe
+BINARY_NAME="${APP_NAME}.exe"
 MANIFEST_NAME=aqua-io.exe.manifest
 else
 # we're on a Mac
-BINARY_NAME=aqua-io.app
+BINARY_NAME="${APP_NAME}.app"
 endif
-APP_NAME=Aqua.io
-APP_ID=trading.aqua-io.app
-VERSION=0.0.2
-BUILD_NO=2
 
 ## build: build binary and package app
 build:
@@ -23,7 +23,9 @@ endif
 
 ## cross compile the app for different architecture than the development machine (requires https://github.com/fyne-io/fyne-cross & docker)
 cross-darwin-amd64:
-fyne-cross darwin -arch=amd64 -app-id=${APP_ID}
+	fyne-cross darwin -arch=amd64 -app-id=${APP_ID}
+cross-windows-amd64:
+	fyne-cross windows -arch=amd64 -app-id=${APP_ID}
 	
 ## run: builds and runs the application
 run:

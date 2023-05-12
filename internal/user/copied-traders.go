@@ -49,17 +49,18 @@ type Transaction struct {
 }
 
 type Order struct {
-	ProfileID   int64   `json:"-"`
-	Symbol      string  `json:"symbol"`
-	OrderID     string  `json:"orderId"`
-	OrderLinkID string  `json:"orderLinkId"`
-	OrderStatus string  `json:"orderStatus"`
-	OrderType   string  `json:"orderType"`
-	CreatedTime int64   `json:"createdTime"`
-	Qty         float64 `json:"qty"`
-	Price       float64 `json:"price"`
-	Side        string  `json:"side"`
-	IsLeverage  int64   `json:"isLeverage"`
+	ProfileID    int64   `json:"-"`
+	Symbol       string  `json:"symbol"`
+	OrderID      string  `json:"orderId"`
+	OrderLinkID  string  `json:"orderLinkId"`
+	OrderStatus  string  `json:"orderStatus"`
+	OrderType    string  `json:"orderType"`
+	CreatedTime  int64   `json:"createdTime"`
+	Qty          float64 `json:"qty"`
+	Price        float64 `json:"price"`
+	TriggerPrice float64 `json:"price"`
+	Side         string  `json:"side"`
+	IsLeverage   int64   `json:"isLeverage"`
 }
 
 type PositionInfo struct {

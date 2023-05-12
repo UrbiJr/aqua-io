@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,6 +44,14 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 		takeProfitStr = fmt.Sprintf("%f", takeProfit)
 	}
 
+	var side string
+	if amount > 0 {
+		side = "Buy"
+	} else {
+		orderType = "Limit"
+		side = "Sell"
+	}
+
 	var timeInForce string
 	if orderType == "Market" {
 		timeInForce = "IOC"
@@ -50,26 +59,19 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 		timeInForce = "GTC"
 	}
 
-	var side string
-	if amount > 0 {
-		side = "Buy"
-	} else {
-		side = "Sell"
-	}
-
 	postData := fmt.Sprintf(`{
 		"category": "spot",
 		"symbol": "%s",
 		"side": "%s",
 		"orderType": "%s",
-		"qty": "%.1f",
+		"qty": "%f",
 		"price": "%s",
 		"timeInForce": "%s",
 		"isLeverage": "%d",
 		"orderFilter": "Order",
 		"takeProfit": "%s",
 		"stopLoss": "%s"
-	}`, symbol, side, orderType, amount, fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr)
+	}`, symbol, side, orderType, math.Abs(amount), fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr)
 
 	req, err := http.NewRequest(method, url, strings.NewReader(postData))
 
@@ -239,7 +241,7 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	return transactions
 }
 
-func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order {
+func (app *Config) fetchOrderHistory(category string, p user.Profile) []user.Order {
 	var url string
 
 	if p.TestMode {
@@ -336,6 +338,112 @@ func (app *Config) getOrderHistory(category string, p user.Profile) []user.Order
 	}
 
 	app.Logger.Debug(fmt.Sprintf("Fetched %d orders from bybit", len(orders)))
+
+	return orders
+}
+
+func (app *Config) fetchOpenOrders(category string, p user.Profile) []user.Order {
+	var url string
+
+	if p.TestMode {
+		url = "https://api-testnet.bybit.com/v5/order/realtime?category=" + category
+	}
+	method := "GET"
+	req, err := http.NewRequest(method, url, nil)
+
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	// create a time variable
+	now := time.Now()
+	// convert to unix time in milliseconds
+	unixMilli := now.UnixMilli()
+
+	// generate hmac for X-BAPI-SIGN
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", "category="+category)
+
+	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
+	hm.Write([]byte(str_to_sign))
+	HMAC := hex.EncodeToString(hm.Sum(nil))
+
+	req.Header.Add("X-BAPI-API-KEY", p.BybitApiKey)
+	req.Header.Add("X-BAPI-TIMESTAMP", fmt.Sprintf("%d", unixMilli))
+	req.Header.Add("X-BAPI-RECV-WINDOW", "5000")
+	req.Header.Add("X-BAPI-SIGN", HMAC)
+
+	res, err := app.Client.Do(req)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		app.Logger.Error(err)
+		return nil
+	}
+
+	var parsed map[string]any
+	var orders []user.Order
+
+	// Unmarshal or Decode the JSON to the interface.
+	json.Unmarshal(body, &parsed)
+
+	for key, _ := range parsed {
+
+		if key == "result" {
+			result := parsed["result"].(map[string]any)
+			for key := range result {
+				if key == "list" && result["list"] != nil {
+					list := result["list"].([]any)
+					for _, x := range list {
+						switch o := x.(type) {
+						case map[string]any:
+							price, err := strconv.ParseFloat(o["price"].(string), 64)
+							if err != nil {
+								continue
+							}
+							triggerPrice, err := strconv.ParseFloat(o["triggerPrice"].(string), 64)
+							if err != nil {
+								continue
+							}
+							qty, err := strconv.ParseFloat(o["qty"].(string), 64)
+							if err != nil {
+								continue
+							}
+							isLeverage, err := strconv.ParseInt(o["isLeverage"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							createdTime, err := strconv.ParseInt(o["createdTime"].(string), 10, 64)
+							if err != nil {
+								continue
+							}
+							orders = append(orders, user.Order{
+								ProfileID:    p.ID,
+								Symbol:       o["symbol"].(string),
+								OrderID:      o["orderId"].(string),
+								OrderLinkID:  o["orderLinkId"].(string),
+								OrderStatus:  o["orderStatus"].(string),
+								OrderType:    o["orderType"].(string),
+								Price:        price,
+								TriggerPrice: triggerPrice,
+								CreatedTime:  createdTime,
+								Qty:          qty,
+								Side:         o["side"].(string),
+								IsLeverage:   isLeverage,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	app.Logger.Debug(fmt.Sprintf("Fetched %d open orders from bybit", len(orders)))
 
 	return orders
 }

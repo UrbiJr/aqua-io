@@ -18,9 +18,12 @@ import (
 type CopiedTradersTab struct {
 	*container.TabItem
 	OrdersSlice             [][]any
+	OpenOrdersSlice         [][]any
 	OrdersTable             *widget.Table
+	OpenOrdersTable         *widget.Table
 	CopiedTradersList       *widget.List
 	orders                  []user.Order
+	openOrders              []user.Order
 	positionsLabel          *widget.Label
 	positionsContainer      *fyne.Container
 	selectedCopiedTrader    *user.Profile
@@ -101,9 +104,11 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the main content
 
 	// get the order history table
-	var slice [][]any
-	slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
-	app.OrdersSlice = slice
+	var ordersSlice, openOrdersSlice [][]any
+	ordersSlice = append(ordersSlice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Leverage", "Created Time"})
+	openOrdersSlice = append(openOrdersSlice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Trigger Price", "Leverage"})
+	app.OrdersSlice = ordersSlice
+	app.OpenOrdersSlice = openOrdersSlice
 	app.OrdersTable = widget.NewTable(
 		func() (int, int) {
 			return len(app.OrdersSlice), len(app.OrdersSlice[0])
@@ -119,16 +124,16 @@ func (app *Config) getCopiedTraders() *container.Split {
 			lbl := container.Objects[0].(*widget.Label)
 			canvasText := container.Objects[1].(*canvas.Text)
 
-			if i.Col == 999 && i.Row != 0 {
+			if i.Col == 1 && i.Row != 0 {
 				lbl.Hide()
 				canvasText.Hidden = false
-				funding := app.OrdersSlice[i.Row][i.Col].(float64)
-				if funding > 0 {
+				side := app.OrdersSlice[i.Row][i.Col].(string)
+				if side == "Buy" {
 					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
-				} else {
+				} else if side == "Sell" {
 					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
 				}
-				canvasText.Text = fmt.Sprintf("%f", funding)
+				canvasText.Text = side
 			} else {
 				canvasText.Hide()
 				lbl.Hidden = false
@@ -137,14 +142,55 @@ func (app *Config) getCopiedTraders() *container.Split {
 			}
 		})
 
+	app.OpenOrdersTable = widget.NewTable(
+		func() (int, int) {
+			return len(app.OpenOrdersSlice), len(app.OpenOrdersSlice[0])
+		},
+		func() fyne.CanvasObject {
+			lbl := widget.NewLabel("")
+			canvasText := canvas.NewText("", nil)
+			canvasText.Hide()
+			return container.NewMax(lbl, canvasText)
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			container := o.(*fyne.Container)
+			lbl := container.Objects[0].(*widget.Label)
+			canvasText := container.Objects[1].(*canvas.Text)
+
+			if i.Col == 1 && i.Row != 0 {
+				lbl.Hide()
+				canvasText.Hidden = false
+				side := app.OrdersSlice[i.Row][i.Col].(string)
+				if side == "Buy" {
+					canvasText.Color = color.RGBA{R: 14, G: 203, B: 129, A: 255}
+				} else if side == "Sell" {
+					canvasText.Color = color.RGBA{R: 246, G: 70, B: 93, A: 255}
+				}
+				canvasText.Text = side
+			} else {
+				canvasText.Hide()
+				lbl.Hidden = false
+				lbl.SetText(
+					app.OpenOrdersSlice[i.Row][i.Col].(string))
+			}
+		})
+
 	// set default columns widths
-	colWidths := []float32{200, 100, 200, 100, 100, 100, 100, 200}
+	colWidths := []float32{100, 50, 200, 100, 100, 100, 100, 200}
 	for i, w := range colWidths {
 		app.OrdersTable.SetColumnWidth(i, w)
 	}
 
+	colWidths = []float32{100, 50, 200, 100, 100, 100, 100, 100}
+	for i, w := range colWidths {
+		app.OpenOrdersTable.SetColumnWidth(i, w)
+	}
+
 	// get the orders tab
 	ordersTab := container.NewVScroll(app.OrdersTable)
+
+	// get the open orders tab
+	openOrdersTab := container.NewVScroll(app.OpenOrdersTable)
 
 	// get the positions tab
 	app.CopiedTradersTab.positionsLabel = widget.NewLabel("Select a trader")
@@ -162,6 +208,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the tabs container
 	tabs := container.NewAppTabs(
 		container.NewTabItem("Order History", ordersTab),
+		container.NewTabItem("Open Orders", openOrdersTab),
 		container.NewTabItem("Positions", positionsTab))
 	tabs.SetTabLocation(container.TabLocationTop)
 
@@ -175,6 +222,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 		// update order history
 		app.updateOrderHistoryContent(profile)
+		app.updateOpenOrdersContent(profile)
 
 		// update positions
 		app.CopiedTradersTab.positionsLabel.SetText("Fetching positions...")
@@ -199,31 +247,65 @@ func (app *Config) getCopiedTraders() *container.Split {
 		tabs))
 }
 
+func (app *Config) getOpenOrdersSlice() [][]any {
+	var slice [][]any
+
+	slice = append(slice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Trigger Price", "Leverage"})
+
+	for _, x := range app.CopiedTradersTab.openOrders {
+		var currentRow []any
+
+		currentRow = append(currentRow, x.Symbol)
+
+		currentRow = append(currentRow, x.Side)
+
+		if len(x.OrderID) > 26 {
+			currentRow = append(currentRow, x.OrderID[:20]+"...")
+		} else {
+			currentRow = append(currentRow, x.OrderID)
+		}
+
+		currentRow = append(currentRow, x.OrderStatus)
+
+		currentRow = append(currentRow, fmt.Sprintf("%f", x.Qty))
+
+		currentRow = append(currentRow, fmt.Sprintf("%f", x.Price))
+
+		currentRow = append(currentRow, fmt.Sprintf("%f", x.TriggerPrice))
+
+		currentRow = append(currentRow, fmt.Sprintf("%d", x.IsLeverage))
+
+		slice = append(slice, currentRow)
+	}
+
+	return slice
+}
+
 func (app *Config) getOrderSlice() [][]any {
 	var slice [][]any
 
-	slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
+	slice = append(slice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Leverage", "Created Time"})
 
 	for _, x := range app.CopiedTradersTab.orders {
 		var currentRow []any
 
 		if x.OrderStatus == "Filled" {
 
-			currentRow = append(currentRow, fmt.Sprintf("%s Perpetual", x.Symbol))
+			currentRow = append(currentRow, x.Symbol)
 
-			if len(x.OrderID) > 16 {
-				currentRow = append(currentRow, x.OrderID[:10]+"...")
+			currentRow = append(currentRow, x.Side)
+
+			if len(x.OrderID) > 26 {
+				currentRow = append(currentRow, x.OrderID[:20]+"...")
 			} else {
 				currentRow = append(currentRow, x.OrderID)
 			}
 
 			currentRow = append(currentRow, x.OrderStatus)
 
-			currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Qty))
+			currentRow = append(currentRow, fmt.Sprintf("%f", x.Qty))
 
 			currentRow = append(currentRow, fmt.Sprintf("%.2f", x.Price))
-
-			currentRow = append(currentRow, x.Side)
 
 			currentRow = append(currentRow, fmt.Sprintf("%d", x.IsLeverage))
 
@@ -241,12 +323,29 @@ func (app *Config) getOrderSlice() [][]any {
 	return slice
 }
 
+func (app *Config) getOpenOrders(profile *user.Profile) []user.Order {
+	var allOrders []user.Order
+
+	if profile != nil {
+		if profile.BybitApiKey != "" {
+			byBitOrders := app.fetchOpenOrders("spot", *profile)
+			if byBitOrders != nil {
+				allOrders = append(allOrders, byBitOrders...)
+			}
+		}
+	}
+
+	app.CopiedTradersTab.openOrders = allOrders
+
+	return allOrders
+}
+
 func (app *Config) getOrders(profile *user.Profile) []user.Order {
 	var allOrders []user.Order
 
 	if profile != nil {
 		if profile.BybitApiKey != "" {
-			byBitOrders := app.getOrderHistory("spot", *profile)
+			byBitOrders := app.fetchOrderHistory("spot", *profile)
 			if byBitOrders != nil {
 				allOrders = append(allOrders, byBitOrders...)
 			}
@@ -263,6 +362,14 @@ func (app *Config) updateOrderHistoryContent(profile *user.Profile) {
 		app.getOrders(profile)
 		app.OrdersSlice = app.getOrderSlice()
 		app.OrdersTable.Refresh()
+	}()
+}
+
+func (app *Config) updateOpenOrdersContent(profile *user.Profile) {
+	go func() {
+		app.getOpenOrders(profile)
+		app.OpenOrdersSlice = app.getOpenOrdersSlice()
+		app.OpenOrdersTable.Refresh()
 	}()
 }
 
@@ -331,14 +438,18 @@ func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
 		// update content based on the current selection
 		go func() {
 			app.updateOrderHistoryContent(app.CopiedTradersTab.selectedCopiedTrader)
+			app.updateOpenOrdersContent(app.CopiedTradersTab.selectedCopiedTrader)
 			app.updatePositionsContent(app.CopiedTradersTab.selectedCopiedTrader)
 		}()
 	} else {
 		// reset orders table
-		var slice [][]any
-		slice = append(slice, []any{"Symbol", "Order ID", "Status", "Qty", "Price", "Side", "Leverage", "Created Time"})
-		app.OrdersSlice = slice
+		var ordersSlice, openOrdersSlice [][]any
+		ordersSlice = append(ordersSlice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Leverage", "Created Time"})
+		openOrdersSlice = append(openOrdersSlice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Trigger Price", "Leverage"})
+		app.OrdersSlice = ordersSlice
+		app.OpenOrdersSlice = openOrdersSlice
 		app.OrdersTable.Refresh()
+		app.OpenOrdersTable.Refresh()
 
 		// reset positions
 		app.CopiedTradersTab.positionsLabel.SetText("Select a profile")
