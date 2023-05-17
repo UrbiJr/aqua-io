@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/url"
 	"path/filepath"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -330,6 +331,49 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 		func(b bool) {
 			if b {
 				app.stopCopyingTrader(t, "")
+			}
+		},
+		app.MainWindow)
+
+	d.Show()
+
+	return d
+}
+
+func (app *Config) makeOrderDialog(p *user.Profile, symbol, orderType string, price float64) dialog.Dialog {
+
+	amount := widget.NewEntry()
+	amount.SetPlaceHolder("0")
+	amount.Validator = utils.IsFloat
+
+	d := dialog.NewForm(
+		fmt.Sprintf("Order %s", symbol),
+		"Confirm",
+		"Skip",
+		[]*widget.FormItem{
+			widget.NewFormItem("Amount (USDT): ", amount),
+		},
+		func(b bool) {
+			if b {
+				a, err := strconv.ParseFloat(amount.Text, 64)
+				if err != nil {
+					app.Logger.Error(err)
+					return
+				}
+				_, err = app.createOrder(p, symbol, orderType, a, price)
+				if err != nil {
+					app.App.SendNotification(&fyne.Notification{
+						Title:   "❌ Error Creating Order",
+						Content: err.Error(),
+					})
+					app.Logger.Error(fmt.Sprintf("failed to create %s order: %s", symbol, err.Error()))
+				} else {
+					app.App.SendNotification(&fyne.Notification{
+						Title:   "🤑 Success!",
+						Content: fmt.Sprintf("Successfully created %s order", symbol),
+					})
+					app.Logger.Debug(fmt.Sprintf("successfully created %s order", symbol))
+				}
 			}
 		},
 		app.MainWindow)
