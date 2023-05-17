@@ -58,7 +58,6 @@ type AuthResult struct {
 func (settings *Whop) ValidateLicense(licenseKey string) (*AuthResult, error) {
 	hwid := utils.GetDeviceID()
 	url := fmt.Sprintf("%smemberships/%s/validate_license", settings.APIBaseEndpoint, licenseKey)
-	fmt.Print(url)
 	data := map[string]interface{}{
 		"metadata": map[string]interface{}{
 			"hwid": hwid,

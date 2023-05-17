@@ -199,15 +199,17 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 					return theme.AccountIcon(), nil
 				}
 
+				file.Close()
+
 				// get the file extension
 				ext = response.Header.Get("Content-Type")
 				switch ext {
 				case "image/gif":
-					ext = "gif"
+					ext = ".gif"
 				case "image/jpeg", "image/jpg":
-					ext = "jpg"
+					ext = ".jpg"
 				case "image/png":
-					ext = "png"
+					ext = ".png"
 				default:
 					app.Logger.Error(errors.New("no content-type header found when getting profile image"))
 					return theme.AccountIcon(), nil
@@ -215,10 +217,14 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 
 				// finally, add extension to the stored image
 				src := fmt.Sprintf("downloads/%s", app.User.DiscordID)
-				dst := fmt.Sprintf("downloads/%s.%s", app.User.DiscordID, ext)
+				dst := fmt.Sprintf("downloads/%s%s", app.User.DiscordID, ext)
 
 				// rename file
-				os.Rename(src, dst)
+				err = os.Rename(src, dst)
+				if err != nil {
+					app.Logger.Error(err)
+					return theme.AccountIcon(), nil
+				}
 				app.User.ProfilePicturePath = dst
 				err = app.DB.UpdateUser(app.User.ID, *app.User)
 				if err != nil {
@@ -249,13 +255,13 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 	case ".png":
 		if !strings.Contains(app.User.ProfilePicturePath, "_circle") {
 			// make circle image
-			err := utils.MakeCirclePNG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			err := utils.MakeCirclePNG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext))
 			if err != nil {
 				app.Logger.Error(err)
 				// rename file so it won't try to make the image round again
-				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext))
 			}
-			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext)
+			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext)
 		}
 		resource, err := fyne.LoadResourceFromPath(app.User.ProfilePicturePath)
 		if err != nil {
@@ -267,13 +273,13 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 	case ".jpg", ".jpeg":
 		if !strings.Contains(app.User.ProfilePicturePath, "_circle") {
 			// make circle image
-			err := utils.MakeCircleJPG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+			err := utils.MakeCircleJPG(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext))
 			if err != nil {
 				app.Logger.Error(err)
 				// rename file so it won't try to make the image round again
-				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext))
+				os.Rename(app.User.ProfilePicturePath, fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext))
 			}
-			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle.%s", app.User.DiscordID, ext)
+			app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s_circle%s", app.User.DiscordID, ext)
 		}
 		resource, err := fyne.LoadResourceFromPath(app.User.ProfilePicturePath)
 		if err != nil {
