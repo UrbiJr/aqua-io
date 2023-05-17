@@ -210,6 +210,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 					app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 				}
 				app.refreshProfilesTab()
+				app.RefreshProfileSelector()
 				app.RefreshLeaderboardWithoutFetch()
 			}
 		},
@@ -378,6 +379,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 					app.User.ProfileManager.UpdateProfile(pf.ID, p)
 				}
 				app.refreshProfilesTab()
+				app.RefreshProfileSelector()
 				app.RefreshLeaderboardWithoutFetch()
 				app.refreshCopiedTradersTab(true)
 			}
@@ -464,6 +466,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 								app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 							}
 							app.refreshProfilesTab()
+							app.RefreshProfileSelector()
 							app.RefreshLeaderboardWithoutFetch()
 						}
 					}))
@@ -493,6 +496,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 									}
 								}
 								app.refreshProfilesTab()
+								app.RefreshProfileSelector()
 								app.RefreshLeaderboardWithoutFetch()
 							}, app.MainWindow)
 						}
@@ -556,6 +560,7 @@ func (app *Config) refreshProfilesBottomContent() {
 						}
 					}
 					app.refreshProfilesTab()
+					app.RefreshProfileSelector()
 					app.RefreshLeaderboardWithoutFetch()
 				}
 			}, app.MainWindow)
@@ -584,5 +589,5 @@ func (app *Config) refreshProfilesTopContent() {
 func (app *Config) refreshProfilesTab() {
 	app.refreshProfilesTopContent()
 	app.refreshProfilesTable()
-	app.refreshProfileSelector()
+	app.RefreshProfileSelector()
 }

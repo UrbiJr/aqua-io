@@ -451,7 +451,7 @@ func (app *Config) RefreshLeaderboardWithoutFetch() {
 	app.LeaderboardTab.CardsContainer.Refresh()
 }
 
-func (app *Config) refreshProfileSelector() {
+func (app *Config) RefreshProfileSelector() {
 	app.LeaderboardTab.ProfileSelector.ClearSelected()
 	app.LeaderboardTab.ProfileSelector.Refresh()
 }

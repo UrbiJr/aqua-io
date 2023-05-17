@@ -48,7 +48,7 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 	if amount > 0 {
 		side = "Buy"
 	} else {
-		orderType = "Limit"
+		//orderType = "Limit"
 		side = "Sell"
 	}
 

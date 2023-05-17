@@ -222,7 +222,6 @@ func (app *Config) getCopiedTraders() *container.Split {
 
 		// update order history
 		app.updateOrderHistoryContent(profile)
-		app.updateOpenOrdersContent(profile)
 
 		// update positions
 		app.CopiedTradersTab.positionsLabel.SetText("Fetching positions...")
@@ -252,30 +251,33 @@ func (app *Config) getOpenOrdersSlice() [][]any {
 
 	slice = append(slice, []any{"Symbol", "Side", "Order ID", "Status", "Qty", "Price", "Trigger Price", "Leverage"})
 
-	for _, x := range app.CopiedTradersTab.openOrders {
+	for _, x := range app.CopiedTradersTab.orders {
 		var currentRow []any
 
-		currentRow = append(currentRow, x.Symbol)
+		if x.OrderStatus != "Filled" && x.OrderStatus != "Canceled" {
+			currentRow = append(currentRow, x.Symbol)
 
-		currentRow = append(currentRow, x.Side)
+			currentRow = append(currentRow, x.Side)
 
-		if len(x.OrderID) > 26 {
-			currentRow = append(currentRow, x.OrderID[:20]+"...")
-		} else {
-			currentRow = append(currentRow, x.OrderID)
+			if len(x.OrderID) > 26 {
+				currentRow = append(currentRow, x.OrderID[:20]+"...")
+			} else {
+				currentRow = append(currentRow, x.OrderID)
+			}
+
+			currentRow = append(currentRow, x.OrderStatus)
+
+			currentRow = append(currentRow, fmt.Sprintf("%f", x.Qty))
+
+			currentRow = append(currentRow, fmt.Sprintf("%f", x.Price))
+
+			currentRow = append(currentRow, fmt.Sprintf("%f", x.TriggerPrice))
+
+			currentRow = append(currentRow, fmt.Sprintf("%d", x.IsLeverage))
+
+			slice = append(slice, currentRow)
 		}
 
-		currentRow = append(currentRow, x.OrderStatus)
-
-		currentRow = append(currentRow, fmt.Sprintf("%f", x.Qty))
-
-		currentRow = append(currentRow, fmt.Sprintf("%f", x.Price))
-
-		currentRow = append(currentRow, fmt.Sprintf("%f", x.TriggerPrice))
-
-		currentRow = append(currentRow, fmt.Sprintf("%d", x.IsLeverage))
-
-		slice = append(slice, currentRow)
 	}
 
 	return slice
@@ -323,23 +325,6 @@ func (app *Config) getOrderSlice() [][]any {
 	return slice
 }
 
-func (app *Config) getOpenOrders(profile *user.Profile) []user.Order {
-	var allOrders []user.Order
-
-	if profile != nil {
-		if profile.BybitApiKey != "" {
-			byBitOrders := app.fetchOpenOrders("spot", *profile)
-			if byBitOrders != nil {
-				allOrders = append(allOrders, byBitOrders...)
-			}
-		}
-	}
-
-	app.CopiedTradersTab.openOrders = allOrders
-
-	return allOrders
-}
-
 func (app *Config) getOrders(profile *user.Profile) []user.Order {
 	var allOrders []user.Order
 
@@ -361,14 +346,8 @@ func (app *Config) updateOrderHistoryContent(profile *user.Profile) {
 	go func() {
 		app.getOrders(profile)
 		app.OrdersSlice = app.getOrderSlice()
-		app.OrdersTable.Refresh()
-	}()
-}
-
-func (app *Config) updateOpenOrdersContent(profile *user.Profile) {
-	go func() {
-		app.getOpenOrders(profile)
 		app.OpenOrdersSlice = app.getOpenOrdersSlice()
+		app.OrdersTable.Refresh()
 		app.OpenOrdersTable.Refresh()
 	}()
 }
@@ -438,7 +417,6 @@ func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
 		// update content based on the current selection
 		go func() {
 			app.updateOrderHistoryContent(app.CopiedTradersTab.selectedCopiedTrader)
-			app.updateOpenOrdersContent(app.CopiedTradersTab.selectedCopiedTrader)
 			app.updatePositionsContent(app.CopiedTradersTab.selectedCopiedTrader)
 		}()
 	} else {
