@@ -160,25 +160,8 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	}
 
 	// create order for each trader's position
-	success := 0
 	for _, p := range positions {
-		app.Logger.Debug(fmt.Sprintf("creating order for symbol %s for profile %s", p.Symbol, profile.Title))
-		_, err := app.createOrder(profile, p.Symbol, "Market", p.Amount, p.MarkPrice)
-		if err == nil {
-			success += 1
-		} else {
-			app.App.SendNotification(&fyne.Notification{
-				Title:   "❌ Error Creating Order",
-				Content: err.Error(),
-			})
-			app.Logger.Error(err.Error())
-		}
-	}
-	if success > 0 {
-		app.App.SendNotification(&fyne.Notification{
-			Title:   "🤑 Success!",
-			Content: fmt.Sprintf("Successfully created %d orders", success),
-		})
+		app.makeOrderDialog(profile, p.Symbol, "Market", p.MarkPrice)
 	}
 
 	profile.TraderID = trader.EncryptedUid
