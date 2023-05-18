@@ -358,12 +358,18 @@ func (app *Config) updateOrderHistoryContent(profile *user.Profile) {
 	}()
 }
 
-func (app *Config) updatePositionsContent(profile *user.Profile) {
+func (app *Config) updatePositionsContent(p *user.Profile) {
 	go func() {
-		positionInfoArr := app.getPositionInfo("linear", *profile)
-		if len(positionInfoArr) == 0 {
-			app.CopiedTradersTab.positionsLabel.SetText("0 copied positions found")
+		var positionInfoArr []user.PositionInfo
+		openedPositions := app.User.CopiedTradersManager.GetOpenedPositionsByProfileID(p.ID)
+		for _, position := range openedPositions {
+			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, *p)...)
 		}
+
+		if len(positionInfoArr) == 0 {
+			app.CopiedTradersTab.positionsLabel.SetText("0 opened positions found")
+		}
+
 		markdownText := ""
 		for i, p := range positionInfoArr {
 			//Unix Timestamp to time.Time

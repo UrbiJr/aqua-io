@@ -445,11 +445,11 @@ func (app *Config) fetchOpenOrders(category string, p user.Profile) []user.Order
 	return orders
 }
 
-func (app *Config) getPositionInfo(category string, p user.Profile) []user.PositionInfo {
+func (app *Config) getPositionInfo(category, symbol string, p user.Profile) []user.PositionInfo {
 	var url string
 
 	if p.TestMode {
-		url = "https://api-testnet.bybit.com/v5/position/list?category=" + category
+		url = "https://api-testnet.bybit.com/v5/position/list?category=" + category + "&symbol=" + symbol
 	}
 	method := "GET"
 	req, err := http.NewRequest(method, url, nil)
@@ -465,7 +465,7 @@ func (app *Config) getPositionInfo(category string, p user.Profile) []user.Posit
 	unixMilli := now.UnixMilli()
 
 	// generate hmac for X-BAPI-SIGN
-	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", "category="+category)
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", "category="+category+"&symbol="+symbol)
 
 	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
 	hm.Write([]byte(str_to_sign))

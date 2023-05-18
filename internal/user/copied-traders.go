@@ -101,7 +101,7 @@ func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(OrderID string) *Ope
 	return nil
 }
 
-func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(ProfileID string) []OpenedPosition {
+func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(ProfileID int64) []OpenedPosition {
 	var openedPositions []OpenedPosition
 	for _, p := range ctm.OpenedPositions {
 		if p.ProfileID == p.ProfileID {

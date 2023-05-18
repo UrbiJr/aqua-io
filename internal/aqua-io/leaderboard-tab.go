@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -340,54 +341,75 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) makeOrderDialog(p *user.Profile, symbol, side string, price float64) dialog.Dialog {
+func (app *Config) makeCreateOrderForm(p *user.Profile, symbol, side string, price float64) *fyne.Container {
+	var orderError error
 
+	title := widget.NewLabel(fmt.Sprintf("Proceed to create %s %s Order?", symbol, side))
+	successText := canvas.NewText("", color.RGBA{R: 14, G: 203, B: 129, A: 255})
+	errorText := widget.NewLabelWithStyle("", fyne.TextAlignCenter, fyne.TextStyle{})
 	amount := widget.NewEntry()
 	amount.SetPlaceHolder("0")
 	amount.Validator = utils.IsFloat
 
-	d := dialog.NewForm(
-		fmt.Sprintf("%s Order %s", side, symbol),
-		"Confirm",
-		"Skip",
-		[]*widget.FormItem{
-			widget.NewFormItem("Amount (USDT): ", amount),
+	form := &widget.Form{
+		Items: []*widget.FormItem{
+			{Text: "Amount (USDT): ", Widget: amount, HintText: "Order quantity"},
 		},
-		func(b bool) {
-			if b {
-				a, err := strconv.ParseFloat(amount.Text, 64)
+		CancelText: "",
+		SubmitText: "Submit Order",
+	}
+	form.Append("", successText)
+	form.Append("", errorText)
+	errorText.Hide()
+	successText.Hide()
+
+	form.OnSubmit = func() {
+		a, err := strconv.ParseFloat(amount.Text, 64)
+		if err != nil {
+			orderError = err
+		} else {
+			openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price)
+			if err != nil {
+				orderError = err
+			} else {
+				app.Logger.Debug(fmt.Sprintf("successfully created %s order", symbol))
+				inserted, err := app.DB.InsertOpenedPosition(*openedPosition)
+				// TODO: improve error handling
 				if err != nil {
-					app.Logger.Error(err)
-					return
-				}
-				openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price)
-				if err != nil {
-					app.App.SendNotification(&fyne.Notification{
-						Title:   "❌ Error Creating Order",
-						Content: err.Error(),
-					})
-					app.Logger.Error(fmt.Sprintf("failed to create %s order: %s", symbol, err.Error()))
+					app.Logger.Error(fmt.Sprintf("error adding opened position to db: %s", err.Error()))
 				} else {
-					inserted, err := app.DB.InsertOpenedPosition(*openedPosition)
-					// TODO: improve error handling
-					if err != nil {
-						app.Logger.Error(err)
+					app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
+					if strings.ToLower(side) == "buy" {
+						app.Logger.Debug(fmt.Sprintf("opened %s Long position", symbol))
 					} else {
-						app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
+						app.Logger.Debug(fmt.Sprintf("opened %s Short position", symbol))
 					}
-					app.App.SendNotification(&fyne.Notification{
-						Title:   "🤑 Success!",
-						Content: fmt.Sprintf("Successfully created %s order", symbol),
-					})
-					app.Logger.Debug(fmt.Sprintf("successfully created %s order", symbol))
 				}
 			}
-		},
-		app.MainWindow)
+		}
 
-	d.Show()
+		if orderError != nil {
+			errMsg := fmt.Sprintf("order create fail: %s", orderError.Error())
+			app.Logger.Error(errMsg)
+			form.SubmitText = "Retry"
+			errorText.Text = utils.AddNewLine(errMsg, 56)
+			errorText.Refresh()
+			errorText.Show()
+			form.Enable()
+			form.Refresh()
+		} else {
+			app.App.SendNotification(&fyne.Notification{
+				Title:   "🤑 Success!",
+				Content: fmt.Sprintf("Successfully created %s order", symbol),
+			})
+			successText.Text = "Order Create Success!"
+			successText.Refresh()
+			successText.Show()
+			form.Disable()
+		}
+	}
 
-	return d
+	return container.NewVBox(title, form)
 }
 
 // getTraderCard returns a card widget containing information about the trader and relative actions,

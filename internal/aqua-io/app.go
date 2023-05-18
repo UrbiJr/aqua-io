@@ -12,9 +12,13 @@ import (
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/client"
 	"github.com/UrbiJr/aqua-io/internal/repository"
+	"github.com/UrbiJr/aqua-io/internal/resources"
 	"github.com/UrbiJr/aqua-io/internal/sites"
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
@@ -153,21 +157,67 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 	return nil
 }
 
+// copyTrader creates an order for each trader's position
 func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
 	if err != nil {
 		return err
 	}
 
-	// create order for each trader's position
-	for _, p := range positions {
-		var side string
-		if p.Amount < 0 {
-			side = "Sell"
-		} else {
-			side = "Buy"
+	if len(positions) > 0 {
+		var forms []*fyne.Container
+		for _, p := range positions {
+			var side string
+			if p.Amount < 0 {
+				side = "Sell"
+			} else {
+				side = "Buy"
+			}
+			// get the create order form for each position
+			forms = append(forms, app.makeCreateOrderForm(profile, p.Symbol, side, p.MarkPrice))
 		}
-		app.makeOrderDialog(profile, p.Symbol, side, p.MarkPrice)
+		index := 0
+		// get the window which will show the form
+		createOrderWindow := app.App.NewWindow(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
+		content := container.NewCenter()
+		// add the first form to window content
+		content.Add(forms[index])
+		var btn *widget.Button
+		if len(forms) == 1 {
+			btn = widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
+				createOrderWindow.Close()
+			})
+		} else {
+			btn = widget.NewButtonWithIcon("Next", theme.NavigateNextIcon(), nil)
+			btn.OnTapped = func() {
+				createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
+				if index+1 < len(forms) {
+					// second-last element
+					if index+1 == len(forms)-1 {
+						btn.SetIcon(theme.CancelIcon())
+						btn.SetText("Close")
+					}
+					index++
+					// update window content based on current form index
+					content.Objects[0] = forms[index]
+					content.Refresh()
+				} else {
+					// all forms have been showed, we can close the window
+					createOrderWindow.Close()
+				}
+			}
+		}
+
+		createOrderWindow.SetContent(container.NewVBox(
+			content,
+			layout.NewSpacer(),
+			btn,
+		))
+		content.Refresh()
+		createOrderWindow.Resize(fyne.NewSize(520, 400))
+		createOrderWindow.SetFixedSize(true)
+		createOrderWindow.SetIcon(resources.ResourceIconPng)
+		createOrderWindow.Show()
 	}
 
 	profile.TraderID = trader.EncryptedUid
