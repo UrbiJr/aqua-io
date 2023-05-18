@@ -47,6 +47,18 @@ func (repo *SQLiteRepository) Migrate() error {
 	}
 
 	query = `
+		create table if not exists opened_positions(
+			order_id text primary key,
+			profile_id integer not null,
+			symbol text not null,
+			FOREIGN KEY(profile_id) REFERENCES profiles(id));
+	`
+	_, err = repo.Conn.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	query = `
 		create table if not exists users(
 			id integer primary key autoincrement,
 			profile_picture_path text null,
@@ -92,6 +104,22 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 	}
 
 	p.ID = id
+	return &p, nil
+}
+
+func (repo *SQLiteRepository) InsertOpenedPosition(p user.OpenedPosition) (*user.OpenedPosition, error) {
+	stmt := "insert into opened_positions (order_id, profile_id, symbol) values (?, ?, ?)"
+
+	res, err := repo.Conn.Exec(stmt, p.OrderID, p.ProfileID, p.Symbol)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
 	return &p, nil
 }
 
@@ -170,6 +198,35 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 			p.BlockAddsAboveEntry = true
 		}
 		p.BlacklistCoins = strings.Split(blackListCoins, ",")
+
+		all = append(all, p)
+	}
+
+	return all, nil
+}
+
+func (repo *SQLiteRepository) AllOpenedPositions() ([]user.OpenedPosition, error) {
+	query := "select order_id, profile_id, symbol from opened_positions order by profile_id"
+
+	rows, err := repo.Conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var all []user.OpenedPosition
+	for rows.Next() {
+		var p user.OpenedPosition
+
+		err := rows.Scan(
+			&p.OrderID,
+			&p.ProfileID,
+			&p.Symbol,
+		)
+		if err != nil {
+			return nil, err
+		}
 
 		all = append(all, p)
 	}
@@ -285,6 +342,29 @@ func (repo *SQLiteRepository) UpdateProfile(id int64, updated user.Profile) erro
 	return nil
 }
 
+func (repo *SQLiteRepository) UpdateOpenedPosition(orderId string, updated user.OpenedPosition) error {
+	if orderId == "" {
+		return errors.New("invalid updated id")
+	}
+
+	stmt := "update opened_positions set profile_id = ?, symbol = ? where order_id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.ProfileID, updated.Symbol, orderId)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errUpdateFailed
+	}
+
+	return nil
+}
+
 func (repo *SQLiteRepository) UpdateUser(id int64, updated user.User) error {
 	if id <= 0 {
 		return errors.New("invalid updated id")
@@ -318,6 +398,24 @@ func (repo *SQLiteRepository) UpdateUser(id int64, updated user.User) error {
 
 func (repo *SQLiteRepository) DeleteProfile(id int64) error {
 	res, err := repo.Conn.Exec("delete from profiles where id = ?", id)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeleteOpenedPosition(orderId string) error {
+	res, err := repo.Conn.Exec("delete from opened_positions where order_id = ?", orderId)
 	if err != nil {
 		return err
 	}

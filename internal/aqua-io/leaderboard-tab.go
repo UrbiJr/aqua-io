@@ -340,14 +340,14 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) makeOrderDialog(p *user.Profile, symbol, orderType string, price float64) dialog.Dialog {
+func (app *Config) makeOrderDialog(p *user.Profile, symbol, side string, price float64) dialog.Dialog {
 
 	amount := widget.NewEntry()
 	amount.SetPlaceHolder("0")
 	amount.Validator = utils.IsFloat
 
 	d := dialog.NewForm(
-		fmt.Sprintf("Order %s", symbol),
+		fmt.Sprintf("%s Order %s", side, symbol),
 		"Confirm",
 		"Skip",
 		[]*widget.FormItem{
@@ -360,7 +360,7 @@ func (app *Config) makeOrderDialog(p *user.Profile, symbol, orderType string, pr
 					app.Logger.Error(err)
 					return
 				}
-				_, err = app.createOrder(p, symbol, orderType, a, price)
+				openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price)
 				if err != nil {
 					app.App.SendNotification(&fyne.Notification{
 						Title:   "❌ Error Creating Order",
@@ -368,6 +368,13 @@ func (app *Config) makeOrderDialog(p *user.Profile, symbol, orderType string, pr
 					})
 					app.Logger.Error(fmt.Sprintf("failed to create %s order: %s", symbol, err.Error()))
 				} else {
+					inserted, err := app.DB.InsertOpenedPosition(*openedPosition)
+					// TODO: improve error handling
+					if err != nil {
+						app.Logger.Error(err)
+					} else {
+						app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
+					}
 					app.App.SendNotification(&fyne.Notification{
 						Title:   "🤑 Success!",
 						Content: fmt.Sprintf("Successfully created %s order", symbol),

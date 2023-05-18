@@ -80,3 +80,43 @@ type PositionInfo struct {
 	Side           string  `json:"side"`
 	PositionStatus string  `json:"positionStatus"`
 }
+
+type OpenedPosition struct {
+	OrderID   string `json:"order_id"`
+	ProfileID int64  `json:"profile_id"`
+	Symbol    string `json:"symbol"`
+}
+
+type CopiedTradersManager struct {
+	OpenedPositions []OpenedPosition
+}
+
+func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(OrderID string) *OpenedPosition {
+	for _, p := range ctm.OpenedPositions {
+		if p.OrderID == OrderID {
+			return &p
+		}
+	}
+
+	return nil
+}
+
+func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(ProfileID string) []OpenedPosition {
+	var openedPositions []OpenedPosition
+	for _, p := range ctm.OpenedPositions {
+		if p.ProfileID == p.ProfileID {
+			openedPositions = append(openedPositions, p)
+		}
+	}
+
+	return openedPositions
+}
+
+func (ctm *CopiedTradersManager) DeleteOpenedPosition(orderId string) {
+	for i, p := range ctm.OpenedPositions {
+		if p.OrderID == orderId {
+			ctm.OpenedPositions = append(ctm.OpenedPositions[:i], ctm.OpenedPositions[i+1:]...)
+			break
+		}
+	}
+}

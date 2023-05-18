@@ -161,7 +161,13 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 
 	// create order for each trader's position
 	for _, p := range positions {
-		app.makeOrderDialog(profile, p.Symbol, "Market", p.MarkPrice)
+		var side string
+		if p.Amount < 0 {
+			side = "Sell"
+		} else {
+			side = "Buy"
+		}
+		app.makeOrderDialog(profile, p.Symbol, side, p.MarkPrice)
 	}
 
 	profile.TraderID = trader.EncryptedUid

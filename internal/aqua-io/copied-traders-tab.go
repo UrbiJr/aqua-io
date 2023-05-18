@@ -330,7 +330,13 @@ func (app *Config) getOrders(profile *user.Profile) []user.Order {
 
 	if profile != nil {
 		if profile.BybitApiKey != "" {
-			byBitOrders := app.fetchOrderHistory("spot", *profile)
+			byBitOrders, err := app.fetchOrderHistory("spot", *profile)
+			if err != nil && strings.Contains(err.Error(), "Timestamp") {
+				app.App.SendNotification(fyne.NewNotification(
+					"⚠️ Error getting orders",
+					err.Error(),
+				))
+			}
 			if byBitOrders != nil {
 				allOrders = append(allOrders, byBitOrders...)
 			}
@@ -440,4 +446,13 @@ func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
 		app.CopiedTradersList.SetItemHeight(i, 50)
 	}
 	app.CopiedTradersList.Refresh()
+}
+
+func (app *Config) getOpenedPositions() {
+	openedPositions, err := app.DB.AllOpenedPositions()
+	if err != nil {
+		app.Logger.Error(err)
+		app.Quit()
+	}
+	app.User.CopiedTradersManager.OpenedPositions = openedPositions
 }

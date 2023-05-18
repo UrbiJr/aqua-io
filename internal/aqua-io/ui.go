@@ -55,18 +55,18 @@ func (app *Config) MakeMobileUI() {
 func (app *Config) MakeDesktopUI() {
 
 	greetings := []string{
-		"how can Aqua.io💧 assist you today? :-)",
-		"how are you going to use Aqua.io💧 today? :-)",
-		"ready to have some fun with Aqua.io💧?",
-		"Aqua.io💧 at your service 🫡",
+		"how can Aqua.io assist you today? :-)",
+		"how are you going to use Aqua.io today? :-)",
+		"ready to have some fun with Aqua.io?",
+		"Aqua.io at your service.",
 		"I was about to get worried.",
-		"everyday is a perfect day to run Aqua.io💧 !",
-		"here's a good reminder to skyrocket your profits:\n“Do more of what works and less of what doesn’t.” - Steve Clark 💬",
-		"did you ever hear this?\n“The market can stay irrational longer than you can stay solvent.” - John Maynard Keynes 💬",
-		"here's a good reminder to skyrocket your profits:\n“Don’t worry about what the markets are going to do, worry about what you are going to do in response to the markets.” - Michael Carr 💬",
-		"you may find this interesting:\n“I get real, real concerned when I see trading strategies with too many rules (you should too).” - Larry Connors 💬",
+		"everyday is a perfect day to run Aqua.io !",
+		"here's a good reminder to skyrocket your profits:\n“Do more of what works and less of what doesn’t.” - Steve Clark",
+		"did you ever hear this?\n“The market can stay irrational longer than you can stay solvent.” - John Maynard Keynes",
+		"here's a good reminder to skyrocket your profits:\n“Don’t worry about what the markets are going to do, worry about what you are going to do in response to the markets.” - Michael Carr",
+		"you may find this interesting:\n“I get real, real concerned when I see trading strategies with too many rules (you should too).” - Larry Connors",
 	}
-	msg := fmt.Sprintf("Hey👋 %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
+	msg := fmt.Sprintf("Hey %s, %s", app.User.Username, greetings[rand.Intn(len(greetings))])
 
 	// get app tabs content
 	app.HomeTab = &HomeTab{}
@@ -77,6 +77,8 @@ func (app *Config) MakeDesktopUI() {
 
 	// load profiles
 	app.getProfiles()
+	// load opened positions
+	app.getOpenedPositions()
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.copiedTradersTab()

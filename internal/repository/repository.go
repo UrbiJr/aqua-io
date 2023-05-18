@@ -24,4 +24,9 @@ type Repository interface {
 	DeleteUser(id int64) error
 	DeleteAllProfiles() error
 	DeleteAllUsers() error
+
+	InsertOpenedPosition(p user.OpenedPosition) (*user.OpenedPosition, error)
+	AllOpenedPositions() ([]user.OpenedPosition, error)
+	UpdateOpenedPosition(orderId string, updated user.OpenedPosition) error
+	DeleteOpenedPosition(orderId string) error
 }

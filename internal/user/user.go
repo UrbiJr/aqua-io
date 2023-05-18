@@ -14,20 +14,22 @@ type User struct {
 	PersistentLogin     bool    `json:"persistent_login"`
 	Theme               string  `json:"theme"`
 	*ProfileManager
+	*CopiedTradersManager
 }
 
 // NewUser creates an instance of the User class
 func NewUser(email, discordID, username, profilePictureURL, licenseKey, manageMembershipURL string, expiresAt float64, persistentLogin bool) *User {
 	return &User{
-		Email:               email,
-		DiscordID:           discordID,
-		Username:            username,
-		ProfilePicturePath:  "",
-		ProfilePictureURL:   profilePictureURL,
-		ManageMembershipURL: manageMembershipURL,
-		LicenseKey:          licenseKey,
-		ExpiresAt:           expiresAt,
-		PersistentLogin:     persistentLogin,
-		ProfileManager:      &ProfileManager{},
+		Email:                email,
+		DiscordID:            discordID,
+		Username:             username,
+		ProfilePicturePath:   "",
+		ProfilePictureURL:    profilePictureURL,
+		ManageMembershipURL:  manageMembershipURL,
+		LicenseKey:           licenseKey,
+		ExpiresAt:            expiresAt,
+		PersistentLogin:      persistentLogin,
+		ProfileManager:       &ProfileManager{},
+		CopiedTradersManager: &CopiedTradersManager{},
 	}
 }

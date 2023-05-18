@@ -18,11 +18,11 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount, price float64) (string, error) {
+func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price float64) (*user.OpenedPosition, error) {
 	var url string
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
-		return "", fmt.Errorf("cannot create order: symbol %s is in user blacklisted coins", symbol)
+		return nil, fmt.Errorf("cannot create order: symbol %s is in user blacklisted coins", symbol)
 	}
 
 	if p.TestMode {
@@ -42,14 +42,6 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 		takeProfitStr = ""
 	} else {
 		takeProfitStr = fmt.Sprintf("%f", takeProfit)
-	}
-
-	var side string
-	if amount > 0 {
-		side = "Buy"
-	} else {
-		//orderType = "Limit"
-		side = "Sell"
 	}
 
 	var timeInForce string
@@ -77,7 +69,7 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 
 	if err != nil {
 		app.Logger.Error(err)
-		return "", err
+		return nil, err
 	}
 
 	// create a time variable
@@ -101,14 +93,14 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 	res, err := app.Client.Do(req)
 	if err != nil {
 		app.Logger.Error(err)
-		return "", err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		app.Logger.Error(err)
-		return "", err
+		return nil, err
 	}
 
 	var parsed map[string]any
@@ -122,21 +114,21 @@ func (app *Config) createOrder(p *user.Profile, symbol, orderType string, amount
 				result := parsed["result"].(map[string]any)
 				for key, _ = range result {
 					if key == "orderId" {
-						app.Logger.Debug(fmt.Sprintf("successfully created bybit order with id %s", result[key].(string)))
-						return result[key].(string), nil
+						app.Logger.Debug(fmt.Sprintf("successfully created bybit %s order with id %s", side, result[key].(string)))
+						return &user.OpenedPosition{OrderID: result[key].(string), Symbol: symbol, ProfileID: p.ID}, nil
 					}
 				}
 			} else {
 				if strings.Contains(parsed["retMsg"].(string), "Timestamp for this request is outside of the recvWindow.") {
 					// send notification to adjust system time
-					return "", errors.New("Timestamp not synchronized: please sync your system time and try again")
+					return nil, errors.New("Timestamp not synchronized: please sync your system time and try again")
 				}
-				return "", errors.New(parsed["retMsg"].(string))
+				return nil, errors.New(parsed["retMsg"].(string))
 			}
 		}
 	}
 
-	return "", fmt.Errorf("create order failed: order id not found")
+	return nil, fmt.Errorf("create order failed: order id not found")
 }
 
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
@@ -241,7 +233,7 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	return transactions
 }
 
-func (app *Config) fetchOrderHistory(category string, p user.Profile) []user.Order {
+func (app *Config) fetchOrderHistory(category string, p user.Profile) ([]user.Order, error) {
 	var url string
 
 	if p.TestMode {
@@ -252,7 +244,7 @@ func (app *Config) fetchOrderHistory(category string, p user.Profile) []user.Ord
 
 	if err != nil {
 		app.Logger.Error(err)
-		return nil
+		return nil, err
 	}
 
 	// create a time variable
@@ -275,14 +267,19 @@ func (app *Config) fetchOrderHistory(category string, p user.Profile) []user.Ord
 	res, err := app.Client.Do(req)
 	if err != nil {
 		app.Logger.Error(err)
-		return nil
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		app.Logger.Error(err)
-		return nil
+		return nil, err
+	}
+
+	if strings.Contains(string(body), "Timestamp for this request is outside of the recvWindow.") {
+		// send notification to adjust system time
+		return nil, errors.New("Timestamp not synchronized: please sync your system time and try again")
 	}
 
 	var parsed map[string]any
@@ -339,7 +336,7 @@ func (app *Config) fetchOrderHistory(category string, p user.Profile) []user.Ord
 
 	app.Logger.Debug(fmt.Sprintf("Fetched %d orders from bybit", len(orders)))
 
-	return orders
+	return orders, nil
 }
 
 func (app *Config) fetchOpenOrders(category string, p user.Profile) []user.Order {
