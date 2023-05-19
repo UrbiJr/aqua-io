@@ -346,29 +346,58 @@ func (app *Config) makeCreateOrderForm(p *user.Profile, symbol, side string, pri
 
 	title := widget.NewLabel(fmt.Sprintf("Proceed to create %s %s Order?", symbol, side))
 	successText := canvas.NewText("", color.RGBA{R: 14, G: 203, B: 129, A: 255})
-	errorText := widget.NewLabelWithStyle("", fyne.TextAlignCenter, fyne.TextStyle{})
+	errorText := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{})
 	amount := widget.NewEntry()
 	amount.SetPlaceHolder("0")
 	amount.Validator = utils.IsFloat
 
+	TP := price + (price * p.AutoTP / 100)
+	SL := price - (price * p.AutoSL / 100)
+
+	takeProfit := widget.NewEntry()
+	takeProfit.SetText(fmt.Sprintf("%f", TP))
+	takeProfit.Validator = utils.IsFloat
+
+	stopLoss := widget.NewEntry()
+	stopLoss.SetText(fmt.Sprintf("%f", SL))
+	stopLoss.Validator = utils.IsFloat
+
+	resetTPSLtoDefault := widget.NewButton("Reset TP & SL to default", func() {
+		takeProfit.SetText(fmt.Sprintf("%f", TP))
+		stopLoss.SetText(fmt.Sprintf("%f", SL))
+	})
+
 	form := &widget.Form{
 		Items: []*widget.FormItem{
 			{Text: "Amount (USDT): ", Widget: amount, HintText: "Order quantity"},
+			{Text: "Take Profit: ", Widget: takeProfit, HintText: "Take profit price (default value as per profile settings)"},
+			{Text: "Stop Loss: ", Widget: stopLoss, HintText: "Stop loss price (default value as per profile settings)"},
 		},
 		CancelText: "",
 		SubmitText: "Submit Order",
 	}
+	form.Append("", resetTPSLtoDefault)
 	form.Append("", successText)
 	form.Append("", errorText)
 	errorText.Hide()
 	successText.Hide()
 
 	form.OnSubmit = func() {
+		errorText.Hide()
 		a, err := strconv.ParseFloat(amount.Text, 64)
 		if err != nil {
 			orderError = err
-		} else {
-			openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price)
+		}
+		tp, err := strconv.ParseFloat(takeProfit.Text, 64)
+		if err != nil {
+			orderError = err
+		}
+		sl, err := strconv.ParseFloat(stopLoss.Text, 64)
+		if err != nil {
+			orderError = err
+		}
+		if orderError == nil {
+			openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price, tp, sl)
 			if err != nil {
 				orderError = err
 			} else {

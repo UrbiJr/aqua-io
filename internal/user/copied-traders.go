@@ -49,18 +49,23 @@ type Transaction struct {
 }
 
 type Order struct {
-	ProfileID    int64   `json:"-"`
-	Symbol       string  `json:"symbol"`
-	OrderID      string  `json:"orderId"`
-	OrderLinkID  string  `json:"orderLinkId"`
-	OrderStatus  string  `json:"orderStatus"`
-	OrderType    string  `json:"orderType"`
-	CreatedTime  int64   `json:"createdTime"`
-	Qty          float64 `json:"qty"`
-	Price        float64 `json:"price"`
-	TriggerPrice float64 `json:"price"`
-	Side         string  `json:"side"`
-	IsLeverage   int64   `json:"isLeverage"`
+	ProfileID        int64   `json:"-"`
+	Symbol           string  `json:"symbol"`
+	OrderID          string  `json:"orderId"`
+	OrderLinkID      string  `json:"orderLinkId"`
+	OrderStatus      string  `json:"orderStatus"`
+	OrderType        string  `json:"orderType"`
+	CreatedTime      int64   `json:"createdTime"`
+	FilledQty        float64 `json:"cumExecQty"`
+	Qty              float64 `json:"qty"`
+	AvgFilledPrice   float64 `json:"avgPrice"`
+	Price            float64 `json:"price"`
+	TakeProfit       float64 `json:"takeProfit"`
+	StopLoss         float64 `json:"stopLoss"`
+	TriggerPrice     float64 `json:"triggerPrice"`
+	TriggerDirection float64 `json:"triggerDirection"`
+	Side             string  `json:"side"`
+	IsLeverage       int64   `json:"isLeverage"`
 }
 
 type PositionInfo struct {
@@ -91,9 +96,9 @@ type CopiedTradersManager struct {
 	OpenedPositions []OpenedPosition
 }
 
-func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(OrderID string) *OpenedPosition {
+func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(orderID string) *OpenedPosition {
 	for _, p := range ctm.OpenedPositions {
-		if p.OrderID == OrderID {
+		if p.OrderID == orderID {
 			return &p
 		}
 	}
@@ -101,15 +106,24 @@ func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(OrderID string) *Ope
 	return nil
 }
 
-func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(ProfileID int64) []OpenedPosition {
+func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(profileID int64) []OpenedPosition {
 	var openedPositions []OpenedPosition
 	for _, p := range ctm.OpenedPositions {
-		if p.ProfileID == p.ProfileID {
+		if p.ProfileID == profileID {
 			openedPositions = append(openedPositions, p)
 		}
 	}
-
 	return openedPositions
+}
+
+func (ctm *CopiedTradersManager) PositionExists(profileID int64, symbol string) bool {
+	for _, p := range ctm.OpenedPositions {
+		if p.ProfileID == profileID && p.Symbol == symbol {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (ctm *CopiedTradersManager) DeleteOpenedPosition(orderId string) {

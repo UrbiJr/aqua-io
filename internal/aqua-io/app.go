@@ -179,7 +179,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 		index := 0
 		// get the window which will show the form
 		createOrderWindow := app.App.NewWindow(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
-		content := container.NewCenter()
+		content := container.NewVBox()
 		// add the first form to window content
 		content.Add(forms[index])
 		var btn *widget.Button
@@ -190,7 +190,6 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 		} else {
 			btn = widget.NewButtonWithIcon("Next", theme.NavigateNextIcon(), nil)
 			btn.OnTapped = func() {
-				createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
 				if index+1 < len(forms) {
 					// second-last element
 					if index+1 == len(forms)-1 {
@@ -200,6 +199,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 					index++
 					// update window content based on current form index
 					content.Objects[0] = forms[index]
+					createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
 					content.Refresh()
 				} else {
 					// all forms have been showed, we can close the window
@@ -214,7 +214,7 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 			btn,
 		))
 		content.Refresh()
-		createOrderWindow.Resize(fyne.NewSize(520, 400))
+		createOrderWindow.Resize(fyne.NewSize(520, 460))
 		createOrderWindow.SetFixedSize(true)
 		createOrderWindow.SetIcon(resources.ResourceIconPng)
 		createOrderWindow.Show()

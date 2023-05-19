@@ -18,7 +18,7 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price float64) (*user.OpenedPosition, error) {
+func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
 	var url string
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
@@ -30,25 +30,23 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 	}
 	method := "POST"
 
-	var stopLossStr, takeProfitStr string
-	takeProfit := price + (price * p.AutoTP / 100)
-	stopLoss := price - (price * p.AutoSL / 100)
-	if stopLoss == price {
-		stopLossStr = ""
-	} else {
-		stopLossStr = fmt.Sprintf("%f", stopLoss)
-	}
-	if takeProfit == price {
-		takeProfitStr = ""
-	} else {
-		takeProfitStr = fmt.Sprintf("%f", takeProfit)
-	}
-
 	var timeInForce string
 	if orderType == "Market" {
 		timeInForce = "IOC"
 	} else {
 		timeInForce = "GTC"
+	}
+
+	var stopLossStr, takeProfitStr string
+	if SL == price {
+		stopLossStr = ""
+	} else {
+		stopLossStr = fmt.Sprintf("%f", SL)
+	}
+	if TP == price {
+		takeProfitStr = ""
+	} else {
+		takeProfitStr = fmt.Sprintf("%f", TP)
 	}
 
 	postData := fmt.Sprintf(`{
@@ -233,11 +231,14 @@ func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	return transactions
 }
 
-func (app *Config) fetchOrderHistory(category string, p user.Profile) ([]user.Order, error) {
+func (app *Config) fetchOrderHistory(category, orderFilter string, p user.Profile) ([]user.Order, error) {
 	var url string
 
+	if orderFilter == "" {
+		orderFilter = "Order"
+	}
 	if p.TestMode {
-		url = "https://api-testnet.bybit.com/v5/order/history?category=" + category
+		url = "https://api-testnet.bybit.com/v5/order/history?category=" + category + "&orderFilter=" + orderFilter
 	}
 	method := "GET"
 	req, err := http.NewRequest(method, url, nil)
@@ -253,7 +254,7 @@ func (app *Config) fetchOrderHistory(category string, p user.Profile) ([]user.Or
 	unixMilli := now.UnixMilli()
 
 	// generate hmac for X-BAPI-SIGN
-	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "20000", "category="+category)
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "20000", "category="+category+"&orderFilter="+orderFilter)
 
 	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
 	hm.Write([]byte(str_to_sign))
@@ -300,32 +301,58 @@ func (app *Config) fetchOrderHistory(category string, p user.Profile) ([]user.Or
 						case map[string]any:
 							price, err := strconv.ParseFloat(o["price"].(string), 64)
 							if err != nil {
-								continue
+								app.Logger.Error(err)
+							}
+							avgPrice, err := strconv.ParseFloat(o["avgPrice"].(string), 64)
+							if err != nil {
+								app.Logger.Error(err)
+							}
+							triggerPrice, err := strconv.ParseFloat(o["triggerPrice"].(string), 64)
+							if err != nil {
+								app.Logger.Error(err)
+							}
+							takeProfit, err := strconv.ParseFloat(o["takeProfit"].(string), 64)
+							if err != nil {
+								app.Logger.Error(err)
+							}
+							stopLoss, err := strconv.ParseFloat(o["stopLoss"].(string), 64)
+							if err != nil {
+								app.Logger.Error(err)
 							}
 							qty, err := strconv.ParseFloat(o["qty"].(string), 64)
 							if err != nil {
-								continue
+								app.Logger.Error(err)
+							}
+							filledQty, err := strconv.ParseFloat(o["cumExecQty"].(string), 64)
+							if err != nil {
+								app.Logger.Error(err)
 							}
 							isLeverage, err := strconv.ParseInt(o["isLeverage"].(string), 10, 64)
 							if err != nil {
-								continue
+								app.Logger.Error(err)
 							}
 							createdTime, err := strconv.ParseInt(o["createdTime"].(string), 10, 64)
 							if err != nil {
-								continue
+								app.Logger.Error(err)
 							}
 							orders = append(orders, user.Order{
-								ProfileID:   p.ID,
-								Symbol:      o["symbol"].(string),
-								OrderID:     o["orderId"].(string),
-								OrderLinkID: o["orderLinkId"].(string),
-								OrderStatus: o["orderStatus"].(string),
-								OrderType:   o["orderType"].(string),
-								Price:       price,
-								CreatedTime: createdTime,
-								Qty:         qty,
-								Side:        o["side"].(string),
-								IsLeverage:  isLeverage,
+								ProfileID:        p.ID,
+								Symbol:           o["symbol"].(string),
+								OrderID:          o["orderId"].(string),
+								OrderLinkID:      o["orderLinkId"].(string),
+								OrderStatus:      o["orderStatus"].(string),
+								OrderType:        o["orderType"].(string),
+								AvgFilledPrice:   avgPrice,
+								Price:            price,
+								TakeProfit:       takeProfit,
+								StopLoss:         stopLoss,
+								TriggerPrice:     triggerPrice,
+								TriggerDirection: o["triggerDirection"].(float64),
+								CreatedTime:      createdTime,
+								FilledQty:        filledQty,
+								Qty:              qty,
+								Side:             o["side"].(string),
+								IsLeverage:       isLeverage,
 							})
 						}
 					}
@@ -565,7 +592,7 @@ func (app *Config) getPositionInfo(category, symbol string, p user.Profile) []us
 		}
 	}
 
-	app.Logger.Debug(fmt.Sprintf("Fetched %d position info from bybit", len(positionInfoArr)))
+	app.Logger.Debug(fmt.Sprintf("Fetched %d positions from bybit", len(positionInfoArr)))
 
 	return positionInfoArr
 }
