@@ -129,6 +129,86 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 	return nil, fmt.Errorf("create order failed: order id not found")
 }
 
+func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string) error {
+	var url string
+
+	if p.TestMode {
+		url = "https://api-testnet.bybit.com/v5/order/cancel"
+	}
+	method := "POST"
+
+	postData := fmt.Sprintf(`{
+		"category": %s,
+		"symbol": %s,
+		"orderId": %s,
+	}`, category, symbol, orderID)
+
+	req, err := http.NewRequest(method, url, strings.NewReader(postData))
+
+	if err != nil {
+		app.Logger.Error(err)
+		return err
+	}
+
+	// create a time variable
+	now := time.Now()
+	// convert to unix time in milliseconds
+	unixMilli := now.UnixMilli()
+
+	// generate hmac for X-BAPI-SIGN
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", postData)
+
+	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
+	hm.Write([]byte(str_to_sign))
+	HMAC := hex.EncodeToString(hm.Sum(nil))
+
+	req.Header.Add("X-BAPI-API-KEY", p.BybitApiKey)
+	req.Header.Add("X-BAPI-TIMESTAMP", fmt.Sprintf("%d", unixMilli))
+	req.Header.Add("X-BAPI-RECV-WINDOW", "5000")
+	req.Header.Add("X-BAPI-SIGN", HMAC)
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := app.Client.Do(req)
+	if err != nil {
+		app.Logger.Error(err)
+		return err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		app.Logger.Error(err)
+		return err
+	}
+
+	var parsed map[string]any
+
+	// Unmarshal or Decode the JSON to the interface.
+	json.Unmarshal(body, &parsed)
+
+	for key, _ := range parsed {
+		if key == "retMsg" {
+			if parsed["retMsg"].(string) == "OK" {
+				result := parsed["result"].(map[string]any)
+				for key, _ = range result {
+					if key == "orderId" {
+						app.Logger.Debug(fmt.Sprintf("successfully cancelled %s order with ID %s", symbol, orderID))
+						return nil
+					}
+				}
+			} else {
+				if strings.Contains(parsed["retMsg"].(string), "Timestamp for this request is outside of the recvWindow.") {
+					// send notification to adjust system time
+					return errors.New("Timestamp not synchronized: please sync your system time and try again")
+				}
+				return errors.New(parsed["retMsg"].(string))
+			}
+		}
+	}
+
+	return fmt.Errorf("cancel order failed")
+}
+
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
 	var url string
 
