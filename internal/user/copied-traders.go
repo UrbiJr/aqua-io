@@ -69,6 +69,7 @@ type Order struct {
 }
 
 type PositionInfo struct {
+	OrderID        string  `json:"order_id"`
 	PositionIdx    float64 `json:"positionIdx"`
 	Symbol         string  `json:"symbol"`
 	Leverage       int64   `json:"leverage"`

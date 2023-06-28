@@ -240,7 +240,7 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 					// return default account icon
 					return theme.AccountIcon(), nil
 				}
-				app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s.%s", app.User.DiscordID, ext)
+				app.User.ProfilePicturePath = fmt.Sprintf("downloads/%s%s", app.User.DiscordID, ext)
 				err = app.DB.UpdateUser(app.User.ID, *app.User)
 				if err != nil {
 					app.Logger.Error(err)

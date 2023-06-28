@@ -385,43 +385,44 @@ func (app *Config) updatePositionsContent(p *user.Profile) {
 		var positionInfoArr []user.PositionInfo
 		openedPositions := app.User.CopiedTradersManager.GetOpenedPositionsByProfileID(p.ID)
 		for _, position := range openedPositions {
-			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, *p)...)
+			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, position.OrderID, *p)...)
 		}
 
 		app.CopiedTradersTab.positionsContainer.RemoveAll()
 
-		for _, p := range positionInfoArr {
+		for _, pos := range positionInfoArr {
 			//Unix Timestamp to time.Time
-			timeT := time.Unix(0, p.UpdatedTime*int64(time.Millisecond))
+			timeT := time.Unix(0, pos.UpdatedTime*int64(time.Millisecond))
 			layout := "02-01-2006 15:04:05"
 			readable := timeT.Format(layout)
 			var mode, side string
-			if p.PositionIdx == 0 {
+			if pos.PositionIdx == 0 {
 				mode = "one-way mode position"
-			} else if p.PositionIdx == 1 {
+			} else if pos.PositionIdx == 1 {
 				mode = "Buy side of hedge-mode position"
-			} else if p.PositionIdx == 2 {
+			} else if pos.PositionIdx == 2 {
 				mode = "Sell side of hedge-mode position"
 			}
-			if p.Side == "None" {
+			if pos.Side == "None" {
 				side = "Empty position"
 			}
 
 			markdownText := "```" + `
-    Symbol:                     ` + p.Symbol + `
+    Order ID:                   ` + pos.OrderID + `
+    Symbol:                     ` + pos.Symbol + `
     Mode:                       ` + mode + `
-    Leverage:                   ` + fmt.Sprintf("%d", p.Leverage) + `
-    Average Entry Price:        ` + fmt.Sprintf("%.2f", p.AvgPrice) + `
-    Position Liquidation Price: ` + fmt.Sprintf("%.2f", p.LiqPrice) + `
-    Take Profit:                ` + p.TakeProfit.(string) + `
-    Stop Loss:                  ` + p.StopLoss.(string) + `
-    Position Value:             ` + fmt.Sprintf("%.2f", p.PositionValue) + `
-    Unrealised Pnl:             ` + fmt.Sprintf("%.2f", p.UnrealisedPnl) + `
-    Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", p.CumRealisedPnl) + `
-    Market Price:               ` + fmt.Sprintf("%.2f", p.MarkPrice) + `
+    Leverage:                   ` + fmt.Sprintf("%d", pos.Leverage) + `
+    Average Entry Price:        ` + fmt.Sprintf("%.2f", pos.AvgPrice) + `
+    Position Liquidation Price: ` + fmt.Sprintf("%.2f", pos.LiqPrice) + `
+    Take Profit:                ` + pos.TakeProfit.(string) + `
+    Stop Loss:                  ` + pos.StopLoss.(string) + `
+    Position Value:             ` + fmt.Sprintf("%.2f", pos.PositionValue) + `
+    Unrealised Pnl:             ` + fmt.Sprintf("%.2f", pos.UnrealisedPnl) + `
+    Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", pos.CumRealisedPnl) + `
+    Market Price:               ` + fmt.Sprintf("%.2f", pos.MarkPrice) + `
     Last Update Time:           ` + readable + `
     Side (buy/sell/empty):      ` + side + `
-    Position Status:            ` + p.PositionStatus + `
+    Position Status:            ` + pos.PositionStatus + `
 ` + "```"
 
 			app.CopiedTradersTab.positionsContainer.Add(widget.NewRichTextFromMarkdown(markdownText))
@@ -433,7 +434,30 @@ func (app *Config) updatePositionsContent(p *user.Profile) {
 
 				}),
 				widget.NewButtonWithIcon("Close", theme.DeleteIcon(), func() {
-
+					dialog.ShowConfirm("Close Position?", fmt.Sprintf("Confirming will cancel %s order with ID %s.", pos.Symbol, pos.OrderID), func(deleted bool) {
+						if deleted {
+							err := app.cancelOrder(p, "spot", pos.OrderID, pos.Symbol)
+							if err != nil {
+								app.App.SendNotification(fyne.NewNotification(
+									"⚠️ Close Position Failed",
+									fmt.Sprintf("Error: %s", err.Error()),
+								))
+							} else {
+								err = app.DB.DeleteOpenedPosition(pos.OrderID)
+								if err != nil {
+									app.Logger.Error(err)
+								} else {
+									app.User.CopiedTradersManager.DeleteOpenedPosition(pos.OrderID)
+									app.Logger.Debug(fmt.Sprintf("closed %s position with order ID %s", pos.Symbol, pos.OrderID))
+									app.App.SendNotification(fyne.NewNotification(
+										"🔴 Successfully Closed Position",
+										fmt.Sprintf("Order %s cancelled", pos.OrderID),
+									))
+								}
+								app.refreshCopiedTradersTab(true)
+							}
+						}
+					}, app.MainWindow)
 				}),
 			))
 			app.CopiedTradersTab.positionsContainer.Add(widget.NewSeparator())

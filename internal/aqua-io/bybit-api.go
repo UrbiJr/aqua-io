@@ -138,9 +138,9 @@ func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string
 	method := "POST"
 
 	postData := fmt.Sprintf(`{
-		"category": %s,
-		"symbol": %s,
-		"orderId": %s,
+		"category": "%s",
+		"symbol": "%s",
+		"orderId": "%s",
 	}`, category, symbol, orderID)
 
 	req, err := http.NewRequest(method, url, strings.NewReader(postData))
@@ -552,7 +552,7 @@ func (app *Config) fetchOpenOrders(category string, p user.Profile) []user.Order
 	return orders
 }
 
-func (app *Config) getPositionInfo(category, symbol string, p user.Profile) []user.PositionInfo {
+func (app *Config) getPositionInfo(category, symbol, orderID string, p user.Profile) []user.PositionInfo {
 	var url string
 
 	if p.TestMode {
@@ -649,6 +649,7 @@ func (app *Config) getPositionInfo(category, symbol string, p user.Profile) []us
 								continue
 							}
 							positionInfoArr = append(positionInfoArr, user.PositionInfo{
+								OrderID:        orderID,
 								PositionIdx:    o["positionIdx"].(float64),
 								Symbol:         o["symbol"].(string),
 								Leverage:       leverage,

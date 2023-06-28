@@ -3,7 +3,7 @@ module github.com/UrbiJr/aqua-io
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.3.4
+	fyne.io/fyne/v2 v2.3.5
 	fyne.io/x/fyne v0.0.0-20230411205836-1ca0ead20763
 	github.com/2captcha/2captcha-go v1.0.1
 	github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186
@@ -17,7 +17,7 @@ require (
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20230403195833-7dc3c09283d6 // indirect
+	fyne.io/systray v1.10.1-0.20230602210930-b6a2d6ca2a7b // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/bogdanfinn/utls v1.5.15 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
