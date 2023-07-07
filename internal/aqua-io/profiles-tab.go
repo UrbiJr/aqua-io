@@ -402,8 +402,8 @@ func (app *Config) getProfilesSlice() [][]any {
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
 
-		if len(x.Title) > 16 {
-			currentRow = append(currentRow, x.Title[:12]+"...")
+		if len(x.Title) > 30 {
+			currentRow = append(currentRow, x.Title[:29]+"...")
 		} else {
 			currentRow = append(currentRow, x.Title)
 		}
@@ -520,7 +520,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{120, 270, 200, 200, 200, 40}
+	colWidths := []float32{220, 270, 200, 200, 100, 40}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
 	}
@@ -532,7 +532,7 @@ func (app *Config) refreshProfilesTable() {
 	app.ProfilesSlice = app.getProfilesSlice()
 	app.ProfilesTable.Refresh()
 
-	colWidths := []float32{120, 270, 200, 200, 200, 40}
+	colWidths := []float32{220, 270, 200, 200, 100, 40}
 	for i, w := range colWidths {
 		app.ProfilesTable.SetColumnWidth(i, w)
 	}

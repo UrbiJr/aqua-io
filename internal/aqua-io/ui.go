@@ -54,6 +54,7 @@ func (app *Config) MakeMobileUI() {
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
 func (app *Config) MakeDesktopUI() {
 
+	// TODO: add emojis to these strings when supported starting from fyne v2.4.0
 	greetings := []string{
 		"how can Aqua.io assist you today? :-)",
 		"how are you going to use Aqua.io today? :-)",

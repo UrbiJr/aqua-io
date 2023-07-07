@@ -17,20 +17,20 @@ import (
 
 type CopiedTradersTab struct {
 	*container.TabItem
-	limitMarketOrdersSlice  [][]any
-	tpSlOrdersSlice         [][]any
-	limitMarketOrdersTable  *widget.Table
-	tpSlOrdersTable         *widget.Table
-	CopiedTradersList       *widget.List
-	limitMarketOrders       []user.Order
-	tpSlOrders              []user.Order
-	positionsContainer      *fyne.Container
-	selectedCopiedTrader    *user.Profile
-	profilesWithTraderNames []string
+	limitMarketOrdersSlice [][]any
+	tpSlOrdersSlice        [][]any
+	limitMarketOrdersTable *widget.Table
+	tpSlOrdersTable        *widget.Table
+	CopiedTradersList      *widget.List
+	limitMarketOrders      []user.Order
+	tpSlOrders             []user.Order
+	positionsContainer     *fyne.Container
+	selectedCopiedTrader   *user.Profile
+	profilesWithTrader     []string
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
-	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
 	split := app.getCopiedTraders()
 
 	max := container.NewMax(split)
@@ -53,18 +53,18 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the copied traders list (profiles with a trader)
 	app.CopiedTradersList = widget.NewList(
 		func() int {
-			return len(app.CopiedTradersTab.profilesWithTraderNames)
+			return len(app.CopiedTradersTab.profilesWithTrader)
 		},
 		func() fyne.CanvasObject {
 			return container.NewHBox(widget.NewIcon(theme.AccountIcon()), widget.NewLabel("Template Object"), widget.NewToolbar())
 		},
 		func(id widget.ListItemID, item fyne.CanvasObject) {
 			// get the current trader...
-			trader := app.CopiedTradersTab.profilesWithTraderNames[id]
-			traderID := strings.Split(trader, "\n")[1]
+			profileTitleAndTraderID := app.CopiedTradersTab.profilesWithTrader[id]
+			traderID := strings.Split(profileTitleAndTraderID, "\n")[1]
 
 			// display profile title and trader nickname
-			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(trader)
+			item.(*fyne.Container).Objects[1].(*widget.Label).SetText(profileTitleAndTraderID + "\t") // to align horizontally
 
 			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
 			if len(toolbar.Items) == 0 {
@@ -212,7 +212,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// when a trader is selected...
 	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
 		// ... get the selected item (profile)
-		trader := app.CopiedTradersTab.profilesWithTraderNames[id]
+		trader := app.CopiedTradersTab.profilesWithTrader[id]
 		traderID := strings.Split(trader, "\n")[1]
 		profile := app.User.ProfileManager.GetProfileByTraderID(traderID)
 		app.CopiedTradersTab.selectedCopiedTrader = profile
@@ -488,9 +488,9 @@ func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
 		app.CopiedTradersTab.positionsContainer.Add(widget.NewLabel("Select a profile"))
 	}
 
-	app.CopiedTradersTab.profilesWithTraderNames = app.formatCopiedTradersList(app.User.ProfileManager.GetProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.ProfileManager.GetProfilesWithTrader())
 	// set default height for each list item
-	for i := range app.CopiedTradersTab.profilesWithTraderNames {
+	for i := range app.CopiedTradersTab.profilesWithTrader {
 		app.CopiedTradersList.SetItemHeight(i, 50)
 	}
 	app.CopiedTradersList.Refresh()
