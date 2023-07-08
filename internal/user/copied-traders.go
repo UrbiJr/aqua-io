@@ -71,19 +71,20 @@ type Order struct {
 type PositionInfo struct {
 	OrderID        string  `json:"order_id"`
 	PositionIdx    float64 `json:"positionIdx"`
+	Side           string  `json:"side"`
 	Symbol         string  `json:"symbol"`
-	Leverage       int64   `json:"leverage"`
+	Size           float64 `json:"size"`
 	AvgPrice       float64 `json:"avgPrice"` // Average entry price
+	MarkPrice      float64 `json:"markPrice"`
 	LiqPrice       float64 `json:"liqPrice"` // Position liquidation price
+	UnrealisedPnl  float64 `json:"unrealisedPnl"`
+	CumRealisedPnl float64 `json:"cumRealisedPnl"`
+	Leverage       int64   `json:"leverage"`
 	TakeProfit     any     `json:"takeProfit"`
 	StopLoss       any     `json:"stopLoss"`
 	PositionValue  float64 `json:"positionValue"`
-	UnrealisedPnl  float64 `json:"unrealisedPnl"`
-	CumRealisedPnl float64 `json:"cumRealisedPnl"`
-	MarkPrice      float64 `json:"markPrice"`
 	CreatedTime    int64   `json:"createdTime"`
 	UpdatedTime    int64   `json:"updatedTime"`
-	Side           string  `json:"side"`
 	PositionStatus string  `json:"positionStatus"`
 }
 

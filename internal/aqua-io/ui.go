@@ -86,7 +86,7 @@ func (app *Config) MakeDesktopUI() {
 	leaderboardContent := app.leaderboardTab()
 
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
-	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copied Traders", theme.GridIcon(), copiedTradersTabContent)
+	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copy Trading", theme.GridIcon(), copiedTradersTabContent)
 	app.LeaderboardTab.TabItem = container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent)
 	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
 	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources.IconNameCreditCard), profilesTabContent)

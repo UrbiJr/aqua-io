@@ -3,6 +3,7 @@ package copy_io
 import (
 	"fmt"
 	"image/color"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,13 +25,15 @@ type CopiedTradersTab struct {
 	CopiedTradersList      *widget.List
 	limitMarketOrders      []user.Order
 	tpSlOrders             []user.Order
-	positionsContainer     *fyne.Container
+	positionsTable         *widget.Table
+	positionsSlice         [][]any
 	selectedCopiedTrader   *user.Profile
 	profilesWithTrader     []string
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
 	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
+	app.positionsSlice = app.getPositionsSlice()
 	split := app.getCopiedTraders()
 
 	max := container.NewMax(split)
@@ -97,9 +100,7 @@ func (app *Config) getCopiedTraders() *container.Split {
 			tpSlOrdersSlice = append(tpSlOrdersSlice, []any{"Symbol", "Order Type", "Side", "Order Value", "Order Qty", "Order Price", "Trigger Price", "Order Status", "Order Time", "Order ID"})
 			app.limitMarketOrdersSlice = limitMarketOrdersSlice
 			app.tpSlOrdersSlice = tpSlOrdersSlice
-			app.CopiedTradersTab.positionsContainer.RemoveAll()
-			app.CopiedTradersTab.positionsContainer.Add(widget.NewLabel("Getting positions..."))
-			app.refreshCopiedTradersTab(true)
+			app.refreshCopiedTradersTab()
 		}))
 
 	// wrap the top content in a container
@@ -108,6 +109,9 @@ func (app *Config) getCopiedTraders() *container.Split {
 	)
 
 	// get the main content
+
+	// get the positions table
+	app.positionsTable = app.getPositionsTable()
 
 	// get the order history table
 	var limitMarketOrdersSlice, tpSlOrdersSlice [][]any
@@ -198,9 +202,8 @@ func (app *Config) getCopiedTraders() *container.Split {
 	// get the open orders tab
 	tpSlOrdersTab := container.NewScroll(app.tpSlOrdersTable)
 
-	// get the positions container
-	app.CopiedTradersTab.positionsContainer = container.NewVBox(widget.NewLabel("Select a profile"))
-	positionsTab := container.NewVScroll(app.CopiedTradersTab.positionsContainer)
+	// get the positions tab
+	positionsTab := container.NewScroll(app.positionsTable)
 
 	// get the tabs container
 	tabs := container.NewAppTabs(
@@ -209,25 +212,8 @@ func (app *Config) getCopiedTraders() *container.Split {
 		container.NewTabItem("TP/SL Orders", tpSlOrdersTab))
 	tabs.SetTabLocation(container.TabLocationTop)
 
-	// when a trader is selected...
-	app.CopiedTradersList.OnSelected = func(id widget.ListItemID) {
-		// ... get the selected item (profile)
-		trader := app.CopiedTradersTab.profilesWithTrader[id]
-		traderID := strings.Split(trader, "\n")[1]
-		profile := app.User.ProfileManager.GetProfileByTraderID(traderID)
-		app.CopiedTradersTab.selectedCopiedTrader = profile
-
-		// update order history
-		app.updateOrderHistoryContent(profile)
-
-		// update positions
-		app.CopiedTradersTab.positionsContainer.RemoveAll()
-		app.CopiedTradersTab.positionsContainer.Add(widget.NewLabel("Getting positions..."))
-		app.updatePositionsContent(profile)
-	}
-
 	// refresh the content
-	app.refreshCopiedTradersTab(false)
+	app.refreshCopiedTradersTab()
 
 	// get the horizontal split
 	return container.NewHSplit(container.NewBorder(
@@ -370,123 +356,185 @@ func (app *Config) getOrders(profile *user.Profile) {
 	app.CopiedTradersTab.tpSlOrders = tpSlOrders
 }
 
-func (app *Config) updateOrderHistoryContent(profile *user.Profile) {
-	go func() {
-		app.getOrders(profile)
-		app.limitMarketOrdersSlice = app.getLimitMarketOrdersSlice()
-		app.tpSlOrdersSlice = app.getTpSlOrdersSlice()
-		app.limitMarketOrdersTable.Refresh()
-		app.tpSlOrdersTable.Refresh()
-	}()
+func (app *Config) updateOrderHistoryContent() {
+	for _, profile := range app.User.Profiles {
+		go func() {
+			app.getOrders(&profile)
+			app.limitMarketOrdersSlice = app.getLimitMarketOrdersSlice()
+			app.tpSlOrdersSlice = app.getTpSlOrdersSlice()
+			app.limitMarketOrdersTable.Refresh()
+			app.tpSlOrdersTable.Refresh()
+		}()
+	}
 }
 
-func (app *Config) updatePositionsContent(p *user.Profile) {
-	go func() {
-		var positionInfoArr []user.PositionInfo
-		openedPositions := app.User.CopiedTradersManager.GetOpenedPositionsByProfileID(p.ID)
-		for _, position := range openedPositions {
-			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, position.OrderID, *p)...)
-		}
+func (app *Config) getPositionsSlice() [][]any {
+	var slice [][]any
+	slice = append(slice, []any{"Side", "Symbol", "Size", "Entry Price", "Market Price", "Liq. Price", "PNL", "Actions"})
 
-		app.CopiedTradersTab.positionsContainer.RemoveAll()
+	for _, profile := range app.User.Profiles {
+		var currentRow []any
+		var positionInfoArr []user.PositionInfo
+		openedPositions := app.User.CopiedTradersManager.GetOpenedPositionsByProfileID(profile.ID)
+		for _, position := range openedPositions {
+			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, position.OrderID, profile)...)
+		}
 
 		for _, pos := range positionInfoArr {
-			//Unix Timestamp to time.Time
-			timeT := time.Unix(0, pos.UpdatedTime*int64(time.Millisecond))
-			layout := "02-01-2006 15:04:05"
-			readable := timeT.Format(layout)
-			var mode, side string
-			if pos.PositionIdx == 0 {
-				mode = "one-way mode position"
-			} else if pos.PositionIdx == 1 {
-				mode = "Buy side of hedge-mode position"
-			} else if pos.PositionIdx == 2 {
-				mode = "Sell side of hedge-mode position"
-			}
+			var side string
+
 			if pos.Side == "None" {
 				side = "Empty position"
+			} else {
+				side = pos.Side
 			}
 
-			markdownText := "```" + `
-    Order ID:                   ` + pos.OrderID + `
-    Symbol:                     ` + pos.Symbol + `
-    Mode:                       ` + mode + `
-    Leverage:                   ` + fmt.Sprintf("%d", pos.Leverage) + `
-    Average Entry Price:        ` + fmt.Sprintf("%.2f", pos.AvgPrice) + `
-    Position Liquidation Price: ` + fmt.Sprintf("%.2f", pos.LiqPrice) + `
-    Take Profit:                ` + pos.TakeProfit.(string) + `
-    Stop Loss:                  ` + pos.StopLoss.(string) + `
-    Position Value:             ` + fmt.Sprintf("%.2f", pos.PositionValue) + `
-    Unrealised Pnl:             ` + fmt.Sprintf("%.2f", pos.UnrealisedPnl) + `
-    Cumulative Realised Pnl:    ` + fmt.Sprintf("%.2f", pos.CumRealisedPnl) + `
-    Market Price:               ` + fmt.Sprintf("%.2f", pos.MarkPrice) + `
-    Last Update Time:           ` + readable + `
-    Side (buy/sell/empty):      ` + side + `
-    Position Status:            ` + pos.PositionStatus + `
-` + "```"
+			symbol := pos.Symbol
+			size := fmt.Sprintf("%.2f", pos.Size)
+			entryPrice := fmt.Sprintf("%.2f", pos.AvgPrice)
+			marketPrice := fmt.Sprintf("%.2f", pos.MarkPrice)
+			liqPrice := fmt.Sprintf("%.2f", pos.LiqPrice)
+			pnl := fmt.Sprintf("%.2f", pos.CumRealisedPnl)
 
-			app.CopiedTradersTab.positionsContainer.Add(widget.NewRichTextFromMarkdown(markdownText))
-			app.CopiedTradersTab.positionsContainer.Add(container.NewGridWithColumns(3,
-				widget.NewButtonWithIcon("Set TP", theme.DocumentCreateIcon(), func() {
+			currentRow = append(currentRow, side)
+			currentRow = append(currentRow, symbol)
+			currentRow = append(currentRow, size)
+			currentRow = append(currentRow, entryPrice)
+			currentRow = append(currentRow, marketPrice)
+			currentRow = append(currentRow, liqPrice)
+			currentRow = append(currentRow, pnl)
+			currentRow = append(currentRow, pos.OrderID) // for toolbar actions
 
-				}),
-				widget.NewButtonWithIcon("Set SL", theme.DocumentCreateIcon(), func() {
-
-				}),
-				widget.NewButtonWithIcon("Close", theme.DeleteIcon(), func() {
-					dialog.ShowConfirm("Close Position?", fmt.Sprintf("Confirming will cancel %s order with ID %s.", pos.Symbol, pos.OrderID), func(deleted bool) {
-						if deleted {
-							err := app.cancelOrder(p, "spot", pos.OrderID, pos.Symbol)
-							if err != nil {
-								app.App.SendNotification(fyne.NewNotification(
-									"⚠️ Close Position Failed",
-									fmt.Sprintf("Error: %s", err.Error()),
-								))
-							} else {
-								err = app.DB.DeleteOpenedPosition(pos.OrderID)
-								if err != nil {
-									app.Logger.Error(err)
-								} else {
-									app.User.CopiedTradersManager.DeleteOpenedPosition(pos.OrderID)
-									app.Logger.Debug(fmt.Sprintf("closed %s position with order ID %s", pos.Symbol, pos.OrderID))
-									app.App.SendNotification(fyne.NewNotification(
-										"🔴 Successfully Closed Position",
-										fmt.Sprintf("Order %s cancelled", pos.OrderID),
-									))
-								}
-								app.refreshCopiedTradersTab(true)
-							}
-						}
-					}, app.MainWindow)
-				}),
-			))
-			app.CopiedTradersTab.positionsContainer.Add(widget.NewSeparator())
+			slice = append(slice, currentRow)
 		}
-		app.CopiedTradersTab.positionsContainer.Refresh()
-	}()
+	}
+
+	return slice
 }
 
-func (app *Config) refreshCopiedTradersTab(isCopiedTraderSelected bool) {
-	if isCopiedTraderSelected && app.CopiedTradersTab.selectedCopiedTrader != nil {
-		// update content based on the current selection
-		go func() {
-			app.updateOrderHistoryContent(app.CopiedTradersTab.selectedCopiedTrader)
-			app.updatePositionsContent(app.CopiedTradersTab.selectedCopiedTrader)
-		}()
-	} else {
-		// reset orders table
-		var limitMarketOrdersSlice, tpSlOrdersSlice [][]any
-		limitMarketOrdersSlice = append(limitMarketOrdersSlice, []any{"Symbol", "Order Type", "Side", "Avg. Filled Price", "Filled Qty", "Order Price", "Order Qty", "Order Status", "Order Time", "Order ID"})
-		tpSlOrdersSlice = append(tpSlOrdersSlice, []any{"Symbol", "Order Type", "Side", "Order Value", "Order Qty", "Order Price", "Trigger Price", "Order Status", "Order Time", "Order ID"})
-		app.limitMarketOrdersSlice = limitMarketOrdersSlice
-		app.tpSlOrdersSlice = tpSlOrdersSlice
-		app.limitMarketOrdersTable.Refresh()
-		app.tpSlOrdersTable.Refresh()
+func (app *Config) getPositionsTable() *widget.Table {
 
-		// reset positions
-		app.CopiedTradersTab.positionsContainer.RemoveAll()
-		app.CopiedTradersTab.positionsContainer.Add(widget.NewLabel("Select a profile"))
+	t := widget.NewTable(
+		func() (int, int) {
+			return len(app.positionsSlice), len(app.positionsSlice[0])
+		},
+		func() fyne.CanvasObject {
+			lbl := widget.NewLabel("")
+			toolbar := widget.NewToolbar()
+			toolbar.Hide()
+			return container.NewMax(lbl, toolbar)
+		},
+		func(i widget.TableCellID, o fyne.CanvasObject) {
+			container := o.(*fyne.Container)
+			lbl := container.Objects[0].(*widget.Label)
+			toolbar := container.Objects[1].(*widget.Toolbar)
+
+			if i.Row != 0 && i.Col == 7 {
+				lbl.Hide()
+				toolbar.Hidden = false
+
+				if len(toolbar.Items) == 0 {
+					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
+						// SET TP
+
+					}))
+					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
+						// SET SL
+
+					}))
+					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
+						// CLOSE POSITION
+
+						var err error
+						var side, symbol, orderId string
+						var amount float64
+
+						// get and parse columns content
+						side = app.positionsSlice[i.Row][0].(string)
+						symbol = app.positionsSlice[i.Row][1].(string)
+						orderId = app.positionsSlice[i.Row][i.Col].(string)
+
+						// retrieve profile from position orderID
+						openedPosition := app.User.CopiedTradersManager.GetOpenedPositionByOrderID(orderId)
+						profile := app.User.ProfileManager.GetProfileByID(openedPosition.ProfileID)
+
+						amount, err = strconv.ParseFloat(app.positionsSlice[i.Row][2].(string), 64)
+
+						if err != nil {
+							return
+						}
+
+						dialog.ShowConfirm("Close Position?", fmt.Sprintf("Confirming will close %s %s Position.", symbol, side), func(deleted bool) {
+							if deleted {
+								if side == "Buy" {
+									_, err = app.closeLongPosition(profile, symbol, "Market", amount)
+								} else {
+									_, err = app.closeShortPosition(profile, symbol, "Market", amount)
+								}
+
+								if err != nil {
+									app.App.SendNotification(fyne.NewNotification(
+										"⚠️ Close Position Failed",
+										fmt.Sprintf("Error: %s", err.Error()),
+									))
+								} else {
+									err = app.DB.DeleteOpenedPosition(orderId)
+									if err != nil {
+										app.Logger.Error(err)
+									} else {
+										app.User.CopiedTradersManager.DeleteOpenedPosition(orderId)
+										app.Logger.Debug(fmt.Sprintf("closed %s position with order ID %s", symbol, orderId))
+										app.App.SendNotification(fyne.NewNotification(
+											"🔴 Successfully Closed Position",
+											fmt.Sprintf("closed %s %s position", symbol, side),
+										))
+									}
+									app.refreshCopiedTradersTab()
+								}
+							}
+						}, app.MainWindow)
+					}))
+				}
+			} else {
+				toolbar.Hide()
+				lbl.Hidden = false
+				// we're just putting in textual information
+				lbl.SetText(
+					app.positionsSlice[i.Row][i.Col].(string))
+			}
+		})
+
+	colWidths := []float32{100, 100, 100, 100, 100, 100, 100, 150}
+	for i, w := range colWidths {
+		t.SetColumnWidth(i, w)
 	}
+
+	return t
+}
+
+func (app *Config) refreshPositionsTable() {
+	app.positionsSlice = app.getPositionsSlice()
+	app.positionsTable.Refresh()
+
+	colWidths := []float32{100, 100, 100, 100, 100, 100, 100, 150}
+	for i, w := range colWidths {
+		app.positionsTable.SetColumnWidth(i, w)
+	}
+}
+
+func (app *Config) refreshCopiedTradersTab() {
+
+	var limitMarketOrdersSlice, tpSlOrdersSlice [][]any
+	limitMarketOrdersSlice = append(limitMarketOrdersSlice, []any{"Symbol", "Order Type", "Side", "Avg. Filled Price", "Filled Qty", "Order Price", "Order Qty", "Order Status", "Order Time", "Order ID"})
+	tpSlOrdersSlice = append(tpSlOrdersSlice, []any{"Symbol", "Order Type", "Side", "Order Value", "Order Qty", "Order Price", "Trigger Price", "Order Status", "Order Time", "Order ID"})
+	app.limitMarketOrdersSlice = limitMarketOrdersSlice
+	app.tpSlOrdersSlice = tpSlOrdersSlice
+	app.limitMarketOrdersTable.Refresh()
+	app.tpSlOrdersTable.Refresh()
+
+	// update content based on the current selection
+	app.updateOrderHistoryContent()
+	app.refreshPositionsTable()
 
 	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.ProfileManager.GetProfilesWithTrader())
 	// set default height for each list item

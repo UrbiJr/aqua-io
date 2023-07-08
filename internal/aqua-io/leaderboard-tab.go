@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -341,10 +340,10 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) makeCreateOrderForm(p *user.Profile, symbol, side string, price float64) *fyne.Container {
+func (app *Config) openPositionForm(p *user.Profile, position, symbol string, price float64) *fyne.Container {
 	var orderError error
 
-	title := widget.NewLabel(fmt.Sprintf("Proceed to create %s %s Order?", symbol, side))
+	title := widget.NewLabel(fmt.Sprintf("Proceed to open %s %s position?", symbol, position))
 	successText := canvas.NewText("", color.RGBA{R: 14, G: 203, B: 129, A: 255})
 	errorText := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{})
 	amount := widget.NewEntry()
@@ -397,28 +396,28 @@ func (app *Config) makeCreateOrderForm(p *user.Profile, symbol, side string, pri
 			orderError = err
 		}
 		if orderError == nil {
-			openedPosition, err := app.createOrder(p, symbol, side, "Market", a, price, tp, sl)
+			var openedPosition *user.OpenedPosition
+			if position == "short" {
+				openedPosition, err = app.openShortPosition(p, symbol, "Market", a, price, tp, sl)
+			} else {
+				openedPosition, err = app.openLongPosition(p, symbol, "Market", a, price, tp, sl)
+			}
 			if err != nil {
 				orderError = err
 			} else {
-				app.Logger.Debug(fmt.Sprintf("successfully created %s order", symbol))
 				inserted, err := app.DB.InsertOpenedPosition(*openedPosition)
 				// TODO: improve error handling
 				if err != nil {
 					app.Logger.Error(fmt.Sprintf("error adding opened position to db: %s", err.Error()))
 				} else {
 					app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
-					if strings.ToLower(side) == "buy" {
-						app.Logger.Debug(fmt.Sprintf("opened %s Long position", symbol))
-					} else {
-						app.Logger.Debug(fmt.Sprintf("opened %s Short position", symbol))
-					}
+					app.Logger.Debug(fmt.Sprintf("successfully opened %s %s position", symbol, position))
 				}
 			}
 		}
 
 		if orderError != nil {
-			errMsg := fmt.Sprintf("order create fail: %s", orderError.Error())
+			errMsg := fmt.Sprintf("position open fail: %s", orderError.Error())
 			app.Logger.Error(errMsg)
 			form.SubmitText = "Retry"
 			errorText.Text = utils.AddNewLine(errMsg, 56)
@@ -429,9 +428,9 @@ func (app *Config) makeCreateOrderForm(p *user.Profile, symbol, side string, pri
 		} else {
 			app.App.SendNotification(&fyne.Notification{
 				Title:   "🤑 Success!",
-				Content: fmt.Sprintf("Successfully created %s order", symbol),
+				Content: fmt.Sprintf("Successfully opened %s %s position", symbol, position),
 			})
-			successText.Text = "Order Create Success!"
+			successText.Text = "Position Open Success!"
 			successText.Refresh()
 			successText.Show()
 			form.Disable()

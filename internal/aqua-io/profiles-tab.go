@@ -381,7 +381,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 				app.refreshProfilesTab()
 				app.RefreshProfileSelector()
 				app.RefreshLeaderboardWithoutFetch()
-				app.refreshCopiedTradersTab(true)
+				app.refreshCopiedTradersTab()
 			}
 		},
 		app.MainWindow,
@@ -483,7 +483,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 						}
 						if pf.TraderID != "" {
 							dialog.ShowError(
-								fmt.Errorf("You must first stop copying trader %s.\nYou can do that from Copied Traders tab.", pf.TraderID),
+								fmt.Errorf("You must stop copying trader %s, first.\nYou can do that from Copy Trading tab.", pf.TraderID),
 								app.MainWindow)
 						} else {
 							dialog.ShowConfirm("Delete?", "", func(deleted bool) {

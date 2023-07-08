@@ -18,12 +18,8 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+func (app *Config) createOrder(p *user.Profile, category, symbol, side, orderType string, amount, price, TP, SL float64, positionIdx int, reduceOnly bool) (*user.OpenedPosition, error) {
 	var url string
-
-	if utils.Contains(p.BlacklistCoins, symbol) {
-		return nil, fmt.Errorf("cannot create order: symbol %s is in user blacklisted coins", symbol)
-	}
 
 	if p.TestMode {
 		url = "https://api-testnet.bybit.com/v5/order/create"
@@ -38,19 +34,20 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 	}
 
 	var stopLossStr, takeProfitStr string
-	if SL == price {
+	if SL == 0 || SL == price {
 		stopLossStr = ""
 	} else {
 		stopLossStr = fmt.Sprintf("%f", SL)
 	}
-	if TP == price {
+
+	if TP == 0 || TP == price {
 		takeProfitStr = ""
 	} else {
 		takeProfitStr = fmt.Sprintf("%f", TP)
 	}
 
 	postData := fmt.Sprintf(`{
-		"category": "spot",
+		"category": "%s",
 		"symbol": "%s",
 		"side": "%s",
 		"orderType": "%s",
@@ -60,8 +57,10 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 		"isLeverage": "%d",
 		"orderFilter": "Order",
 		"takeProfit": "%s",
-		"stopLoss": "%s"
-	}`, symbol, side, orderType, math.Abs(amount), fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr)
+		"stopLoss": "%s",
+		"positionIdx": %d,
+		"reduceOnly", %t,
+	}`, category, symbol, side, orderType, math.Abs(amount), fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr, positionIdx, reduceOnly)
 
 	req, err := http.NewRequest(method, url, strings.NewReader(postData))
 
@@ -129,6 +128,7 @@ func (app *Config) createOrder(p *user.Profile, symbol, side, orderType string, 
 	return nil, fmt.Errorf("create order failed: order id not found")
 }
 
+// this is different from closing a position
 func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string) error {
 	var url string
 
@@ -207,6 +207,38 @@ func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string
 	}
 
 	return fmt.Errorf("cancel order failed")
+}
+
+// openShortPosition opens a short position, i.e. makes a sell order
+func (app *Config) openShortPosition(p *user.Profile, symbol, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+
+	if utils.Contains(p.BlacklistCoins, symbol) {
+		return nil, fmt.Errorf("cannot open short position: symbol %s is in user blacklisted coins", symbol)
+	}
+
+	return app.createOrder(p, "linear", symbol, "Sell", orderType, amount, price, TP, SL, 1, false)
+}
+
+// openLongPosition opens a long position, i.e. makes a buy order
+func (app *Config) openLongPosition(p *user.Profile, symbol, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+
+	if utils.Contains(p.BlacklistCoins, symbol) {
+		return nil, fmt.Errorf("cannot open long position: symbol %s is in user blacklisted coins", symbol)
+	}
+
+	return app.createOrder(p, "linear", symbol, "Buy", orderType, amount, price, TP, SL, 1, false)
+}
+
+// closeShortPosition closes a short position, i.e. makes a buy order
+func (app *Config) closeShortPosition(p *user.Profile, symbol, orderType string, amount float64) (*user.OpenedPosition, error) {
+
+	return app.createOrder(p, "linear", symbol, "Buy", orderType, amount, 0, 0, 0, 1, true)
+}
+
+// closeLongPosition closes a long position, i.e. makes a sell order
+func (app *Config) closeLongPosition(p *user.Profile, symbol, orderType string, amount float64) (*user.OpenedPosition, error) {
+
+	return app.createOrder(p, "linear", symbol, "Sell", orderType, amount, 0, 0, 0, 1, true)
 }
 
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
@@ -616,6 +648,10 @@ func (app *Config) getPositionInfo(category, symbol, orderID string, p user.Prof
 							if err != nil {
 								continue
 							}
+							size, err := strconv.ParseFloat(o["size"].(string), 64)
+							if err != nil {
+								continue
+							}
 							avgPrice, err := strconv.ParseFloat(o["avgPrice"].(string), 64)
 							if err != nil {
 								continue
@@ -654,6 +690,7 @@ func (app *Config) getPositionInfo(category, symbol, orderID string, p user.Prof
 								Symbol:         o["symbol"].(string),
 								Leverage:       leverage,
 								AvgPrice:       avgPrice,
+								Size:           size,
 								LiqPrice:       liqPrice,
 								TakeProfit:     o["takeProfit"],
 								StopLoss:       o["stopLoss"],
