@@ -340,10 +340,10 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) openPositionForm(p *user.Profile, position, symbol string, price float64) *fyne.Container {
+func (app *Config) openPositionForm(p *user.Profile, direction utils.PositionDirection, symbol string, price float64) *fyne.Container {
 	var orderError error
 
-	title := widget.NewLabel(fmt.Sprintf("Proceed to open %s %s position?", symbol, position))
+	title := widget.NewLabel(fmt.Sprintf("Proceed to open %s %s position?", symbol, direction))
 	successText := canvas.NewText("", color.RGBA{R: 14, G: 203, B: 129, A: 255})
 	errorText := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{})
 	amount := widget.NewEntry()
@@ -368,7 +368,7 @@ func (app *Config) openPositionForm(p *user.Profile, position, symbol string, pr
 
 	form := &widget.Form{
 		Items: []*widget.FormItem{
-			{Text: "Amount (USDT): ", Widget: amount, HintText: "Order quantity"},
+			{Text: "Amount: ", Widget: amount, HintText: "Order quantity"},
 			{Text: "Take Profit: ", Widget: takeProfit, HintText: "Take profit price (default value as per profile settings)"},
 			{Text: "Stop Loss: ", Widget: stopLoss, HintText: "Stop loss price (default value as per profile settings)"},
 		},
@@ -397,11 +397,13 @@ func (app *Config) openPositionForm(p *user.Profile, position, symbol string, pr
 		}
 		if orderError == nil {
 			var openedPosition *user.OpenedPosition
-			if position == "short" {
-				openedPosition, err = app.openShortPosition(p, symbol, "Market", a, price, tp, sl)
-			} else {
+			switch direction {
+			case utils.LONG_POSITION:
 				openedPosition, err = app.openLongPosition(p, symbol, "Market", a, price, tp, sl)
+			case utils.SHORT_POSITION:
+				openedPosition, err = app.openShortPosition(p, symbol, "Market", a, price, tp, sl)
 			}
+
 			if err != nil {
 				orderError = err
 			} else {
@@ -411,7 +413,7 @@ func (app *Config) openPositionForm(p *user.Profile, position, symbol string, pr
 					app.Logger.Error(fmt.Sprintf("error adding opened position to db: %s", err.Error()))
 				} else {
 					app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
-					app.Logger.Debug(fmt.Sprintf("successfully opened %s %s position", symbol, position))
+					app.Logger.Debug(fmt.Sprintf("successfully opened %s %s position", symbol, direction))
 				}
 			}
 		}
@@ -428,7 +430,7 @@ func (app *Config) openPositionForm(p *user.Profile, position, symbol string, pr
 		} else {
 			app.App.SendNotification(&fyne.Notification{
 				Title:   "🤑 Success!",
-				Content: fmt.Sprintf("Successfully opened %s %s position", symbol, position),
+				Content: fmt.Sprintf("Successfully opened %s %s position", symbol, direction),
 			})
 			successText.Text = "Position Open Success!"
 			successText.Refresh()

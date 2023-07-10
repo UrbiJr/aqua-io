@@ -384,7 +384,8 @@ func (app *Config) getPositionsSlice() [][]any {
 			var side string
 
 			if pos.Side == "None" {
-				side = "Empty position"
+				// TODO: handle "Empty position" aka None
+				continue
 			} else {
 				side = pos.Side
 			}
@@ -510,6 +511,11 @@ func (app *Config) getPositionsTable() *widget.Table {
 	}
 
 	return t
+}
+
+func (app *Config) refreshCopiedTradersList() {
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
+	app.CopiedTradersList.Refresh()
 }
 
 func (app *Config) refreshPositionsTable() {

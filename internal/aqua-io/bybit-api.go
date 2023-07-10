@@ -1,6 +1,7 @@
 package copy_io
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -8,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -18,7 +18,23 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
-func (app *Config) createOrder(p *user.Profile, category, symbol, side, orderType string, amount, price, TP, SL float64, positionIdx int, reduceOnly bool) (*user.OpenedPosition, error) {
+type OrderData struct {
+	Category    utils.ByBitProductType `json:"category"`
+	Symbol      string                 `json:"symbol"`
+	Side        utils.OrderSide        `json:"side"`
+	OrderType   utils.OrderType        `json:"orderType"`
+	Qty         float64                `json:"qty"`
+	Price       string                 `json:"price"`
+	TimeInForce string                 `json:"timeInForce"`
+	IsLeverage  int64                  `json:"isLeverage"`
+	OrderFilter string                 `json:"orderFilter"`
+	TakeProfit  string                 `json:"takeProfit"`
+	StopLoss    string                 `json:"stopLoss"`
+	PositionIdx int64                  `json:"positionIdx"`
+	ReduceOnly  bool                   `json:"reduceOnly"`
+}
+
+func (app *Config) createOrder(p *user.Profile, orderData OrderData) (*user.OpenedPosition, error) {
 	var url string
 
 	if p.TestMode {
@@ -26,43 +42,27 @@ func (app *Config) createOrder(p *user.Profile, category, symbol, side, orderTyp
 	}
 	method := "POST"
 
-	var timeInForce string
-	if orderType == "Market" {
-		timeInForce = "IOC"
+	if orderData.OrderType == "Market" {
+		orderData.TimeInForce = "IOC"
 	} else {
-		timeInForce = "GTC"
+		orderData.TimeInForce = "GTC"
 	}
 
-	var stopLossStr, takeProfitStr string
-	if SL == 0 || SL == price {
-		stopLossStr = ""
-	} else {
-		stopLossStr = fmt.Sprintf("%f", SL)
+	if orderData.StopLoss == orderData.Price {
+		orderData.StopLoss = ""
 	}
 
-	if TP == 0 || TP == price {
-		takeProfitStr = ""
-	} else {
-		takeProfitStr = fmt.Sprintf("%f", TP)
+	if orderData.TakeProfit == orderData.Price {
+		orderData.TakeProfit = ""
 	}
 
-	postData := fmt.Sprintf(`{
-		"category": "%s",
-		"symbol": "%s",
-		"side": "%s",
-		"orderType": "%s",
-		"qty": "%f",
-		"price": "%s",
-		"timeInForce": "%s",
-		"isLeverage": "%d",
-		"orderFilter": "Order",
-		"takeProfit": "%s",
-		"stopLoss": "%s",
-		"positionIdx": %d,
-		"reduceOnly", %t,
-	}`, category, symbol, side, orderType, math.Abs(amount), fmt.Sprintf("%.2f", price), timeInForce, p.Leverage, takeProfitStr, stopLossStr, positionIdx, reduceOnly)
+	// convert OrderData into JSON payload
+	payload, err := json.Marshal(orderData)
+	if err != nil {
+		return nil, err
+	}
 
-	req, err := http.NewRequest(method, url, strings.NewReader(postData))
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
 
 	if err != nil {
 		app.Logger.Error(err)
@@ -75,7 +75,7 @@ func (app *Config) createOrder(p *user.Profile, category, symbol, side, orderTyp
 	unixMilli := now.UnixMilli()
 
 	// generate hmac for X-BAPI-SIGN
-	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", postData)
+	str_to_sign := fmt.Sprintf("%d%s%s%s", unixMilli, p.BybitApiKey, "5000", string(payload))
 
 	hm := hmac.New(sha256.New, []byte(p.BybitApiSecret))
 	hm.Write([]byte(str_to_sign))
@@ -111,8 +111,8 @@ func (app *Config) createOrder(p *user.Profile, category, symbol, side, orderTyp
 				result := parsed["result"].(map[string]any)
 				for key, _ = range result {
 					if key == "orderId" {
-						app.Logger.Debug(fmt.Sprintf("successfully created bybit %s order with id %s", side, result[key].(string)))
-						return &user.OpenedPosition{OrderID: result[key].(string), Symbol: symbol, ProfileID: p.ID}, nil
+						app.Logger.Debug(fmt.Sprintf("successfully created bybit %s order with id %s", orderData.Side, result[key].(string)))
+						return &user.OpenedPosition{OrderID: result[key].(string), Symbol: orderData.Symbol, ProfileID: p.ID}, nil
 					}
 				}
 			} else {
@@ -210,35 +210,73 @@ func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string
 }
 
 // openShortPosition opens a short position, i.e. makes a sell order
-func (app *Config) openShortPosition(p *user.Profile, symbol, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+func (app *Config) openShortPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
 		return nil, fmt.Errorf("cannot open short position: symbol %s is in user blacklisted coins", symbol)
 	}
 
-	return app.createOrder(p, "linear", symbol, "Sell", orderType, amount, price, TP, SL, 1, false)
+	return app.createOrder(p, OrderData{
+		Category:    utils.BYBIT_PRODUCT_LINEAR,
+		Symbol:      symbol,
+		Side:        utils.ORDER_SELL,
+		OrderType:   orderType,
+		Qty:         amount,
+		Price:       fmt.Sprintf("%.2f", price),
+		TakeProfit:  fmt.Sprintf("%f", TP),
+		StopLoss:    fmt.Sprintf("%f", SL),
+		PositionIdx: 0,
+		ReduceOnly:  false,
+	})
 }
 
 // openLongPosition opens a long position, i.e. makes a buy order
-func (app *Config) openLongPosition(p *user.Profile, symbol, orderType string, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+func (app *Config) openLongPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
 
 	if utils.Contains(p.BlacklistCoins, symbol) {
 		return nil, fmt.Errorf("cannot open long position: symbol %s is in user blacklisted coins", symbol)
 	}
 
-	return app.createOrder(p, "linear", symbol, "Buy", orderType, amount, price, TP, SL, 1, false)
+	return app.createOrder(p, OrderData{
+		Category:    utils.BYBIT_PRODUCT_LINEAR,
+		Symbol:      symbol,
+		Side:        utils.ORDER_BUY,
+		OrderType:   orderType,
+		Qty:         amount,
+		Price:       fmt.Sprintf("%.2f", price),
+		TakeProfit:  fmt.Sprintf("%f", TP),
+		StopLoss:    fmt.Sprintf("%f", SL),
+		PositionIdx: 0,
+		ReduceOnly:  false,
+	})
 }
 
 // closeShortPosition closes a short position, i.e. makes a buy order
-func (app *Config) closeShortPosition(p *user.Profile, symbol, orderType string, amount float64) (*user.OpenedPosition, error) {
+func (app *Config) closeShortPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount float64) (*user.OpenedPosition, error) {
 
-	return app.createOrder(p, "linear", symbol, "Buy", orderType, amount, 0, 0, 0, 1, true)
+	return app.createOrder(p, OrderData{
+		Category:    utils.BYBIT_PRODUCT_LINEAR,
+		Symbol:      symbol,
+		Side:        utils.ORDER_BUY,
+		OrderType:   orderType,
+		Qty:         amount,
+		PositionIdx: 0,
+		ReduceOnly:  true,
+	})
 }
 
 // closeLongPosition closes a long position, i.e. makes a sell order
-func (app *Config) closeLongPosition(p *user.Profile, symbol, orderType string, amount float64) (*user.OpenedPosition, error) {
+func (app *Config) closeLongPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount float64) (*user.OpenedPosition, error) {
 
-	return app.createOrder(p, "linear", symbol, "Sell", orderType, amount, 0, 0, 0, 1, true)
+	return app.createOrder(p, OrderData{
+		Category:    utils.BYBIT_PRODUCT_LINEAR,
+		Symbol:      symbol,
+		Side:        utils.ORDER_SELL,
+		OrderType:   orderType,
+		Qty:         amount,
+		PositionIdx: 0,
+		ReduceOnly:  true,
+	})
 }
 
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {
@@ -412,39 +450,39 @@ func (app *Config) fetchOrderHistory(category, orderFilter string, p user.Profil
 						switch o := x.(type) {
 						case map[string]any:
 							price, err := strconv.ParseFloat(o["price"].(string), 64)
-							if err != nil {
+							if err != nil && o["price"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							avgPrice, err := strconv.ParseFloat(o["avgPrice"].(string), 64)
-							if err != nil {
+							if err != nil && o["avgPrice"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							triggerPrice, err := strconv.ParseFloat(o["triggerPrice"].(string), 64)
-							if err != nil {
+							if err != nil && o["triggerPrice"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							takeProfit, err := strconv.ParseFloat(o["takeProfit"].(string), 64)
-							if err != nil {
+							if err != nil && o["takeProfit"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							stopLoss, err := strconv.ParseFloat(o["stopLoss"].(string), 64)
-							if err != nil {
+							if err != nil && o["stopLoss"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							qty, err := strconv.ParseFloat(o["qty"].(string), 64)
-							if err != nil {
+							if err != nil && o["qty"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							filledQty, err := strconv.ParseFloat(o["cumExecQty"].(string), 64)
-							if err != nil {
+							if err != nil && o["cumExecQty"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							isLeverage, err := strconv.ParseInt(o["isLeverage"].(string), 10, 64)
-							if err != nil {
+							if err != nil && o["isLeverage"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							createdTime, err := strconv.ParseInt(o["createdTime"].(string), 10, 64)
-							if err != nil {
+							if err != nil && o["createdTime"].(string) != "" {
 								app.Logger.Error(err)
 							}
 							orders = append(orders, user.Order{

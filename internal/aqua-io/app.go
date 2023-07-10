@@ -167,14 +167,13 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	if len(positions) > 0 {
 		var forms []*fyne.Container
 		for _, p := range positions {
-			var position string
 			if p.Amount < 0 {
-				position = "short"
+				// get the open position form for each position
+				forms = append(forms, app.openPositionForm(profile, utils.SHORT_POSITION, p.Symbol, p.MarkPrice))
 			} else {
-				position = "long"
+				forms = append(forms, app.openPositionForm(profile, utils.LONG_POSITION, p.Symbol, p.MarkPrice))
 			}
-			// get the open position form for each position
-			forms = append(forms, app.openPositionForm(profile, position, p.Symbol, p.MarkPrice))
+
 		}
 		index := 0
 		// get the window which will show the form
@@ -265,7 +264,7 @@ func (app *Config) stopCopyingTrader(trader user.Trader, traderID string) error 
 	}
 
 	// refresh affected widgets
-	app.CopiedTradersList.Refresh()
+	app.refreshCopiedTradersList()
 	app.RefreshLeaderboardWithoutFetch()
 	app.refreshCopiedTradersTab()
 	app.refreshProfilesTab()
