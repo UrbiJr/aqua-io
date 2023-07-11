@@ -24,12 +24,12 @@ type OrderData struct {
 	Side        utils.OrderSide        `json:"side"`
 	OrderType   utils.OrderType        `json:"orderType"`
 	Qty         float64                `json:"qty"`
-	Price       string                 `json:"price"`
+	Price       string                 `json:"price,omitempty"`
 	TimeInForce string                 `json:"timeInForce"`
-	IsLeverage  int64                  `json:"isLeverage"`
-	OrderFilter string                 `json:"orderFilter"`
-	TakeProfit  string                 `json:"takeProfit"`
-	StopLoss    string                 `json:"stopLoss"`
+	IsLeverage  int64                  `json:"isLeverage,omitempty"`
+	OrderFilter string                 `json:"orderFilter,omitempty"`
+	TakeProfit  string                 `json:"takeProfit,omitempty"`
+	StopLoss    string                 `json:"stopLoss,omitempty"`
 	PositionIdx int64                  `json:"positionIdx"`
 	ReduceOnly  bool                   `json:"reduceOnly"`
 }
@@ -44,16 +44,9 @@ func (app *Config) createOrder(p *user.Profile, orderData OrderData) (*user.Open
 
 	if orderData.OrderType == "Market" {
 		orderData.TimeInForce = "IOC"
+		orderData.Price = ""
 	} else {
 		orderData.TimeInForce = "GTC"
-	}
-
-	if orderData.StopLoss == orderData.Price {
-		orderData.StopLoss = ""
-	}
-
-	if orderData.TakeProfit == orderData.Price {
-		orderData.TakeProfit = ""
 	}
 
 	// convert OrderData into JSON payload
@@ -118,7 +111,7 @@ func (app *Config) createOrder(p *user.Profile, orderData OrderData) (*user.Open
 			} else {
 				if strings.Contains(parsed["retMsg"].(string), "Timestamp for this request is outside of the recvWindow.") {
 					// send notification to adjust system time
-					return nil, errors.New("Timestamp not synchronized: please sync your system time and try again")
+					return nil, errors.New("timestamp not synchronized: please sync your system time and try again")
 				}
 				return nil, errors.New(parsed["retMsg"].(string))
 			}
@@ -210,73 +203,55 @@ func (app *Config) cancelOrder(p *user.Profile, category, orderID, symbol string
 }
 
 // openShortPosition opens a short position, i.e. makes a sell order
-func (app *Config) openShortPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+func (app *Config) openShortPosition(p *user.Profile, orderData OrderData) (*user.OpenedPosition, error) {
 
-	if utils.Contains(p.BlacklistCoins, symbol) {
-		return nil, fmt.Errorf("cannot open short position: symbol %s is in user blacklisted coins", symbol)
+	if utils.Contains(p.BlacklistCoins, orderData.Symbol) {
+		return nil, fmt.Errorf("cannot open short position: symbol %s is in user blacklisted coins", orderData.Symbol)
 	}
 
-	return app.createOrder(p, OrderData{
-		Category:    utils.BYBIT_PRODUCT_LINEAR,
-		Symbol:      symbol,
-		Side:        utils.ORDER_SELL,
-		OrderType:   orderType,
-		Qty:         amount,
-		Price:       fmt.Sprintf("%.2f", price),
-		TakeProfit:  fmt.Sprintf("%f", TP),
-		StopLoss:    fmt.Sprintf("%f", SL),
-		PositionIdx: 0,
-		ReduceOnly:  false,
-	})
+	orderData.Category = utils.BYBIT_PRODUCT_LINEAR
+	orderData.Side = utils.ORDER_SELL
+	orderData.PositionIdx = 0
+	orderData.ReduceOnly = false
+
+	return app.createOrder(p, orderData)
 }
 
 // openLongPosition opens a long position, i.e. makes a buy order
-func (app *Config) openLongPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount, price, TP, SL float64) (*user.OpenedPosition, error) {
+func (app *Config) openLongPosition(p *user.Profile, orderData OrderData) (*user.OpenedPosition, error) {
 
-	if utils.Contains(p.BlacklistCoins, symbol) {
-		return nil, fmt.Errorf("cannot open long position: symbol %s is in user blacklisted coins", symbol)
+	if utils.Contains(p.BlacklistCoins, orderData.Symbol) {
+		return nil, fmt.Errorf("cannot open long position: symbol %s is in user blacklisted coins", orderData.Symbol)
 	}
 
-	return app.createOrder(p, OrderData{
-		Category:    utils.BYBIT_PRODUCT_LINEAR,
-		Symbol:      symbol,
-		Side:        utils.ORDER_BUY,
-		OrderType:   orderType,
-		Qty:         amount,
-		Price:       fmt.Sprintf("%.2f", price),
-		TakeProfit:  fmt.Sprintf("%f", TP),
-		StopLoss:    fmt.Sprintf("%f", SL),
-		PositionIdx: 0,
-		ReduceOnly:  false,
-	})
+	orderData.Category = utils.BYBIT_PRODUCT_LINEAR
+	orderData.Side = utils.ORDER_BUY
+	orderData.PositionIdx = 0
+	orderData.ReduceOnly = false
+
+	return app.createOrder(p, orderData)
 }
 
 // closeShortPosition closes a short position, i.e. makes a buy order
-func (app *Config) closeShortPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount float64) (*user.OpenedPosition, error) {
+func (app *Config) closeShortPosition(p *user.Profile, orderData OrderData) (*user.OpenedPosition, error) {
 
-	return app.createOrder(p, OrderData{
-		Category:    utils.BYBIT_PRODUCT_LINEAR,
-		Symbol:      symbol,
-		Side:        utils.ORDER_BUY,
-		OrderType:   orderType,
-		Qty:         amount,
-		PositionIdx: 0,
-		ReduceOnly:  true,
-	})
+	orderData.Category = utils.BYBIT_PRODUCT_LINEAR
+	orderData.Side = utils.ORDER_BUY
+	orderData.PositionIdx = 0
+	orderData.ReduceOnly = true
+
+	return app.createOrder(p, orderData)
 }
 
 // closeLongPosition closes a long position, i.e. makes a sell order
-func (app *Config) closeLongPosition(p *user.Profile, symbol string, orderType utils.OrderType, amount float64) (*user.OpenedPosition, error) {
+func (app *Config) closeLongPosition(p *user.Profile, orderData OrderData) (*user.OpenedPosition, error) {
 
-	return app.createOrder(p, OrderData{
-		Category:    utils.BYBIT_PRODUCT_LINEAR,
-		Symbol:      symbol,
-		Side:        utils.ORDER_SELL,
-		OrderType:   orderType,
-		Qty:         amount,
-		PositionIdx: 0,
-		ReduceOnly:  true,
-	})
+	orderData.Category = utils.BYBIT_PRODUCT_LINEAR
+	orderData.Side = utils.ORDER_SELL
+	orderData.PositionIdx = 0
+	orderData.ReduceOnly = true
+
+	return app.createOrder(p, orderData)
 }
 
 func (app *Config) getBybitTransactions(p user.Profile) []user.Transaction {

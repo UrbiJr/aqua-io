@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
 )
 
 type CopiedTradersTab struct {
@@ -467,10 +468,16 @@ func (app *Config) getPositionsTable() *widget.Table {
 
 						dialog.ShowConfirm("Close Position?", fmt.Sprintf("Confirming will close %s %s Position.", symbol, side), func(deleted bool) {
 							if deleted {
+								var orderData OrderData
+
+								orderData.OrderType = utils.ORDER_MARKET
+								orderData.Symbol = symbol
+								orderData.Qty = amount
+
 								if side == "Buy" {
-									_, err = app.closeLongPosition(profile, symbol, "Market", amount)
+									_, err = app.closeLongPosition(profile, orderData)
 								} else {
-									_, err = app.closeShortPosition(profile, symbol, "Market", amount)
+									_, err = app.closeShortPosition(profile, orderData)
 								}
 
 								if err != nil {

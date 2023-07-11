@@ -350,20 +350,28 @@ func (app *Config) openPositionForm(p *user.Profile, direction utils.PositionDir
 	amount.SetPlaceHolder("0")
 	amount.Validator = utils.IsFloat
 
-	TP := price + (price * p.AutoTP / 100)
-	SL := price - (price * p.AutoSL / 100)
-
 	takeProfit := widget.NewEntry()
-	takeProfit.SetText(fmt.Sprintf("%f", TP))
-	takeProfit.Validator = utils.IsFloat
-
 	stopLoss := widget.NewEntry()
-	stopLoss.SetText(fmt.Sprintf("%f", SL))
-	stopLoss.Validator = utils.IsFloat
+
+	if p.AutoTP != 0 {
+		TP := price + (price * p.AutoTP / 100)
+		takeProfit.SetText(fmt.Sprintf("%f", TP))
+	} else {
+		takeProfit.SetText("")
+	}
+	defaultTakeProfit := takeProfit.Text
+
+	if p.AutoSL != 0 {
+		SL := price - (price * p.AutoSL / 100)
+		stopLoss.SetText(fmt.Sprintf("%f", SL))
+	} else {
+		stopLoss.SetText("")
+	}
+	defaultStopLoss := stopLoss.Text
 
 	resetTPSLtoDefault := widget.NewButton("Reset TP & SL to default", func() {
-		takeProfit.SetText(fmt.Sprintf("%f", TP))
-		stopLoss.SetText(fmt.Sprintf("%f", SL))
+		takeProfit.SetText(defaultTakeProfit)
+		stopLoss.SetText(defaultStopLoss)
 	})
 
 	form := &widget.Form{
@@ -382,26 +390,33 @@ func (app *Config) openPositionForm(p *user.Profile, direction utils.PositionDir
 	successText.Hide()
 
 	form.OnSubmit = func() {
+		var orderData OrderData
+		var openedPosition *user.OpenedPosition
+
 		errorText.Hide()
 		a, err := strconv.ParseFloat(amount.Text, 64)
 		if err != nil {
 			orderError = err
 		}
-		tp, err := strconv.ParseFloat(takeProfit.Text, 64)
-		if err != nil {
-			orderError = err
+		_, err = strconv.ParseFloat(takeProfit.Text, 64)
+		if err == nil {
+			orderData.TakeProfit = takeProfit.Text
 		}
-		sl, err := strconv.ParseFloat(stopLoss.Text, 64)
-		if err != nil {
-			orderError = err
+		_, err = strconv.ParseFloat(stopLoss.Text, 64)
+		if err == nil {
+			orderData.StopLoss = stopLoss.Text
 		}
+
+		orderData.OrderType = utils.ORDER_MARKET
+		orderData.Symbol = symbol
+		orderData.Qty = a
+
 		if orderError == nil {
-			var openedPosition *user.OpenedPosition
 			switch direction {
 			case utils.LONG_POSITION:
-				openedPosition, err = app.openLongPosition(p, symbol, "Market", a, price, tp, sl)
+				openedPosition, err = app.openLongPosition(p, orderData)
 			case utils.SHORT_POSITION:
-				openedPosition, err = app.openShortPosition(p, symbol, "Market", a, price, tp, sl)
+				openedPosition, err = app.openShortPosition(p, orderData)
 			}
 
 			if err != nil {
@@ -419,7 +434,7 @@ func (app *Config) openPositionForm(p *user.Profile, direction utils.PositionDir
 		}
 
 		if orderError != nil {
-			errMsg := fmt.Sprintf("position open fail: %s", orderError.Error())
+			errMsg := fmt.Sprintf("failed to open position: %s", orderError.Error())
 			app.Logger.Error(errMsg)
 			form.SubmitText = "Retry"
 			errorText.Text = utils.AddNewLine(errMsg, 56)
