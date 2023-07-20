@@ -15,6 +15,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	fyne_app "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 
 	aqua_io "github.com/UrbiJr/aqua-io/internal/aqua-io"
 	"github.com/UrbiJr/aqua-io/internal/captcha"
@@ -218,8 +222,27 @@ func main() {
 	if showLogin {
 		app.LoginWindow.Show()
 	} else {
-		app.MakeDesktopUI()
-		app.MainWindow.Show()
+		app.SplashWindow = app.App.NewWindow("Aqua.io")
+		appLogo := canvas.NewImageFromResource(resources.ResourceIconPng)
+		appLogo.SetMinSize(fyne.NewSize(35, 35))
+		appLogo.FillMode = canvas.ImageFillContain
+		preloader := container.NewVBox(
+			container.NewCenter(
+				container.NewHBox(widget.NewRichTextFromMarkdown(`## Loading App...`), appLogo),
+			),
+			layout.NewSpacer(),
+			widget.NewProgressBarInfinite(),
+			layout.NewSpacer(),
+		)
+		app.SplashWindow.SetContent(preloader)
+		app.SplashWindow.CenterOnScreen()
+		app.SplashWindow.Show()
+
+		go func() {
+			app.MakeDesktopUI()
+			app.MainWindow.Show()
+			app.SplashWindow.Hide()
+		}()
 	}
 
 	// show and run the application (blocking function)

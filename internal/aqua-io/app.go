@@ -31,6 +31,7 @@ type Config struct {
 	Whop            *whop.Whop
 	DB              repository.Repository
 	LoginWindow     fyne.Window
+	SplashWindow    fyne.Window
 	MainWindow      fyne.Window
 	TopRightToolbar *widget.Toolbar
 	AccountMenu     *fyne.Container
