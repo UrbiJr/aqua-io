@@ -1,7 +1,6 @@
 package copy_io
 
 import (
-	"fmt"
 	"image/color"
 	"strings"
 
@@ -9,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/validation"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/UrbiJr/aqua-io/internal/resources"
@@ -32,7 +32,12 @@ func (app *Config) MakeLoginWindow() {
 	appLogo.SetMinSize(fyne.NewSize(25, 25))
 	appLogo.FillMode = canvas.ImageFillContain
 	authResult := &whop.AuthResult{}
+
+	connecting := container.NewVBox(layout.NewSpacer(), container.NewBorder(nil, nil, widget.NewLabel("Logging In"), nil, widget.NewProgressBarInfinite()), layout.NewSpacer())
+
 	signInButton := widget.NewButtonWithIcon("Sign In", theme.LoginIcon(), func() {
+		errorText.Text = ""
+		connecting.Show()
 		result, err := app.Whop.ValidateLicense(licenseKey.Text)
 		if err != nil {
 			authResult.Success = false
@@ -45,7 +50,11 @@ func (app *Config) MakeLoginWindow() {
 			if authResult.ErrorMessage == "" {
 				authResult.ErrorMessage = "application error"
 			}
-			errorText.Text = fmt.Sprintf("Login Error: %s", authResult.ErrorMessage)
+			if len(authResult.ErrorMessage) > 38 {
+				errorText.Text = authResult.ErrorMessage[:36] + "..."
+			} else {
+				errorText.Text = authResult.ErrorMessage
+			}
 			errorText.Refresh()
 		} else {
 			// get logged user
@@ -83,23 +92,30 @@ func (app *Config) MakeLoginWindow() {
 			app.MainWindow.Show()
 			app.LoginWindow.Hide()
 		}
+
+		connecting.Hide()
 	})
 	cancelButton := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		app.Quit()
 	})
 	signInButton.Importance = widget.HighImportance
 	cancelButton.Importance = widget.DangerImportance
+	connecting.Hide()
 	vBox := container.NewVBox(
 		container.NewCenter(
 			container.NewHBox(widget.NewRichTextFromMarkdown(`## User Login`), appLogo)),
 		licenseKey,
 		rememberMe,
 		errorText,
+		layout.NewSpacer(),
 		container.NewCenter(
 			container.NewHBox(
 				signInButton,
 				cancelButton,
 			)),
+		layout.NewSpacer(),
+		connecting,
+		layout.NewSpacer(),
 	)
 
 	app.LoginWindow.SetContent(vBox)

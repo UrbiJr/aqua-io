@@ -16,16 +16,18 @@ import (
 
 	"github.com/UrbiJr/aqua-io/internal/user"
 	"github.com/UrbiJr/aqua-io/internal/utils"
+	"github.com/google/uuid"
 )
 
 type OrderData struct {
+	OrderLinkId string                 `json:"orderLinkId"`
 	Category    utils.ByBitProductType `json:"category"`
 	Symbol      string                 `json:"symbol"`
 	Side        utils.OrderSide        `json:"side"`
 	OrderType   utils.OrderType        `json:"orderType"`
 	Qty         float64                `json:"qty"`
 	Price       string                 `json:"price,omitempty"`
-	TimeInForce string                 `json:"timeInForce"`
+	TimeInForce string                 `json:"timeInForce,omitempty"`
 	IsLeverage  int64                  `json:"isLeverage,omitempty"`
 	OrderFilter string                 `json:"orderFilter,omitempty"`
 	TakeProfit  string                 `json:"takeProfit,omitempty"`
@@ -41,6 +43,8 @@ func (app *Config) createOrder(p *user.Profile, orderData OrderData) (*user.Open
 		url = "https://api-testnet.bybit.com/v5/order/create"
 	}
 	method := "POST"
+
+	orderData.OrderLinkId = uuid.NewString()
 
 	if orderData.OrderType == "Market" {
 		orderData.TimeInForce = "IOC"

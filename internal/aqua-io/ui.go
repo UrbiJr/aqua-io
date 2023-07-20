@@ -451,3 +451,18 @@ func (app *Config) Contacts() {
 		}()
 	}
 }
+
+func (app *Config) Copy(obj fyne.CanvasObject) func() {
+	return func() {
+		switch o := obj.(type) {
+		case *widget.Entry:
+			app.MainWindow.Clipboard().SetContent(o.Text)
+		case *widget.Button:
+			app.MainWindow.Clipboard().SetContent(o.Text)
+		case *widget.Label:
+			app.MainWindow.Clipboard().SetContent(o.Text)
+		case *widget.RichText:
+			app.MainWindow.Clipboard().SetContent(o.String())
+		}
+	}
+}

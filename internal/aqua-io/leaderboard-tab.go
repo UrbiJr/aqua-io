@@ -407,7 +407,8 @@ func (app *Config) openPositionForm(p *user.Profile, direction utils.PositionDir
 			orderData.StopLoss = stopLoss.Text
 		}
 
-		orderData.OrderType = utils.ORDER_MARKET
+		orderData.OrderType = utils.ORDER_LIMIT
+		//orderData.Price = fmt.Sprintf("%f", price)
 		orderData.Symbol = symbol
 		orderData.Qty = a
 
