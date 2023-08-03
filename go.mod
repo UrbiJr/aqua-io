@@ -1,23 +1,24 @@
-module github.com/UrbiJr/copy-io
+module github.com/UrbiJr/aqua-io
 
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.3.2
+	fyne.io/fyne/v2 v2.3.5
+	fyne.io/x/fyne v0.0.0-20230411205836-1ca0ead20763
 	github.com/2captcha/2captcha-go v1.0.1
 	github.com/UrbiJr/anticaptcha v1.0.2-0.20221231174833-9059270e0186
 	github.com/bogdanfinn/fhttp v0.5.19
 	github.com/bogdanfinn/tls-client v1.3.8
+	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/durango/go-credit-card v0.0.0-20220404131259-a9e175ba4082
 	github.com/glebarez/go-sqlite v1.20.3
 	github.com/mitchellh/go-ps v1.0.0
-	github.com/wcharczuk/go-chart/v2 v2.1.0
+	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 )
 
 require (
-	fyne.io/systray v1.10.1-0.20230312215936-7f71b037e260 // indirect
+	fyne.io/systray v1.10.1-0.20230602210930-b6a2d6ca2a7b // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/bogdanfinn/utls v1.5.15 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -28,15 +29,15 @@ require (
 	github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345 // indirect
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
-	github.com/go-text/typesetting v0.0.0-20221212183139-1eb938670a1f // indirect
+	github.com/go-text/typesetting v0.0.0-20230405155246-bf9c697c6e16 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/klauspost/compress v1.16.3 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230126093431-47fa9a501578 // indirect
 	github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76 // indirect

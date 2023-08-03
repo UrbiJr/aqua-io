@@ -1,6 +1,9 @@
 package utils
 
-import "math/rand"
+import (
+	"math/rand"
+	"strings"
+)
 
 func RandString(n int, randomChars string) string {
 	runes := []rune(randomChars)
@@ -20,4 +23,19 @@ func Contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+// AddNewLine changes a string by adding a newline character ("\n") every n characters
+func AddNewLine(str string, n int) string {
+	var sb strings.Builder
+
+	for i, char := range str {
+		sb.WriteRune(char)
+
+		if (i+1)%n == 0 {
+			sb.WriteString("\n")
+		}
+	}
+
+	return sb.String()
 }

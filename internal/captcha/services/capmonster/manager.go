@@ -42,9 +42,9 @@ var (
 )
 
 func (capManager *CapMonsterManager) GetRecaptchaV2CreateTask(websiteURL string, recaptchaKey string) (float64, error) {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientKey": capManager.Credential.APIKey,
-		"task": map[string]interface{}{
+		"task": map[string]any{
 			"type":       "NoCaptchaTaskProxyless",
 			"websiteURL": websiteURL,
 			"websiteKey": recaptchaKey,
@@ -65,7 +65,7 @@ func (capManager *CapMonsterManager) GetRecaptchaV2CreateTask(websiteURL string,
 	defer resp.Body.Close()
 
 	// Decode response
-	responseBody := make(map[string]interface{})
+	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 	// TODO treat api errors and handle them properly
 	if _, ok := responseBody["taskId"]; ok {
@@ -80,9 +80,9 @@ func (capManager *CapMonsterManager) GetRecaptchaV2CreateTask(websiteURL string,
 }
 
 func (capManager *CapMonsterManager) GetHCaptchaCreateTask(websiteURL string, recaptchaKey string) (float64, error) {
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientKey": capManager.Credential.APIKey,
-		"task": map[string]interface{}{
+		"task": map[string]any{
 			"type":       "HCaptchaTaskProxyless",
 			"websiteURL": websiteURL,
 			"websiteKey": recaptchaKey,
@@ -103,7 +103,7 @@ func (capManager *CapMonsterManager) GetHCaptchaCreateTask(websiteURL string, re
 	defer resp.Body.Close()
 
 	// Decode response
-	responseBody := make(map[string]interface{})
+	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 	// TODO treat api errors and handle them properly
 	if _, ok := responseBody["taskId"]; ok {
@@ -117,9 +117,9 @@ func (capManager *CapMonsterManager) GetHCaptchaCreateTask(websiteURL string, re
 	return 0, errors.New("task number not found in server response")
 }
 
-func (capManager *CapMonsterManager) getTaskResult(taskID float64) (map[string]interface{}, error) {
+func (capManager *CapMonsterManager) getTaskResult(taskID float64) (map[string]any, error) {
 	// Mount the data to be sent
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientKey": capManager.Credential.APIKey,
 		"taskId":    taskID,
 	}
@@ -137,7 +137,7 @@ func (capManager *CapMonsterManager) getTaskResult(taskID float64) (map[string]i
 	defer resp.Body.Close()
 
 	// Decode response
-	responseBody := make(map[string]interface{})
+	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 	return responseBody, nil
 }

@@ -1,23 +1,32 @@
+APP_NAME=Aqua.io
+APP_ID=trading.aqua-io.app
+VERSION=0.0.3
+BUILD_NO=3
 # if on Windows
 ifeq ($(OS),Windows_NT)
-BINARY_NAME=Copy IO.exe
+BINARY_NAME="${APP_NAME}.exe"
+MANIFEST_NAME=aqua-io.exe.manifest
 else
 # we're on a Mac
-BINARY_NAME=Copy IO.app
+BINARY_NAME="${APP_NAME}.app"
 endif
-APP_NAME=Copy.io
-VERSION=1.0.1
-BUILD_NO=1
 
-## build: build binary and package copy_io
+## build: build binary and package app
 build:
 ifeq ($(OS),Windows_NT)
 	@del ${BINARY_NAME}
+	fyne package -os windows -icon Icon.png -appID ${APP_ID} -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 else
 	rm -rf ${BINARY_NAME}
+	fyne package -os darwin -icon Icon.png -appID ${APP_ID} -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 endif
-	fyne package -appVersion ${VERSION} -appBuild ${BUILD_NO} -name ${APP_NAME} -release
 
+## cross compile the app for different architecture than the development machine (requires https://github.com/fyne-io/fyne-cross & docker)
+cross-darwin-amd64:
+	fyne-cross darwin -arch=amd64 -app-id=${APP_ID}
+cross-windows-amd64:
+	fyne-cross windows -arch=amd64 -app-id=${APP_ID}
+	
 ## run: builds and runs the application
 run:
 ifeq ($(OS),Windows_NT)
@@ -40,6 +49,7 @@ clean:
 	@go clean
 ifeq ($(OS),Windows_NT)
 	@del ${BINARY_NAME}
+	@del ${MANIFEST_NAME}
 else
 	@rm -rf ${BINARY_NAME}
 endif

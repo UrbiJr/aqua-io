@@ -90,9 +90,9 @@ func (antiManager *AntiCaptchaManager) GetImageToText(imageString string) (strin
 
 func (antiManager *AntiCaptchaManager) GetHCaptchaCreateTask(websiteURL string, recaptchaKey string) (float64, error) {
 	// Mount the data to be sent
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientKey": antiManager.Credential.APIKey,
-		"task": map[string]interface{}{
+		"task": map[string]any{
 			"type":       "HCaptchaTaskProxyless",
 			"websiteURL": websiteURL,
 			"websiteKey": recaptchaKey,
@@ -113,7 +113,7 @@ func (antiManager *AntiCaptchaManager) GetHCaptchaCreateTask(websiteURL string, 
 	defer resp.Body.Close()
 
 	// Decode response
-	responseBody := make(map[string]interface{})
+	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 	// TODO treat api errors and handle them properly
 	if _, ok := responseBody["taskId"]; ok {
@@ -127,9 +127,9 @@ func (antiManager *AntiCaptchaManager) GetHCaptchaCreateTask(websiteURL string, 
 	return 0, errors.New("task number not found in server response")
 }
 
-func (antiManager *AntiCaptchaManager) getTaskResult(taskID float64) (map[string]interface{}, error) {
+func (antiManager *AntiCaptchaManager) getTaskResult(taskID float64) (map[string]any, error) {
 	// Mount the data to be sent
-	body := map[string]interface{}{
+	body := map[string]any{
 		"clientKey": antiManager.Credential.APIKey,
 		"taskId":    taskID,
 	}
@@ -147,7 +147,7 @@ func (antiManager *AntiCaptchaManager) getTaskResult(taskID float64) (map[string
 	defer resp.Body.Close()
 
 	// Decode response
-	responseBody := make(map[string]interface{})
+	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
 	return responseBody, nil
 }

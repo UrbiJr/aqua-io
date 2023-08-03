@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -9,17 +10,23 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	fyne_app "fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 
-	"github.com/UrbiJr/copy-io/internal/captcha"
-	"github.com/UrbiJr/copy-io/internal/client"
-	copy_io "github.com/UrbiJr/copy-io/internal/copy-io"
-	"github.com/UrbiJr/copy-io/internal/resources"
-	"github.com/UrbiJr/copy-io/internal/user"
-	"github.com/UrbiJr/copy-io/internal/utils"
+	aqua_io "github.com/UrbiJr/aqua-io/internal/aqua-io"
+	"github.com/UrbiJr/aqua-io/internal/captcha"
+	"github.com/UrbiJr/aqua-io/internal/client"
+	"github.com/UrbiJr/aqua-io/internal/resources"
+	"github.com/UrbiJr/aqua-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/utils"
+	"github.com/UrbiJr/aqua-io/internal/whop"
 
 	tls_client "github.com/bogdanfinn/tls-client"
 
@@ -42,9 +49,9 @@ func init() {
 		log.Println(err)
 		return
 	}
-	// Crea il percorso della sottocartella "Copy IO" all'interno di "AppData/Local".
-	// windows: C:\Users\<user>\AppData\Local\Roaming\Copy IO\logs
-	appDataLogsDir = filepath.Join(appDataDir, "Copy IO", "logs")
+	// Crea il percorso della sottocartella "Aqua IO" all'interno di "AppData/Local".
+	// windows: C:\Users\<user>\AppData\Local\Roaming\Aqua IO\logs
+	appDataLogsDir = filepath.Join(appDataDir, "Aqua IO", "logs")
 
 	err = os.MkdirAll(appDataLogsDir, os.ModePerm)
 	if err != nil {
@@ -59,12 +66,17 @@ func main() {
 
 	//utils.Info("Booting up...")
 
-	var app copy_io.Config
+	var app aqua_io.Config
+
+	// create needed directories if don't exist
+	path := "downloads"
+	// ignore the error
+	_ = os.Mkdir(path, os.ModePerm)
 
 	// create a fyne application
-	fyneApp := fyne_app.NewWithID("io.copy-trading.copy-io.preferences")
+	fyneApp := fyne_app.NewWithID("trading.aqua-io.app")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+	fyneApp.Settings().SetTheme(&resources.LightTheme{})
 	app.App = fyneApp
 
 	clientOptions := &client.ClientOptions{
@@ -106,45 +118,133 @@ func main() {
 	// create a database repository
 	app.SetupDB(sqlDB)
 
-	// create the login page
+	// get Whop config
+	whopSettings := whop.InitWhop()
+	app.Whop = whopSettings
 
-	// get logged user
-	app.User = &user.User{
-		Email:                "urbijr@app-robotics.eu",
-		Username:             "urbijr",
-		Settings:             &user.Settings{},
-		CopiedTradersManager: &user.CopiedTradersManager{},
-		ProfileManager:       &user.ProfileManager{},
-	}
+	// create the login page
+	app.LoginWindow = app.App.NewWindow("Aqua.io - Login")
+	app.MakeLoginWindow()
+	app.LoginWindow.Resize(fyne.NewSize(300, 300))
+	app.LoginWindow.CenterOnScreen()
+	app.LoginWindow.SetFixedSize(true)
+	app.LoginWindow.SetIcon(resources.ResourceIconPng)
+	app.LoginWindow.SetOnClosed(func() {
+		app.Quit()
+	})
 
 	// create and size a fyne window
-	win := fyneApp.NewWindow("Copy.io")
+	win := fyneApp.NewWindow("Aqua.io")
 	app.MainWindow = win
 	os := runtime.GOOS
 	switch os {
 	case "windows":
-		win.Resize(fyne.NewSize(1390, 848))
+		win.Resize(fyne.NewSize(1280, 720))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeDesktopUI()
 	case "darwin":
-		win.Resize(fyne.NewSize(1390, 848))
+		win.Resize(fyne.NewSize(1280, 720))
 		win.CenterOnScreen()
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeDesktopUI()
 	default:
 		win.Resize(fyne.NewSize(415, 890))
 		win.SetFixedSize(true)
 		win.SetMaster()
-		app.MakeMobileUI()
 	}
 
 	win.SetMainMenu(app.MakeMenu())
+	win.SetIcon(resources.ResourceIconPng)
 
-	win.SetIcon(resources.ResourceInternalResourcesProvisionalLogoJpg)
+	// retrieve user if stored locally
+	dbUser, err := app.DB.GetAllUsers()
+	showLogin := false
+	if err != nil {
+		app.Logger.Error(err)
+		showLogin = true
+	} else if dbUser != nil && dbUser.PersistentLogin {
+		// and attempt automatic login if persistent was set
+		authResult, err := app.Whop.ValidateLicense(dbUser.LicenseKey)
+		if err != nil {
+			app.Logger.Error(err)
+			showLogin = true
+		} else {
+			if !authResult.Success {
+				app.App.SendNotification(fyne.NewNotification(
+					"⚠️ Auto-Login Failed",
+					fmt.Sprintf("Error: %s", authResult.ErrorMessage),
+				))
+				showLogin = true
+			} else {
+				// get logged user
+				discordID := ""
+				username := strings.Split(authResult.Email, "@")[0]
+				profilePicture := ""
+				if authResult.Discord != nil {
+					discordInfo := authResult.Discord.(map[string]any)
+					discordID = discordInfo["id"].(string)
+					username = discordInfo["username"].(string)
+					profilePicture = discordInfo["image_url"].(string)
+				}
+
+				loggedUser := user.NewUser(
+					authResult.Email,
+					discordID,
+					username,
+					profilePicture,
+					authResult.LicenseKey,
+					authResult.ManageMembershipURL,
+					authResult.ExpiresAt,
+					dbUser.PersistentLogin)
+
+				loggedUser.Theme = dbUser.Theme
+				// only check for dark since light is set as default
+				if loggedUser.Theme == "dark" {
+					fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+				}
+				loggedUser.ID = dbUser.ID
+				loggedUser.ProfilePicturePath = dbUser.ProfilePicturePath
+				// update db with info fetched from whop
+				err = app.DB.UpdateUser(loggedUser.ID, *loggedUser)
+				if err != nil {
+					app.Logger.Error(err)
+				}
+				app.User = loggedUser
+			}
+		}
+	} else {
+		showLogin = true
+	}
+
+	// otherwise show login window
+	app.MakeTray()
+	if showLogin {
+		app.LoginWindow.Show()
+	} else {
+		app.SplashWindow = app.App.NewWindow("Aqua.io")
+		appLogo := canvas.NewImageFromResource(resources.ResourceIconPng)
+		appLogo.SetMinSize(fyne.NewSize(35, 35))
+		appLogo.FillMode = canvas.ImageFillContain
+		preloader := container.NewVBox(
+			container.NewCenter(
+				container.NewHBox(widget.NewRichTextFromMarkdown(`## Loading App...`), appLogo),
+			),
+			layout.NewSpacer(),
+			widget.NewProgressBarInfinite(),
+			layout.NewSpacer(),
+		)
+		app.SplashWindow.SetContent(preloader)
+		app.SplashWindow.CenterOnScreen()
+		app.SplashWindow.Show()
+
+		go func() {
+			app.MakeDesktopUI()
+			app.MainWindow.Show()
+			app.SplashWindow.Hide()
+		}()
+	}
 
 	// show and run the application (blocking function)
-	win.ShowAndRun()
+	app.App.Run()
 }

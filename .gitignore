@@ -4,4 +4,4 @@ tmp/
 *.json
 *-release.jpg
 .db
-*.jpg
+fyne-cross

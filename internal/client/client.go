@@ -1,7 +1,7 @@
 package client
 
 import (
-	"github.com/UrbiJr/copy-io/internal/captcha"
+	"github.com/UrbiJr/aqua-io/internal/captcha"
 	tls_client "github.com/bogdanfinn/tls-client"
 )
 

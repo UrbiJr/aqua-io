@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/UrbiJr/copy-io/internal/user"
+	"github.com/UrbiJr/aqua-io/internal/user"
 )
 
 type TestRepository struct{}

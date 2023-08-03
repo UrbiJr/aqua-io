@@ -5,8 +5,8 @@ import (
 
 	api2captcha "github.com/2captcha/2captcha-go"
 	"github.com/UrbiJr/anticaptcha"
-	"github.com/UrbiJr/copy-io/internal/captcha/base"
-	"github.com/UrbiJr/copy-io/internal/captcha/services/2captcha/task"
+	"github.com/UrbiJr/aqua-io/internal/captcha/base"
+	"github.com/UrbiJr/aqua-io/internal/captcha/services/2captcha/task"
 )
 
 // CaptchaSolver client used to perform 2Captcha tasks.
@@ -139,7 +139,7 @@ func (solver *CaptchaSolver) SolveGeetest(captcha *base.GeetestCaptcha) (anticap
 
 	var geetestSolution anticaptcha.GeeTestSolution
 
-	// func Unmarshal(data []byte, v interface{}) error
+	// func Unmarshal(data []byte, v any) error
 	err = json.Unmarshal([]byte(code), &geetestSolution)
 	if err != nil {
 		return anticaptcha.GeeTestSolution{}, err

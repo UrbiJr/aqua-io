@@ -5,8 +5,10 @@ package utils
 
 import "C"
 import (
+	"log"
 	"strings"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/mitchellh/go-ps"
 )
 
@@ -32,4 +34,13 @@ func IsProcRunning(names ...string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func GetDeviceID() string {
+	id, err := machineid.ID()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return id
 }
