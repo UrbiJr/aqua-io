@@ -67,7 +67,7 @@ func (capManager *CapMonsterManager) GetRecaptchaV2CreateTask(websiteURL string,
 	// Decode response
 	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
-	// TODO treat api errors and handle them properly
+	// TODO treat api error and handle them properly
 	if _, ok := responseBody["taskId"]; ok {
 		if taskId, ok := responseBody["taskId"].(float64); ok {
 			return taskId, nil
@@ -105,7 +105,7 @@ func (capManager *CapMonsterManager) GetHCaptchaCreateTask(websiteURL string, re
 	// Decode response
 	responseBody := make(map[string]any)
 	json.NewDecoder(resp.Body).Decode(&responseBody)
-	// TODO treat api errors and handle them properly
+	// TODO treat api error and handle them properly
 	if _, ok := responseBody["taskId"]; ok {
 		if taskId, ok := responseBody["taskId"].(float64); ok {
 			return taskId, nil

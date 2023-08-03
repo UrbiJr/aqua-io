@@ -18,7 +18,7 @@ const (
 )
 
 // It is a good idea to assert that we implement an interface
-// so that compile errors are closer to the defining type.
+// so that compile error are closer to the defining type.
 var _ fyne.Theme = (*DarkTheme)(nil)
 var _ fyne.Theme = (*LightTheme)(nil)
 
