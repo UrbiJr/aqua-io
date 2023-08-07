@@ -3,6 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/UrbiJr/aqua-io/backend/internal/client"
+	resources2 "github.com/UrbiJr/aqua-io/backend/internal/resources"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
+	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/internal/whop"
 	"log"
 	"math/rand"
 	"net/http"
@@ -20,14 +25,7 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	aqua_io "github.com/UrbiJr/aqua-io/internal/aqua-io"
 	"github.com/UrbiJr/aqua-io/internal/captcha"
-	"github.com/UrbiJr/aqua-io/internal/client"
-	"github.com/UrbiJr/aqua-io/internal/resources"
-	"github.com/UrbiJr/aqua-io/internal/user"
-	"github.com/UrbiJr/aqua-io/internal/utils"
-	"github.com/UrbiJr/aqua-io/internal/whop"
-
 	tls_client "github.com/bogdanfinn/tls-client"
 
 	_ "github.com/glebarez/go-sqlite"
@@ -39,7 +37,7 @@ func init() {
 	debugArg := flag.Bool("debug", false, "enable debug mode") // go run ./main.go -debug
 	flag.Parse()
 	debug := *debugArg
-	utils.SetDebug(debug)
+	utils2.SetDebug(debug)
 
 	var appDataLogsDir string
 
@@ -58,7 +56,7 @@ func init() {
 		log.Println(err)
 	}
 
-	go utils.BlockNetworkSniffing()
+	go utils2.BlockNetworkSniffing()
 }
 
 // app entry point
@@ -66,7 +64,7 @@ func main() {
 
 	//utils.Info("Booting up...")
 
-	var app aqua_io.Config
+	var app copy_io.Config
 
 	// create needed directories if don't exist
 	path := "downloads"
@@ -76,15 +74,15 @@ func main() {
 	// create a fyne application
 	fyneApp := fyne_app.NewWithID("trading.aqua-io.app")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources.LightTheme{})
+	fyneApp.Settings().SetTheme(&resources2.LightTheme{})
 	app.App = fyneApp
 
 	clientOptions := &client.ClientOptions{
 		Timeout:          30,
 		TlsClientProfile: tls_client.Chrome_110,
 	}
-	if utils.DebugEnabled {
-		// enable charles proxy for tls client
+	if utils2.DebugEnabled {
+		// enable charles proxy for tls tls
 		clientOptions.CharlesProxy = true
 	}
 	client, err := client.NewTLSClient(&captcha.SolverOptions{Provider: "2captcha"}, clientOptions)
@@ -92,8 +90,8 @@ func main() {
 		log.Panic(err)
 	}
 	app.TLSClient = client
-	if utils.DebugEnabled {
-		// enable charles proxy for http client
+	if utils2.DebugEnabled {
+		// enable charles proxy for http tls
 		proxyStr := "http://127.0.0.1:8888"
 		proxyURL, _ := url.Parse(proxyStr)
 		transport := &http.Transport{
@@ -105,7 +103,7 @@ func main() {
 	}
 
 	// create our loggers
-	app.Logger = new(utils.AppLogger)
+	app.Logger = new(utils2.AppLogger)
 	app.Logger.SetupLogger()
 	app.Logger.Debug("debug logging enabled")
 
@@ -128,7 +126,7 @@ func main() {
 	app.LoginWindow.Resize(fyne.NewSize(300, 300))
 	app.LoginWindow.CenterOnScreen()
 	app.LoginWindow.SetFixedSize(true)
-	app.LoginWindow.SetIcon(resources.ResourceIconPng)
+	app.LoginWindow.SetIcon(resources2.ResourceIconPng)
 	app.LoginWindow.SetOnClosed(func() {
 		app.Quit()
 	})
@@ -155,7 +153,7 @@ func main() {
 	}
 
 	win.SetMainMenu(app.MakeMenu())
-	win.SetIcon(resources.ResourceIconPng)
+	win.SetIcon(resources2.ResourceIconPng)
 
 	// retrieve user if stored locally
 	dbUser, err := app.DB.GetAllUsers()
@@ -201,7 +199,7 @@ func main() {
 				loggedUser.Theme = dbUser.Theme
 				// only check for dark since light is set as default
 				if loggedUser.Theme == "dark" {
-					fyneApp.Settings().SetTheme(&resources.DarkTheme{})
+					fyneApp.Settings().SetTheme(&resources2.DarkTheme{})
 				}
 				loggedUser.ID = dbUser.ID
 				loggedUser.ProfilePicturePath = dbUser.ProfilePicturePath
@@ -223,7 +221,7 @@ func main() {
 		app.LoginWindow.Show()
 	} else {
 		app.SplashWindow = app.App.NewWindow("Aqua.io")
-		appLogo := canvas.NewImageFromResource(resources.ResourceIconPng)
+		appLogo := canvas.NewImageFromResource(resources2.ResourceIconPng)
 		appLogo.SetMinSize(fyne.NewSize(35, 35))
 		appLogo.FillMode = canvas.ImageFillContain
 		preloader := container.NewVBox(
