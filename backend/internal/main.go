@@ -3,11 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/UrbiJr/aqua-io/backend/internal/client"
-	resources2 "github.com/UrbiJr/aqua-io/backend/internal/resources"
-	"github.com/UrbiJr/aqua-io/backend/internal/user"
-	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
-	"github.com/UrbiJr/aqua-io/backend/internal/whop"
 	"log"
 	"math/rand"
 	"net/http"
@@ -18,6 +13,14 @@ import (
 	"strings"
 	"time"
 
+	aqua_io "github.com/UrbiJr/aqua-io/backend/internal/aqua-io"
+	"github.com/UrbiJr/aqua-io/backend/internal/resources"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
+	"github.com/UrbiJr/aqua-io/backend/pkg/logger"
+	"github.com/UrbiJr/aqua-io/backend/pkg/protection"
+
 	"fyne.io/fyne/v2"
 	fyne_app "fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -25,29 +28,26 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/UrbiJr/aqua-io/internal/captcha"
-	tls_client "github.com/bogdanfinn/tls-client"
-
 	_ "github.com/glebarez/go-sqlite"
 )
 
 func init() {
 	rand.Seed(time.Now().Unix())
 
-	debugArg := flag.Bool("debug", false, "enable debug mode") // go run ./main.go -debug
+	debugArg := flag.Bool("debug", false, "enable debug mode") // go run ./backend/internal/main.go -debug
 	flag.Parse()
 	debug := *debugArg
-	utils2.SetDebug(debug)
+	utils.SetDebug(debug)
 
 	var appDataLogsDir string
 
-	// Ottieni il percorso della cartella "AppData" per l'utente corrente su Windows.
+	// get the "AppData" directory path for the current user on Windows.
 	appDataDir, err := os.UserCacheDir()
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	// Crea il percorso della sottocartella "Aqua IO" all'interno di "AppData/Local".
+	// create subdirectory "Aqua IO" path inside "AppData/Local".
 	// windows: C:\Users\<user>\AppData\Local\Roaming\Aqua IO\logs
 	appDataLogsDir = filepath.Join(appDataDir, "Aqua IO", "logs")
 
@@ -56,7 +56,7 @@ func init() {
 		log.Println(err)
 	}
 
-	go utils2.BlockNetworkSniffing()
+	go protection.BlockNetworkSniffing()
 }
 
 // app entry point
@@ -64,7 +64,7 @@ func main() {
 
 	//utils.Info("Booting up...")
 
-	var app copy_io.Config
+	var app aqua_io.Config
 
 	// create needed directories if don't exist
 	path := "downloads"
@@ -74,24 +74,11 @@ func main() {
 	// create a fyne application
 	fyneApp := fyne_app.NewWithID("trading.aqua-io.app")
 	// set custom theme
-	fyneApp.Settings().SetTheme(&resources2.LightTheme{})
+	fyneApp.Settings().SetTheme(&resources.LightTheme{})
 	app.App = fyneApp
 
-	clientOptions := &client.ClientOptions{
-		Timeout:          30,
-		TlsClientProfile: tls_client.Chrome_110,
-	}
-	if utils2.DebugEnabled {
-		// enable charles proxy for tls tls
-		clientOptions.CharlesProxy = true
-	}
-	client, err := client.NewTLSClient(&captcha.SolverOptions{Provider: "2captcha"}, clientOptions)
-	if err != nil {
-		log.Panic(err)
-	}
-	app.TLSClient = client
-	if utils2.DebugEnabled {
-		// enable charles proxy for http tls
+	if utils.DebugEnabled {
+		// add localhost proxy
 		proxyStr := "http://127.0.0.1:8888"
 		proxyURL, _ := url.Parse(proxyStr)
 		transport := &http.Transport{
@@ -103,7 +90,7 @@ func main() {
 	}
 
 	// create our loggers
-	app.Logger = new(utils2.AppLogger)
+	app.Logger = new(logger.AppLogger)
 	app.Logger.SetupLogger()
 	app.Logger.Debug("debug logging enabled")
 
@@ -117,7 +104,7 @@ func main() {
 	app.SetupDB(sqlDB)
 
 	// get Whop config
-	whopSettings := whop.InitWhop()
+	whopSettings := auth.InitWhop()
 	app.Whop = whopSettings
 
 	// create the login page
@@ -126,7 +113,7 @@ func main() {
 	app.LoginWindow.Resize(fyne.NewSize(300, 300))
 	app.LoginWindow.CenterOnScreen()
 	app.LoginWindow.SetFixedSize(true)
-	app.LoginWindow.SetIcon(resources2.ResourceIconPng)
+	app.LoginWindow.SetIcon(resources.ResourceIconPng)
 	app.LoginWindow.SetOnClosed(func() {
 		app.Quit()
 	})
@@ -153,17 +140,17 @@ func main() {
 	}
 
 	win.SetMainMenu(app.MakeMenu())
-	win.SetIcon(resources2.ResourceIconPng)
+	win.SetIcon(resources.ResourceIconPng)
 
 	// retrieve user if stored locally
-	dbUser, err := app.DB.GetAllUsers()
+	dbUsers, err := app.DB.AllUsers()
 	showLogin := false
 	if err != nil {
 		app.Logger.Error(err)
 		showLogin = true
-	} else if dbUser != nil && dbUser.PersistentLogin {
+	} else if len(dbUsers) > 0 && dbUsers[0].ID > 0 && dbUsers[0].PersistentLogin {
 		// and attempt automatic login if persistent was set
-		authResult, err := app.Whop.ValidateLicense(dbUser.LicenseKey)
+		authResult, err := app.Whop.ValidateLicense(dbUsers[0].LicenseKey)
 		if err != nil {
 			app.Logger.Error(err)
 			showLogin = true
@@ -194,15 +181,15 @@ func main() {
 					authResult.LicenseKey,
 					authResult.ManageMembershipURL,
 					authResult.ExpiresAt,
-					dbUser.PersistentLogin)
+					dbUsers[0].PersistentLogin)
 
-				loggedUser.Theme = dbUser.Theme
+				loggedUser.Theme = dbUsers[0].Theme
 				// only check for dark since light is set as default
 				if loggedUser.Theme == "dark" {
-					fyneApp.Settings().SetTheme(&resources2.DarkTheme{})
+					fyneApp.Settings().SetTheme(&resources.DarkTheme{})
 				}
-				loggedUser.ID = dbUser.ID
-				loggedUser.ProfilePicturePath = dbUser.ProfilePicturePath
+				loggedUser.ID = dbUsers[0].ID
+				loggedUser.ProfilePicturePath = dbUsers[0].ProfilePicturePath
 				// update db with info fetched from whop
 				err = app.DB.UpdateUser(loggedUser.ID, *loggedUser)
 				if err != nil {
@@ -221,7 +208,7 @@ func main() {
 		app.LoginWindow.Show()
 	} else {
 		app.SplashWindow = app.App.NewWindow("Aqua.io")
-		appLogo := canvas.NewImageFromResource(resources2.ResourceIconPng)
+		appLogo := canvas.NewImageFromResource(resources.ResourceIconPng)
 		appLogo.SetMinSize(fyne.NewSize(35, 35))
 		appLogo.FillMode = canvas.ImageFillContain
 		preloader := container.NewVBox(

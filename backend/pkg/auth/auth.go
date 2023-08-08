@@ -67,6 +67,8 @@ func validateLicense() (Response, error) {
 		},
 	}
 
+	authClient := &http.Client{}
+	
 	resp, err := authClient.Do(req)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such host") {

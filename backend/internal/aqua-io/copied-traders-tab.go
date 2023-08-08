@@ -1,13 +1,14 @@
-package copy_io
+package aqua_io
 
 import (
 	"fmt"
-	user2 "github.com/UrbiJr/aqua-io/backend/internal/user"
-	"github.com/UrbiJr/aqua-io/backend/internal/utils"
 	"image/color"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
+	user "github.com/UrbiJr/aqua-io/backend/internal/user"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -24,33 +25,38 @@ type CopiedTradersTab struct {
 	limitMarketOrdersTable *widget.Table
 	tpSlOrdersTable        *widget.Table
 	CopiedTradersList      *widget.List
-	limitMarketOrders      []user2.Order
-	tpSlOrders             []user2.Order
+	limitMarketOrders      []user.Order
+	tpSlOrders             []user.Order
 	positionsTable         *widget.Table
 	positionsSlice         [][]any
-	selectedCopiedTrader   *user2.Profile
+	selectedCopiedTrader   *user.Profile
 	profilesWithTrader     []string
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
 	app.positionsSlice = app.getPositionsSlice()
-	split := app.getCopiedTraders()
+	split := app.getCopiedTradersTab()
 
 	max := container.NewMax(split)
 
 	return max
 }
 
-func (app *Config) formatCopiedTradersList(profilesWithTrader []user2.Profile) []string {
+func (app *Config) formatCopiedTradersList() []string {
 	var names []string
-	for _, p := range profilesWithTrader {
-		names = append(names, fmt.Sprintf("%s\n%s", p.Title, p.TraderID))
+	for _, t := range app.User.CopiedTradersManager.CopiedTraders {
+		p := app.User.ProfileManager.GetProfileByID(t.ProfileID)
+		if p != nil {
+			names = append(names, fmt.Sprintf("%s\n%s", p.Title, t.NickName))
+		} else {
+			names = append(names, fmt.Sprintf("%s\n%s", "Unknown Profile", t.NickName))
+		}
 	}
 	return names
 }
 
-func (app *Config) getCopiedTraders() *container.Split {
+func (app *Config) getCopiedTradersTab() *container.Split {
 
 	/* LEFT SPLIT */
 
@@ -73,12 +79,12 @@ func (app *Config) getCopiedTraders() *container.Split {
 			toolbar := item.(*fyne.Container).Objects[2].(*widget.Toolbar)
 			if len(toolbar.Items) == 0 {
 				toolbar.Append(widget.NewToolbarAction(theme.VisibilityIcon(), func() {
-					app.traderDialog(user2.Trader{}, traderID)
+					app.traderDialog(user.Trader{}, traderID)
 				}))
 				toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
 					dialog.ShowConfirm("Stop copying?", "Doing that will NOT close positions copied from this trader.", func(deleted bool) {
 						if deleted {
-							err := app.stopCopyingTrader(user2.Trader{}, traderID)
+							err := app.stopCopyingTrader(user.Trader{}, traderID)
 							if err != nil {
 								app.Logger.Error(err)
 							}
@@ -325,32 +331,23 @@ func (app *Config) getLimitMarketOrdersSlice() [][]any {
 	return slice
 }
 
-func (app *Config) getOrders(profile *user2.Profile) {
-	var limitMarketOrders, tpSlOrders []user2.Order
+func (app *Config) getOrders(profile *user.Profile) {
+	var limitMarketOrders, tpSlOrders []user.Order
 
 	if profile != nil {
-		if profile.BybitApiKey != "" {
-			byBitOrders, err := app.fetchOrderHistory("spot", "Order", *profile)
-			if err != nil && strings.Contains(err.Error(), "Timestamp") {
-				app.App.SendNotification(fyne.NewNotification(
-					"⚠️ Error getting orders",
-					err.Error(),
-				))
-			}
-			if byBitOrders != nil {
-				limitMarketOrders = append(limitMarketOrders, byBitOrders...)
-			}
-			byBitOrders, err = app.fetchOrderHistory("spot", "tpslOrder", *profile)
-			if err != nil && strings.Contains(err.Error(), "Timestamp") {
-				app.App.SendNotification(fyne.NewNotification(
-					"⚠️ Error getting orders",
-					err.Error(),
-				))
-			}
-			if byBitOrders != nil {
-				tpSlOrders = append(tpSlOrders, byBitOrders...)
-			}
+		switch profile.Exchange {
+		case constants.ByBit:
+			// TODO: fetch ByBit orders
+		case constants.Binance:
+			// TODO: Binance bybit orders
+		case constants.OKX:
+			// TODO: OKX bybit orders
+		case constants.Phemex:
+			// TODO: Phemex bybit orders
+		case constants.Bitget:
+			// TODO: Bitget bybit orders
 		}
+
 	}
 
 	app.CopiedTradersTab.limitMarketOrders = limitMarketOrders
@@ -373,13 +370,10 @@ func (app *Config) getPositionsSlice() [][]any {
 	var slice [][]any
 	slice = append(slice, []any{"Side", "Symbol", "Size", "Entry Price", "Market Price", "Liq. Price", "PNL", "Actions"})
 
-	for _, profile := range app.User.Profiles {
+	for _, _ = range app.User.Profiles {
 		var currentRow []any
-		var positionInfoArr []user2.PositionInfo
-		openedPositions := app.User.CopiedTradersManager.GetOpenedPositionsByProfileID(profile.ID)
-		for _, position := range openedPositions {
-			positionInfoArr = append(positionInfoArr, app.getPositionInfo("linear", position.Symbol, position.OrderID, profile)...)
-		}
+		var positionInfoArr []user.PositionInfo
+		// TODO: fetch opened positions using wss api
 
 		for _, pos := range positionInfoArr {
 			var side string
@@ -455,12 +449,9 @@ func (app *Config) getPositionsTable() *widget.Table {
 						side = app.positionsSlice[i.Row][0].(string)
 						symbol = app.positionsSlice[i.Row][1].(string)
 						orderId = app.positionsSlice[i.Row][i.Col].(string)
-
-						// retrieve profile from position orderID
-						openedPosition := app.User.CopiedTradersManager.GetOpenedPositionByOrderID(orderId)
-						profile := app.User.ProfileManager.GetProfileByID(openedPosition.ProfileID)
-
 						amount, err = strconv.ParseFloat(app.positionsSlice[i.Row][2].(string), 64)
+
+						app.Logger.Debug(side, symbol, orderId, amount)
 
 						if err != nil {
 							return
@@ -468,17 +459,8 @@ func (app *Config) getPositionsTable() *widget.Table {
 
 						dialog.ShowConfirm("Close Position?", fmt.Sprintf("Confirming will close %s %s Position.", symbol, side), func(deleted bool) {
 							if deleted {
-								var orderData OrderData
-
-								orderData.OrderType = utils.ORDER_MARKET
-								orderData.Symbol = symbol
-								orderData.Qty = amount
-
-								if side == "Buy" {
-									_, err = app.closeLongPosition(profile, orderData)
-								} else {
-									_, err = app.closeShortPosition(profile, orderData)
-								}
+								// TODO: call close position wss method
+								err = nil
 
 								if err != nil {
 									app.App.SendNotification(fyne.NewNotification(
@@ -486,17 +468,12 @@ func (app *Config) getPositionsTable() *widget.Table {
 										fmt.Sprintf("Error: %s", err.Error()),
 									))
 								} else {
-									err = app.DB.DeleteOpenedPosition(orderId)
-									if err != nil {
-										app.Logger.Error(err)
-									} else {
-										app.User.CopiedTradersManager.DeleteOpenedPosition(orderId)
-										app.Logger.Debug(fmt.Sprintf("closed %s position with order ID %s", symbol, orderId))
-										app.App.SendNotification(fyne.NewNotification(
-											"🔴 Successfully Closed Position",
-											fmt.Sprintf("closed %s %s position", symbol, side),
-										))
-									}
+
+									app.Logger.Debug(fmt.Sprintf("closed %s position with order ID %s", symbol, orderId))
+									app.App.SendNotification(fyne.NewNotification(
+										"🔴 Successfully Closed Position",
+										fmt.Sprintf("closed %s %s position", symbol, side),
+									))
 									app.refreshCopiedTradersTab()
 								}
 							}
@@ -521,7 +498,7 @@ func (app *Config) getPositionsTable() *widget.Table {
 }
 
 func (app *Config) refreshCopiedTradersList() {
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.GetProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
 	app.CopiedTradersList.Refresh()
 }
 
@@ -549,7 +526,7 @@ func (app *Config) refreshCopiedTradersTab() {
 	app.updateOrderHistoryContent()
 	app.refreshPositionsTable()
 
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList(app.User.ProfileManager.GetProfilesWithTrader())
+	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
 	// set default height for each list item
 	for i := range app.CopiedTradersTab.profilesWithTrader {
 		app.CopiedTradersList.SetItemHeight(i, 50)
@@ -557,11 +534,11 @@ func (app *Config) refreshCopiedTradersTab() {
 	app.CopiedTradersList.Refresh()
 }
 
-func (app *Config) getOpenedPositions() {
-	openedPositions, err := app.DB.AllOpenedPositions()
+func (app *Config) getCopiedTraders() {
+	copiedTraders, err := app.DB.AllCopiedTraders()
 	if err != nil {
 		app.Logger.Error(err)
 		app.Quit()
 	}
-	app.User.CopiedTradersManager.OpenedPositions = openedPositions
+	app.User.CopiedTradersManager.CopiedTraders = copiedTraders
 }

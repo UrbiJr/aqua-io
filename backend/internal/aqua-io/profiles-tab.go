@@ -1,12 +1,14 @@
-package copy_io
+package aqua_io
 
 import (
 	"errors"
 	"fmt"
-	"github.com/UrbiJr/aqua-io/backend/internal/user"
-	"github.com/UrbiJr/aqua-io/backend/internal/utils"
 	"strconv"
 	"strings"
+
+	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -74,92 +76,52 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 		}
 	}
 
-	bybitApiKey := widget.NewEntry()
-	bybitApiKey.SetPlaceHolder("XXXX")
-	bybitApiKey.Validator = utils.IsStringEmpty
+	exchange := widget.NewSelect([]string{
+		constants.ByBit,
+		constants.OKX,
+		constants.Binance,
+		constants.Phemex,
+		constants.Bitget,
+	}, nil)
+	exchange.ClearSelected()
 
-	bybitApiSecret := widget.NewPasswordEntry()
-	bybitApiSecret.SetPlaceHolder("bybit api secret")
-	bybitApiSecret.Validator = utils.IsStringEmpty
+	accountName := widget.NewEntry()
+	accountName.SetPlaceHolder("")
+	accountName.Validator = utils.IsStringEmpty
 
-	maxBybitBinancePriceDifferentPercent := widget.NewEntry()
-	maxBybitBinancePriceDifferentPercent.SetPlaceHolder("0.5")
-	maxBybitBinancePriceDifferentPercent.Validator = utils.IsFloat
+	publicAPI := widget.NewEntry()
+	publicAPI.SetPlaceHolder("XXXX")
+	publicAPI.Validator = utils.IsStringEmpty
 
-	leverage := widget.NewEntry()
-	leverage.SetPlaceHolder("15")
-	leverage.Validator = utils.IsInteger
+	secretAPI := widget.NewPasswordEntry()
+	secretAPI.SetPlaceHolder("bybit api secret")
+	secretAPI.Validator = utils.IsStringEmpty
 
-	initialOpenPercent := widget.NewEntry()
-	initialOpenPercent.SetPlaceHolder("2.5")
-	initialOpenPercent.Validator = utils.IsFloat
+	passphrase := widget.NewPasswordEntry()
+	passphrase.SetPlaceHolder("passphrase")
+	passphrase.Validator = utils.IsStringEmpty
 
-	maxAddMultiplier := widget.NewEntry()
-	maxAddMultiplier.SetPlaceHolder("5")
-	maxAddMultiplier.Validator = utils.IsFloat
-
-	openDelay := widget.NewEntry()
-	openDelay.SetPlaceHolder("5")
-	openDelay.Validator = utils.IsFloat
-
-	oneCoinMaxPercent := widget.NewEntry()
-	oneCoinMaxPercent.SetPlaceHolder("25")
-	oneCoinMaxPercent.Validator = utils.IsFloat
-
-	blackListCoins := widget.NewMultiLineEntry()
-	blackListCoins.SetPlaceHolder("coin1,coin2,coin3")
-
-	addPreventionPercent := widget.NewEntry()
-	addPreventionPercent.SetPlaceHolder("0.5")
-	addPreventionPercent.Validator = utils.IsFloat
-
-	blockAddsAboveEntry := widget.NewCheck("", func(b bool) {})
-
-	maxOpenPositions := widget.NewEntry()
-	maxOpenPositions.SetPlaceHolder("10")
-	maxOpenPositions.Validator = utils.IsInteger
-
-	autoTP := widget.NewEntry()
-	autoTP.SetPlaceHolder("7")
-	autoTP.Validator = utils.IsFloat
-
-	autoSL := widget.NewEntry()
-	autoSL.SetPlaceHolder("0")
-	autoSL.Validator = utils.IsFloat
+	stopIfFallUnder := widget.NewEntry()
+	stopIfFallUnder.SetPlaceHolder("0")
+	stopIfFallUnder.Validator = utils.IsFloat
 
 	testMode := widget.NewCheck("", func(b bool) {})
 
 	vBox := container.NewVBox(
 		widget.NewLabel("Title"),
 		title,
-		widget.NewLabel("Bybit Api Key"),
-		bybitApiKey,
-		widget.NewLabel("Bybit API Secret"),
-		bybitApiSecret,
-		widget.NewLabel("Binance/ByBit Price Difference"),
-		maxBybitBinancePriceDifferentPercent,
-		widget.NewLabel("Leverage"),
-		leverage,
-		widget.NewLabel("Initial Open Percent"),
-		initialOpenPercent,
-		widget.NewLabel("Max Add Multiplier"),
-		maxAddMultiplier,
-		widget.NewLabel("Open Delay"),
-		openDelay,
-		widget.NewLabel("One Coin Max Percent*"),
-		oneCoinMaxPercent,
-		widget.NewLabel("Blacklist Coins"),
-		blackListCoins,
-		widget.NewLabel("Add Prevention Percent"),
-		addPreventionPercent,
-		widget.NewLabel("Blocks Adds Above Entry"),
-		blockAddsAboveEntry,
-		widget.NewLabel("Max Open Positions"),
-		maxOpenPositions,
-		widget.NewLabel("Auto TP"),
-		autoTP,
-		widget.NewLabel("Auto SL"),
-		autoSL,
+		widget.NewLabel("Exchange"),
+		exchange,
+		widget.NewLabel("Account Name"),
+		accountName,
+		widget.NewLabel("Public API Key"),
+		publicAPI,
+		widget.NewLabel("Secret API Key"),
+		secretAPI,
+		widget.NewLabel("Passphrase"),
+		passphrase,
+		widget.NewLabel("Stop If Fall Under"),
+		stopIfFallUnder,
 		widget.NewLabel("Test Mode"),
 		testMode,
 	)
@@ -185,22 +147,15 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 
 			if valid {
 				p := user.Profile{
-					Title:               title.Text,
-					BybitApiKey:         bybitApiKey.Text,
-					BybitApiSecret:      bybitApiSecret.Text,
-					BlacklistCoins:      strings.Split(blackListCoins.Text, ","),
-					BlockAddsAboveEntry: blockAddsAboveEntry.Checked,
-					TestMode:            testMode.Checked,
+					Title:       title.Text,
+					Exchange:    constants.Exchange(exchange.Selected),
+					AccountName: accountName.Text,
+					PublicAPI:   publicAPI.Text,
+					SecretAPI:   secretAPI.Text,
+					Passphrase:  passphrase.Text,
+					TestMode:    testMode.Checked,
 				}
-				p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
-				p.Leverage, _ = strconv.ParseInt(leverage.Text, 10, 64)
-				p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
-				p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
-				p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
-				p.AddPreventionPercent, _ = strconv.ParseFloat(addPreventionPercent.Text, 64)
-				p.AutoTP, _ = strconv.ParseFloat(autoTP.Text, 64)
-				p.AutoSL, _ = strconv.ParseFloat(autoSL.Text, 64)
-				p.MaxOpenPositions, _ = strconv.ParseInt(maxOpenPositions.Text, 10, 64)
+				p.StopIfFallUnder, _ = strconv.ParseFloat(stopIfFallUnder.Text, 64)
 
 				inserted, err := app.DB.InsertProfile(p)
 
@@ -240,59 +195,34 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 		}
 	}
 
-	bybitApiKey := widget.NewEntry()
-	bybitApiKey.SetText(pf.BybitApiKey)
-	bybitApiKey.Validator = utils.IsStringEmpty
+	exchange := widget.NewSelect([]string{
+		constants.ByBit,
+		constants.OKX,
+		constants.Binance,
+		constants.Phemex,
+		constants.Bitget,
+	}, nil)
+	exchange.SetSelected(string(pf.Exchange))
 
-	bybitApiSecret := widget.NewPasswordEntry()
-	bybitApiSecret.SetText(pf.BybitApiSecret)
-	bybitApiSecret.Validator = utils.IsStringEmpty
+	accountName := widget.NewEntry()
+	accountName.SetText(pf.AccountName)
+	accountName.Validator = utils.IsStringEmpty
 
-	maxBybitBinancePriceDifferentPercent := widget.NewEntry()
-	maxBybitBinancePriceDifferentPercent.SetText(fmt.Sprintf("%.2f", pf.MaxBybitBinancePriceDifferentPercent))
-	maxBybitBinancePriceDifferentPercent.Validator = utils.IsFloat
+	publicAPI := widget.NewEntry()
+	publicAPI.SetText(pf.PublicAPI)
+	publicAPI.Validator = utils.IsStringEmpty
 
-	leverage := widget.NewEntry()
-	leverage.SetText(fmt.Sprintf("%d", pf.Leverage))
-	leverage.Validator = utils.IsInteger
+	secretAPI := widget.NewPasswordEntry()
+	secretAPI.SetText(pf.SecretAPI)
+	secretAPI.Validator = utils.IsStringEmpty
 
-	initialOpenPercent := widget.NewEntry()
-	initialOpenPercent.SetText(fmt.Sprintf("%.2f", pf.InitialOpenPercent))
-	initialOpenPercent.Validator = utils.IsFloat
+	passphrase := widget.NewPasswordEntry()
+	passphrase.SetText(pf.Passphrase)
+	passphrase.Validator = utils.IsStringEmpty
 
-	maxAddMultiplier := widget.NewEntry()
-	maxAddMultiplier.SetText(fmt.Sprintf("%.2f", pf.MaxAddMultiplier))
-	maxAddMultiplier.Validator = utils.IsFloat
-
-	openDelay := widget.NewEntry()
-	openDelay.SetText(fmt.Sprintf("%.2f", pf.OpenDelay))
-	openDelay.Validator = utils.IsFloat
-
-	oneCoinMaxPercent := widget.NewEntry()
-	oneCoinMaxPercent.SetText(fmt.Sprintf("%.2f", pf.OneCoinMaxPercent))
-	oneCoinMaxPercent.Validator = utils.IsFloat
-
-	blackListCoins := widget.NewMultiLineEntry()
-	blackListCoins.SetPlaceHolder(strings.Join(pf.BlacklistCoins, ","))
-
-	addPreventionPercent := widget.NewEntry()
-	addPreventionPercent.SetText(fmt.Sprintf("%.2f", pf.AddPreventionPercent))
-	addPreventionPercent.Validator = utils.IsFloat
-
-	blockAddsAboveEntry := widget.NewCheck("", func(b bool) {})
-	blockAddsAboveEntry.SetChecked(pf.BlockAddsAboveEntry)
-
-	maxOpenPositions := widget.NewEntry()
-	maxOpenPositions.SetText(fmt.Sprintf("%d", pf.MaxOpenPositions))
-	maxOpenPositions.Validator = utils.IsInteger
-
-	autoTP := widget.NewEntry()
-	autoTP.SetText(fmt.Sprintf("%.2f", pf.AutoTP))
-	autoTP.Validator = utils.IsFloat
-
-	autoSL := widget.NewEntry()
-	autoSL.SetText(fmt.Sprintf("%.2f", pf.AutoSL))
-	autoSL.Validator = utils.IsFloat
+	stopIfFallUnder := widget.NewEntry()
+	stopIfFallUnder.SetText(fmt.Sprintf("%f", pf.StopIfFallUnder))
+	stopIfFallUnder.Validator = utils.IsFloat
 
 	testMode := widget.NewCheck("", func(b bool) {})
 	testMode.SetChecked(pf.TestMode)
@@ -300,34 +230,18 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	vBox := container.NewVBox(
 		widget.NewLabel("Title"),
 		title,
-		widget.NewLabel("Bybit Api Key"),
-		bybitApiKey,
-		widget.NewLabel("Bybit API Secret"),
-		bybitApiSecret,
-		widget.NewLabel("Binance/ByBit Price Difference"),
-		maxBybitBinancePriceDifferentPercent,
-		widget.NewLabel("Leverage"),
-		leverage,
-		widget.NewLabel("Initial Open Percent"),
-		initialOpenPercent,
-		widget.NewLabel("Max Add Multiplier"),
-		maxAddMultiplier,
-		widget.NewLabel("Open Delay"),
-		openDelay,
-		widget.NewLabel("One Coin Max Percent*"),
-		oneCoinMaxPercent,
-		widget.NewLabel("Blacklist Coins"),
-		blackListCoins,
-		widget.NewLabel("Add Prevention Percent"),
-		addPreventionPercent,
-		widget.NewLabel("Blocks Adds Above Entry"),
-		blockAddsAboveEntry,
-		widget.NewLabel("Max Open Positions"),
-		maxOpenPositions,
-		widget.NewLabel("Auto TP"),
-		autoTP,
-		widget.NewLabel("Auto SL"),
-		autoSL,
+		widget.NewLabel("Exchange"),
+		exchange,
+		widget.NewLabel("Account Name"),
+		accountName,
+		widget.NewLabel("Public API Key"),
+		publicAPI,
+		widget.NewLabel("Secret API Key"),
+		secretAPI,
+		widget.NewLabel("Passphrase"),
+		passphrase,
+		widget.NewLabel("Stop If Fall Under"),
+		stopIfFallUnder,
 		widget.NewLabel("Test Mode"),
 		testMode,
 	)
@@ -353,23 +267,15 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 			if valid {
 				p := user.Profile{
-					Title:               title.Text,
-					TraderID:            pf.TraderID,
-					BybitApiKey:         bybitApiKey.Text,
-					BybitApiSecret:      bybitApiSecret.Text,
-					BlacklistCoins:      strings.Split(blackListCoins.Text, ","),
-					BlockAddsAboveEntry: blockAddsAboveEntry.Checked,
-					TestMode:            testMode.Checked,
+					Title:       title.Text,
+					Exchange:    constants.Exchange(exchange.Selected),
+					AccountName: accountName.Text,
+					PublicAPI:   publicAPI.Text,
+					SecretAPI:   secretAPI.Text,
+					Passphrase:  passphrase.Text,
+					TestMode:    testMode.Checked,
 				}
-				p.MaxBybitBinancePriceDifferentPercent, _ = strconv.ParseFloat(maxBybitBinancePriceDifferentPercent.Text, 64)
-				p.Leverage, _ = strconv.ParseInt(leverage.Text, 10, 64)
-				p.MaxAddMultiplier, _ = strconv.ParseFloat(maxAddMultiplier.Text, 64)
-				p.OpenDelay, _ = strconv.ParseFloat(openDelay.Text, 64)
-				p.OneCoinMaxPercent, _ = strconv.ParseFloat(oneCoinMaxPercent.Text, 64)
-				p.AddPreventionPercent, _ = strconv.ParseFloat(addPreventionPercent.Text, 64)
-				p.AutoTP, _ = strconv.ParseFloat(autoTP.Text, 64)
-				p.AutoSL, _ = strconv.ParseFloat(autoSL.Text, 64)
-				p.MaxOpenPositions, _ = strconv.ParseInt(maxOpenPositions.Text, 10, 64)
+				p.StopIfFallUnder, _ = strconv.ParseFloat(stopIfFallUnder.Text, 64)
 
 				err := app.DB.UpdateProfile(pf.ID, p)
 
@@ -397,7 +303,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
-	slice = append(slice, []any{"Profile Title", "Trader", "ByBit API Key", "Auto TP/SL", "Test", "Actions"})
+	slice = append(slice, []any{"Profile Title", "Exchange", "Public API", "Stop If Fall Under", "Test", "Actions"})
 
 	for _, x := range app.User.ProfileManager.Profiles {
 		var currentRow []any
@@ -408,19 +314,15 @@ func (app *Config) getProfilesSlice() [][]any {
 			currentRow = append(currentRow, x.Title)
 		}
 
-		if x.TraderID != "" {
-			currentRow = append(currentRow, x.TraderID)
+		currentRow = append(currentRow, x.Exchange)
+
+		if len(x.PublicAPI) > 5 {
+			currentRow = append(currentRow, fmt.Sprintf("%s****", x.PublicAPI[0:4]))
 		} else {
-			currentRow = append(currentRow, "Unset")
+			currentRow = append(currentRow, x.PublicAPI)
 		}
 
-		if len(x.BybitApiKey) > 5 {
-			currentRow = append(currentRow, fmt.Sprintf("%s****", x.BybitApiKey[0:4]))
-		} else {
-			currentRow = append(currentRow, x.BybitApiKey)
-		}
-
-		currentRow = append(currentRow, fmt.Sprintf("%.2f / %.2f", x.AutoTP, x.AutoSL))
+		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.StopIfFallUnder))
 
 		currentRow = append(currentRow, x.TestMode)
 
@@ -458,7 +360,6 @@ func (app *Config) getProfilesTable() *widget.Table {
 						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
-							pf.TraderID = ""
 							inserted, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
@@ -481,25 +382,20 @@ func (app *Config) getProfilesTable() *widget.Table {
 						if pf == nil {
 							return
 						}
-						if pf.TraderID != "" {
-							dialog.ShowError(
-								fmt.Errorf("You must stop copying trader %s, first.\nYou can do that from Copy Trading tab.", pf.TraderID),
-								app.MainWindow)
-						} else {
-							dialog.ShowConfirm("Delete?", "", func(deleted bool) {
-								if deleted {
-									err := app.DB.DeleteProfile(pf.ID)
-									if err != nil {
-										app.Logger.Error(err)
-									} else {
-										app.User.ProfileManager.DeleteProfile(pf.ID)
-									}
+
+						dialog.ShowConfirm("Delete?", "", func(deleted bool) {
+							if deleted {
+								err := app.DB.DeleteProfile(pf.ID)
+								if err != nil {
+									app.Logger.Error(err)
+								} else {
+									app.User.ProfileManager.DeleteProfile(pf.ID)
 								}
-								app.refreshProfilesTab()
-								app.RefreshProfileSelector()
-								app.RefreshLeaderboardWithoutFetch()
-							}, app.MainWindow)
-						}
+							}
+							app.refreshProfilesTab()
+							app.RefreshProfileSelector()
+							app.RefreshLeaderboardWithoutFetch()
+						}, app.MainWindow)
 
 					}))
 				}
@@ -546,17 +442,15 @@ func (app *Config) refreshProfilesBottomContent() {
 	btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
 		dialog.ShowConfirm(
 			"Delete all profiles?",
-			fmt.Sprintf("Do you really want to delete %d profiles?\nNote that profiles with a trader will NOT be deleted: you have to stop copying the trader first.", len(app.User.ProfileManager.GetProfilesWithTrader())),
+			fmt.Sprintf("Do you really want to delete %d profiles?", len(app.User.ProfileManager.Profiles)),
 			func(deleted bool) {
 				if deleted {
 					for _, p := range app.User.ProfileManager.Profiles {
-						if p.TraderID == "" {
-							err := app.DB.DeleteProfile(p.ID)
-							if err != nil {
-								app.Logger.Error(err)
-							} else {
-								app.User.ProfileManager.DeleteProfile(p.ID)
-							}
+						err := app.DB.DeleteProfile(p.ID)
+						if err != nil {
+							app.Logger.Error(err)
+						} else {
+							app.User.ProfileManager.DeleteProfile(p.ID)
 						}
 					}
 					app.refreshProfilesTab()

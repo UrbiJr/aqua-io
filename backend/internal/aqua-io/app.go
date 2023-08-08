@@ -1,22 +1,22 @@
-package copy_io
+package aqua_io
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/UrbiJr/aqua-io/backend/internal/resources"
-	user2 "github.com/UrbiJr/aqua-io/backend/internal/user"
-	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
-	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
-	"github.com/UrbiJr/aqua-io/backend/pkg/database"
-	"github.com/UrbiJr/aqua-io/backend/pkg/logger"
-	tls_client "github.com/bogdanfinn/tls-client"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/UrbiJr/aqua-io/backend/internal/resources"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
+	"github.com/UrbiJr/aqua-io/backend/pkg/database"
+	"github.com/UrbiJr/aqua-io/backend/pkg/logger"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -27,25 +27,13 @@ import (
 
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
-	App             fyne.App
-	Whop            *auth.Whop
-	DB              database.Repository
-	LoginWindow     fyne.Window
-	SplashWindow    fyne.Window
-	MainWindow      fyne.Window
-	TopRightToolbar *widget.Toolbar
-	AccountMenu     *fyne.Container
-	GlobalContent   *fyne.Container
-	*HomeTab
-	*CopiedTradersTab
-	*LeaderboardTab
-	*AnalyticsTab
-	*ProfilesTab
-	//SiteList []*sites.SupportedSite
+	App  fyne.App
+	Whop *auth.Whop
+	DB   database.Repository
+	*UI
 	Logger *logger.AppLogger
-	User   *user2.User
+	User   *user.User // -> Profiles -> Exchanges (Bybit,Binance,etc)
 	*http.Client
-	TLSClient tls_client.HttpClient
 }
 
 // NewApp returns a new instance of the app
@@ -92,7 +80,7 @@ func (app *Config) ConnectSQL() (*sql.DB, error) {
 		path = filepath.Join(app.App.Storage().RootURI().Path(), "sql.db")
 	}
 
-	if utils2.DebugEnabled {
+	if utils.DebugEnabled {
 		app.Logger.Debug("DB path: " + path)
 	}
 
@@ -159,20 +147,18 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 }
 
 // copyTrader creates an order for each trader's position
-func (app *Config) copyTrader(trader user2.Trader, profile *user2.Profile) error {
-	positions, err := app.fetchTraderPositions(trader.EncryptedUid)
-	if err != nil {
-		return err
-	}
+func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
+	// TODO: call websocket api to fetch trader's position
+	var positions []user.Position
 
 	if len(positions) > 0 {
 		var forms []*fyne.Container
 		for _, p := range positions {
 			if p.Amount < 0 {
 				// get the open position form for each position
-				forms = append(forms, app.openPositionForm(profile, utils2.SHORT_POSITION, p.Symbol, p.MarkPrice))
+				forms = append(forms, app.openPositionForm(profile, &trader, utils.SHORT_POSITION, p.Symbol, p.MarkPrice))
 			} else {
-				forms = append(forms, app.openPositionForm(profile, utils2.LONG_POSITION, p.Symbol, p.MarkPrice))
+				forms = append(forms, app.openPositionForm(profile, &trader, utils.LONG_POSITION, p.Symbol, p.MarkPrice))
 			}
 
 		}
@@ -220,12 +206,12 @@ func (app *Config) copyTrader(trader user2.Trader, profile *user2.Profile) error
 		createOrderWindow.Show()
 	}
 
-	profile.TraderID = trader.EncryptedUid
-	err = app.DB.UpdateProfile(profile.ID, *profile)
+	// add copied trader to DB
+	inserted, err := app.DB.InsertCopiedTrader(trader)
 	if err != nil {
 		app.Logger.Error(err)
 	} else {
-		app.User.ProfileManager.UpdateProfile(profile.ID, *profile)
+		app.User.CopiedTradersManager.CopiedTraders = append(app.User.CopiedTradersManager.CopiedTraders, *inserted)
 	}
 
 	// refresh affected widgets
@@ -237,39 +223,8 @@ func (app *Config) copyTrader(trader user2.Trader, profile *user2.Profile) error
 	return nil
 }
 
-func (app *Config) stopCopyingTrader(trader user2.Trader, traderID string) error {
-	if trader.EncryptedUid == "" {
-		if traderID != "" {
-			// fetch trader
-			traderInfo, err := app.fetchTraderByUid(traderID)
-			if err != nil {
-				return err
-			}
-			trader = *traderInfo
-		} else {
-			return errors.New("no trader provided")
-		}
-	}
-
-	profile := app.User.ProfileManager.GetProfileByTraderID(trader.EncryptedUid)
-	if profile == nil {
-		return fmt.Errorf("no profiles found with trader id %s", trader.EncryptedUid)
-	}
-
-	profile.TraderID = ""
-	err := app.DB.UpdateProfile(profile.ID, *profile)
-	if err != nil {
-		app.Logger.Error(err.Error())
-	} else {
-		app.User.ProfileManager.UpdateProfile(profile.ID, *profile)
-	}
-
-	// refresh affected widgets
-	app.refreshCopiedTradersList()
-	app.RefreshLeaderboardWithoutFetch()
-	app.refreshCopiedTradersTab()
-	app.refreshProfilesTab()
-
+func (app *Config) stopCopyingTrader(trader user.Trader, traderID string) error {
+	// TODO
 	return nil
 }
 

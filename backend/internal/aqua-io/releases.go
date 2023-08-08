@@ -1,4 +1,4 @@
-package copy_io
+package aqua_io
 
 import (
 	"net/url"

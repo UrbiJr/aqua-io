@@ -2,17 +2,18 @@ package user
 
 // User is a type associated with users of this software.
 type User struct {
-	ID                  int64   `json:"id"`
-	Email               string  `json:"-"`
-	DiscordID           string  `json:"-"`
-	Username            string  `json:"-"`
-	ProfilePictureURL   string  `json:"-"`
-	ProfilePicturePath  string  `json:"profile_picture_path"`
-	LicenseKey          string  `json:"license_key"`
-	ManageMembershipURL string  `json:"-"`
-	ExpiresAt           float64 `json:"-"`
-	PersistentLogin     bool    `json:"persistent_login"`
-	Theme               string  `json:"theme"`
+	ID                        int64   `json:"id"`
+	Email                     string  `json:"-"`
+	DiscordID                 string  `json:"-"`
+	Username                  string  `json:"-"`
+	ProfilePictureURL         string  `json:"-"`
+	ProfilePicturePath        string  `json:"profile_picture_path"`
+	LicenseKey                string  `json:"license_key"`
+	ManageMembershipURL       string  `json:"-"`
+	ExpiresAt                 float64 `json:"-"`
+	PersistentLogin           bool    `json:"persistent_login"`
+	Theme                     string  `json:"theme"`
+	CloseAllTradesWhenClosing bool    `json:"close_all_trades_when_closing"`
 	*ProfileManager
 	*CopiedTradersManager
 }

@@ -1,16 +1,16 @@
-package copy_io
+package aqua_io
 
 import (
 	"errors"
 	"fmt"
-	"github.com/UrbiJr/aqua-io/backend/internal/resources"
-	user2 "github.com/UrbiJr/aqua-io/backend/internal/user"
-	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
 	"image/color"
 	"math"
 	"net/url"
 	"path/filepath"
-	"strconv"
+
+	"github.com/UrbiJr/aqua-io/backend/internal/resources"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
+	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -28,10 +28,10 @@ const (
 )
 
 type LeaderboardTab struct {
-	Traders []user2.Trader
+	Traders []user.Trader
 	*container.TabItem
 	ProfileSelector      *widget.Select
-	SelectedProfile      *user2.Profile
+	SelectedProfile      *user.Profile
 	TraderPositionsSlice [][]any
 	CardsContainer       *fyne.Container
 }
@@ -39,8 +39,8 @@ type LeaderboardTab struct {
 func (app *Config) leaderboardTab() *fyne.Container {
 
 	grid := container.NewAdaptiveGrid(4)
-	// fetch the traders from binance
-	app.LeaderboardTab.Traders, _ = app.fetchTraders(defaultStatisticsType, defaultPeriodType)
+	// TODO: fetch the traders from binance using wss
+	app.LeaderboardTab.Traders = []user.Trader{}
 	// get the leaderboard
 	cards := app.makeTradersCards()
 	for _, card := range cards {
@@ -62,7 +62,10 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	onSearchSubmitted := func() {
 		go func() {
 			searchResults.Items = []*fyne.MenuItem{}
-			filtered, err := app.searchByNickname(searchEntry.Text)
+			// TODO: call wss method Search By Nickname to look for traders with nickname
+			// filtered, err := app.searchByNickname(searchEntry.Text)
+			filtered := []user.Trader{}
+			err := errors.New("not implemented yet")
 			if err != nil {
 				searchResults.Items = append(searchResults.Items, fyne.NewMenuItem("API error", func() {}))
 			} else {
@@ -70,7 +73,6 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					if len(searchResults.Items) > 5 {
 						break
 					}
-
 					n := trader.NickName
 					photoUrl := trader.UserPhotoUrl
 					uid := trader.EncryptedUid
@@ -81,7 +83,7 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
 						app.Logger.Debug("Selected trader " + n)
 						go func() {
-							app.traderDialog(user2.Trader{
+							app.traderDialog(user.Trader{
 								NickName:      n,
 								UserPhotoUrl:  photoUrl,
 								EncryptedUid:  uid,
@@ -142,14 +144,14 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	return mainContainer
 }
 
-func (app *Config) getTraderPositionsSlice(t user2.Trader) [][]any {
+func (app *Config) getTraderPositionsSlice(t user.Trader) [][]any {
 	var slice [][]any
 
 	slice = append(slice, []any{"Symbol", "Size", "Entry Price", "Mark Price", "PNL"})
-	positions, err := app.fetchTraderPositions(t.EncryptedUid)
-	if err != nil {
-		return slice
-	}
+	// TODO: fetch trader's positions using wss
+	// positions, err := app.fetchTraderPositions(t.EncryptedUid)
+
+	positions := []user.Position{}
 
 	for _, x := range positions {
 		var currentRow []any
@@ -171,16 +173,12 @@ func (app *Config) getTraderPositionsSlice(t user2.Trader) [][]any {
 }
 
 // traderDialog represents the "Trader Overview" which allows user to copy the trader and view its positions
-func (app *Config) traderDialog(t user2.Trader, traderID string) dialog.Dialog {
+func (app *Config) traderDialog(t user.Trader, traderID string) dialog.Dialog {
 
 	if t.EncryptedUid == "" {
 		if traderID != "" {
-			// fetch trader
-			traderInfo, err := app.fetchTraderByUid(traderID)
-			if err != nil {
-				return nil
-			}
-			t = *traderInfo
+			// TODO: fetch trader using wss and provided traderID
+			return nil
 		} else {
 			return nil
 		}
@@ -296,33 +294,26 @@ func (app *Config) noProfileSelectedDialog() dialog.Dialog {
 	return d
 }
 
-func (app *Config) copyTraderDialog(t user2.Trader) dialog.Dialog {
+func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 	var d dialog.Dialog
 
-	if app.LeaderboardTab.SelectedProfile.TraderID != "" {
-		d = dialog.NewError(
-			errors.New("Selected profile already has a trader.\nPlease select a different profile, then try again"),
-			app.MainWindow,
-		)
-	} else {
-		d = dialog.NewCustomConfirm(
-			"Copy?",
-			"Confirm",
-			"Cancel",
-			widget.NewLabelWithStyle(fmt.Sprintf("Copy %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
-			func(b bool) {
-				if b {
-					app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
-				}
-			},
-			app.MainWindow)
-	}
+	d = dialog.NewCustomConfirm(
+		"Copy?",
+		"Confirm",
+		"Cancel",
+		widget.NewLabelWithStyle(fmt.Sprintf("Copy %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		func(b bool) {
+			if b {
+				app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
+			}
+		},
+		app.MainWindow)
 
 	d.Show()
 	return d
 }
 
-func (app *Config) stopCopyingTraderDialog(t user2.Trader) dialog.Dialog {
+func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	d := dialog.NewCustomConfirm(
 		"Stop Copying?",
 		"Confirm",
@@ -340,7 +331,9 @@ func (app *Config) stopCopyingTraderDialog(t user2.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) openPositionForm(p *user2.Profile, direction utils2.PositionDirection, symbol string, price float64) *fyne.Container {
+func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction utils2.PositionDirection, symbol string, price float64) *fyne.Container {
+	// TODO: add trader config as input fields
+
 	var orderError error
 
 	title := widget.NewLabel(fmt.Sprintf("Proceed to open %s %s position?", symbol, direction))
@@ -353,25 +346,9 @@ func (app *Config) openPositionForm(p *user2.Profile, direction utils2.PositionD
 	takeProfit := widget.NewEntry()
 	stopLoss := widget.NewEntry()
 
-	if p.AutoTP != 0 {
-		TP := price + (price * p.AutoTP / 100)
-		takeProfit.SetText(fmt.Sprintf("%f", TP))
-	} else {
-		takeProfit.SetText("")
-	}
-	defaultTakeProfit := takeProfit.Text
-
-	if p.AutoSL != 0 {
-		SL := price - (price * p.AutoSL / 100)
-		stopLoss.SetText(fmt.Sprintf("%f", SL))
-	} else {
-		stopLoss.SetText("")
-	}
-	defaultStopLoss := stopLoss.Text
-
 	resetTPSLtoDefault := widget.NewButton("Reset TP & SL to default", func() {
-		takeProfit.SetText(defaultTakeProfit)
-		stopLoss.SetText(defaultStopLoss)
+		takeProfit.SetText("")
+		stopLoss.SetText("")
 	})
 
 	form := &widget.Form{
@@ -390,45 +367,24 @@ func (app *Config) openPositionForm(p *user2.Profile, direction utils2.PositionD
 	successText.Hide()
 
 	form.OnSubmit = func() {
-		var orderData OrderData
-		var openedPosition *user2.OpenedPosition
-
+		var err error
 		errorText.Hide()
-		a, err := strconv.ParseFloat(amount.Text, 64)
-		if err != nil {
-			orderError = err
-		}
-		_, err = strconv.ParseFloat(takeProfit.Text, 64)
-		if err == nil {
-			orderData.TakeProfit = takeProfit.Text
-		}
-		_, err = strconv.ParseFloat(stopLoss.Text, 64)
-		if err == nil {
-			orderData.StopLoss = stopLoss.Text
-		}
-
-		orderData.OrderType = utils2.ORDER_LIMIT
-		//orderData.Price = fmt.Sprintf("%f", price)
-		orderData.Symbol = symbol
-		orderData.Qty = a
 
 		if orderError == nil {
 			switch direction {
 			case utils2.LONG_POSITION:
-				openedPosition, err = app.openLongPosition(p, orderData)
+				// TODO: call wss api
 			case utils2.SHORT_POSITION:
-				openedPosition, err = app.openShortPosition(p, orderData)
+				// TODO: call wss api
 			}
 
 			if err != nil {
 				orderError = err
 			} else {
-				inserted, err := app.DB.InsertOpenedPosition(*openedPosition)
 				// TODO: improve error handling
 				if err != nil {
 					app.Logger.Error(fmt.Sprintf("error adding opened position to db: %s", err.Error()))
 				} else {
-					app.User.CopiedTradersManager.OpenedPositions = append(app.User.CopiedTradersManager.OpenedPositions, *inserted)
 					app.Logger.Debug(fmt.Sprintf("successfully opened %s %s position", symbol, direction))
 				}
 			}
@@ -460,12 +416,12 @@ func (app *Config) openPositionForm(p *user2.Profile, direction utils2.PositionD
 
 // getTraderCard returns a card widget containing information about the trader and relative actions,
 // it eventually also returns a pointer to a GIF widget if the trader image is a GIF (as this cannot be displayed in the card)
-func (app *Config) getTraderCard(trader user2.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
+func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
 	var twitterLink, binanceLink fyne.CanvasObject
 	var canvasImage *canvas.Image
 	var btn *widget.Button
 
-	if app.LeaderboardTab.SelectedProfile != nil && app.LeaderboardTab.SelectedProfile.TraderID == trader.EncryptedUid {
+	if app.User.CopiedTradersManager.GetCopiedTraderByID(trader.ID) != nil {
 		btn = widget.NewButton("Stop Copying", func() {
 			app.stopCopyingTraderDialog(trader)
 		})
@@ -552,7 +508,8 @@ func (app *Config) getTraderCard(trader user2.Trader, showImage bool, showPopUpB
 }
 
 func (app *Config) RefreshLeaderboard(statisticsType, periodType string) {
-	app.LeaderboardTab.Traders, _ = app.fetchTraders(statisticsType, periodType)
+	// TODO: fetch the traders from binance using wss
+	app.LeaderboardTab.Traders = []user.Trader{}
 	cards := app.makeTradersCards()
 	app.LeaderboardTab.CardsContainer.RemoveAll()
 	for _, card := range cards {

@@ -1,11 +1,12 @@
-package copy_io
+package aqua_io
 
 import (
+	"image/color"
+	"strings"
+
 	"github.com/UrbiJr/aqua-io/backend/internal/resources"
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
 	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
-	"image/color"
-	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"

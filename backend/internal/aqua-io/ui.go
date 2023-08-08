@@ -1,10 +1,8 @@
-package copy_io
+package aqua_io
 
 import (
 	"errors"
 	"fmt"
-	resources2 "github.com/UrbiJr/aqua-io/backend/internal/resources"
-	"github.com/UrbiJr/aqua-io/backend/internal/utils"
 	"image/color"
 	"io"
 	"math/rand"
@@ -13,6 +11,9 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	resources2 "github.com/UrbiJr/aqua-io/backend/internal/resources"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -27,32 +28,23 @@ import (
 
 // UI contains fyne elements
 type UI struct {
-}
-
-// MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
-func (app *Config) MakeMobileUI() {
-
-	// add application tabs (home, tasks, proxies, profiles, settings)
-	tabs := container.NewAppTabs(
-		container.NewTabItemWithIcon("          ", theme.HomeIcon(), canvas.NewText("Home content goes here", nil)),
-		container.NewTabItemWithIcon("          ", theme.ListIcon(), canvas.NewText("Tasks content goes here", nil)),
-		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources2.IconNameWifi), canvas.NewText("Proxies content goes here", nil)),
-		container.NewTabItemWithIcon("          ", app.App.Settings().Theme().Icon(resources2.IconNameCreditCard), canvas.NewText("Profiles content goes here", nil)),
-	)
-	// show tabs at the bottom of the window
-	tabs.SetTabLocation(container.TabLocationBottom)
-
-	// populate app tabs
-
-	// populate window
-	finalContent := container.NewVBox(tabs)
-
-	app.MainWindow.SetContent(finalContent)
-
+	LoginWindow     fyne.Window
+	SplashWindow    fyne.Window
+	MainWindow      fyne.Window
+	TopRightToolbar *widget.Toolbar
+	AccountMenu     *fyne.Container
+	GlobalContent   *fyne.Container
+	*HomeTab
+	*CopiedTradersTab
+	*LeaderboardTab
+	*AnalyticsTab
+	*ProfilesTab
 }
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
 func (app *Config) MakeDesktopUI() {
+	
+	app.UI = &UI{}
 
 	// TODO: add emojis to these strings when supported starting from fyne v2.4.0
 	greetings := []string{
@@ -78,8 +70,8 @@ func (app *Config) MakeDesktopUI() {
 
 	// load profiles
 	app.getProfiles()
-	// load opened positions
-	app.getOpenedPositions()
+	// load copied traders
+	app.getCopiedTraders()
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.copiedTradersTab()
@@ -304,6 +296,12 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 	}
 }
 
+// ShowExchangeSelector shows a view to select an exchange and set it globally for the application.
+// selected exchange is used f.e. to show leaderboard, 
+func (app *Config) ShowExchangeSelector() {
+	// TODO
+}
+
 func (app *Config) getToolbar() *widget.Toolbar {
 	var accIcon fyne.Resource
 	accIcon, _ = app.getAccountIcon()
@@ -311,6 +309,9 @@ func (app *Config) getToolbar() *widget.Toolbar {
 	if accIcon != nil {
 		return widget.NewToolbar(
 			widget.NewToolbarSpacer(),
+			widget.NewToolbarAction(theme.SettingsIcon(), func() {
+				app.ShowExchangeSelector()
+			}),
 			widget.NewToolbarAction(accIcon, func() {
 				if app.AccountMenu.Visible() {
 					app.AccountMenu.Hide()
@@ -322,6 +323,9 @@ func (app *Config) getToolbar() *widget.Toolbar {
 	} else {
 		return widget.NewToolbar(
 			widget.NewToolbarSpacer(),
+			widget.NewToolbarAction(theme.SettingsIcon(), func() {
+				app.ShowExchangeSelector()
+			}),
 			// AnimatedGif does not implement fyne.Resource so we cannot use it as toolabr icon :(
 			widget.NewToolbarAction(theme.AccountIcon(), func() {
 				if app.AccountMenu.Visible() {

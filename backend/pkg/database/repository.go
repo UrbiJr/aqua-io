@@ -2,7 +2,7 @@ package database
 
 import (
 	"errors"
-	user2 "github.com/UrbiJr/aqua-io/backend/internal/user"
+	"github.com/UrbiJr/aqua-io/backend/internal/user"
 )
 
 var (
@@ -12,20 +12,26 @@ var (
 
 type Repository interface {
 	Migrate() error
-	InsertProfile(p user2.Profile) (*user2.Profile, error)
-	InsertUser(u user2.User) (*user2.User, error)
-	AllProfiles() ([]user2.Profile, error)
-	GetUser(ID int64) (*user2.User, error)
-	GetAllUsers() (*user2.User, error)
-	UpdateProfile(id int64, updated user2.Profile) error
-	UpdateUser(id int64, updated user2.User) error
-	DeleteProfile(id int64) error
-	DeleteUser(id int64) error
+	InsertProfile(p user.Profile) (*user.Profile, error)
+	InsertStrategy(s user.Strategy) (*user.Strategy, error)
+	InsertCopiedTrader(t user.Trader) (*user.Trader, error)
+	InsertUser(u user.User) (*user.User, error)
+	AllProfiles() ([]user.Profile, error)
+	AllStrategies() ([]user.Strategy, error)
+	AllCopiedTraders() ([]user.Trader, error)
+	AllUsers() ([]user.User, error)
+	GetUser(ID int64) (*user.User, error)
+	GetStrategy(ID int64) (*user.Strategy, error)
+	UpdateProfile(ID int64, updated user.Profile) error
+	UpdateStrategy(ID int64, updated user.Strategy) error
+	UpdateCopiedTrader(ID int64, updated user.Trader) error
+	UpdateUser(ID int64, updated user.User) error
+	DeleteProfile(ID int64) error
+	DeleteStrategy(ID int64) error
+	DeleteCopiedTrader(ID int64) error
+	DeleteUser(ID int64) error
 	DeleteAllProfiles() error
+	DeleteAllStrategies() error
+	DeleteAllCopiedTraders() error
 	DeleteAllUsers() error
-
-	InsertOpenedPosition(p user2.OpenedPosition) (*user2.OpenedPosition, error)
-	AllOpenedPositions() ([]user2.OpenedPosition, error)
-	UpdateOpenedPosition(orderId string, updated user2.OpenedPosition) error
-	DeleteOpenedPosition(orderId string) error
 }

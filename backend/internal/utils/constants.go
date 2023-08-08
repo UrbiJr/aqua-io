@@ -4,6 +4,7 @@ type PositionDirection string
 type ByBitProductType string
 type OrderSide string
 type OrderType string
+type Exchange string
 
 const (
 	SHORT_POSITION       = "Short"
@@ -14,4 +15,9 @@ const (
 	ORDER_BUY            = "Buy"
 	ORDER_MARKET         = "Market"
 	ORDER_LIMIT          = "Limit"
+	BYBIT_EXCHANGE       = "ByBit"
+	OKX_EXCHANGE         = "OKX"
+	BINANCE_EXCHANGE     = "Binance"
+	PHEMEX_EXCHANGE      = "Phemex"
+	BITGET_EXCHANGE      = "Bitget"
 )

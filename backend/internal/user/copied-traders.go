@@ -1,22 +1,44 @@
 package user
 
-// Trader contains information specific to a trader
+// Trader contains information specific to a trader (copied or not)
 type Trader struct {
-	EncryptedUid   string  `json:"encryptedUid"`
-	FutureUid      any     `json:"futureUid"`
-	NickName       string  `json:"nickName"`
-	UserPhotoUrl   string  `json:"userPhotoUrl"`
-	Rank           int64   `json:"rank"`
-	Pnl            float64 `json:"pnl"`
-	Roi            float64 `json:"roi"`
-	PositionShared bool    `json:"positionShared"`
-	TwitterUrl     any     `json:"twitterUrl"`
-	UpdateTime     int64   `json:"updateTime"`
-	FollowerCount  int64   `json:"followerCount"`
-	TwShared       string  `json:"-"`
-	IsTwTrader     bool    `json:"isTwTrader"`
-	OpenId         any     `json:"openId"`
-	PortfolioId    any     `json:"portfolioId"`
+	ID                                int64    `json:"id"`
+	ProfileID                         int64    `json:"profile_id"` // used to retrieve exchange settings
+	EncryptedUid                      string   `json:"encrypted_uid"`
+	FutureUid                         any      `json:"future_uid"`
+	NickName                          string   `json:"nickName"`
+	UserPhotoUrl                      string   `json:"userPhotoUrl"`
+	Rank                              int64    `json:"rank"`
+	Pnl                               float64  `json:"pnl"`
+	Roi                               float64  `json:"roi"`
+	PositionShared                    bool     `json:"positionShared"`
+	TwitterUrl                        any      `json:"twitterUrl"`
+	UpdateTime                        int64    `json:"updateTime"`
+	FollowerCount                     int64    `json:"followerCount"`
+	TwShared                          string   `json:"-"`
+	IsTwTrader                        bool     `json:"isTwTrader"`
+	OpenId                            any      `json:"openId"`
+	PortfolioId                       any      `json:"portfolioId"`
+	TradeMode                         string   `json:"trade_mode"`
+	Leverage                          float64  `json:"leverage"`
+	MaxOpenPositions                  int      `json:"max_open_positions"`
+	MaxCoinPercentagePosition         int      `json:"max_coin_percentage_position"`
+	MaxPriceDifferenceBetweenExchange float64  `json:"price_difference_between_exchanges"`
+	OpenDelayBetweenPositions         int      `json:"open_delay_between_positions"`
+	BlockPositionAdds                 bool     `json:"block_position_adds"`
+	AutoTakeProfit                    Strategy `json:"-"`
+	AutoStopLoss                      Strategy `json:"-"`
+	MaxCoinAllocation                 float64  `json:"max_coin_allocation"` // 25%
+	MaxAddMultiplier                  float64  `json:"max_add_multiplier"`  // 10%
+	AddPreventionPercent              float64  `json:"add_prevention_percent"`
+	BlackListedCoins                  []string `json:"blacklisted_coins"`
+	StopControl                       bool     `json:"stop_control"`
+}
+
+type Strategy struct {
+	ID           int64   `json:"id"`
+	PositionSize float64 `json:"position_size"`
+	Percentage   float64 `json:"percentage"`
 }
 
 type Position struct {
@@ -88,51 +110,15 @@ type PositionInfo struct {
 	PositionStatus string  `json:"positionStatus"`
 }
 
-type OpenedPosition struct {
-	OrderID   string `json:"order_id"`
-	ProfileID int64  `json:"profile_id"`
-	Symbol    string `json:"symbol"`
-}
-
 type CopiedTradersManager struct {
-	OpenedPositions []OpenedPosition
+	CopiedTraders []Trader
 }
 
-func (ctm *CopiedTradersManager) GetOpenedPositionByOrderID(orderID string) *OpenedPosition {
-	for _, p := range ctm.OpenedPositions {
-		if p.OrderID == orderID {
-			return &p
+func (ctm *CopiedTradersManager) GetCopiedTraderByID(ID int64) *Trader {
+	for _, t := range ctm.CopiedTraders {
+		if t.ID == ID {
+			return &t
 		}
 	}
-
 	return nil
-}
-
-func (ctm *CopiedTradersManager) GetOpenedPositionsByProfileID(profileID int64) []OpenedPosition {
-	var openedPositions []OpenedPosition
-	for _, p := range ctm.OpenedPositions {
-		if p.ProfileID == profileID {
-			openedPositions = append(openedPositions, p)
-		}
-	}
-	return openedPositions
-}
-
-func (ctm *CopiedTradersManager) PositionExists(profileID int64, symbol string) bool {
-	for _, p := range ctm.OpenedPositions {
-		if p.ProfileID == profileID && p.Symbol == symbol {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (ctm *CopiedTradersManager) DeleteOpenedPosition(orderId string) {
-	for i, p := range ctm.OpenedPositions {
-		if p.OrderID == orderId {
-			ctm.OpenedPositions = append(ctm.OpenedPositions[:i], ctm.OpenedPositions[i+1:]...)
-			break
-		}
-	}
 }
