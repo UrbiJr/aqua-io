@@ -30,23 +30,8 @@ func AuthenticateUser(isDev bool) error {
 				return err
 			}
 		*/
-
-		GlobalUserInformation.DiscordUsername = resp.Discord.Username
-		GlobalUserInformation.DiscordUserImage = resp.Discord.ImageUrl
-
-		//go enablePresence(response.Discord.Username)
-	}
-
-	return nil
-}
-
-func validateLicense() (Response, error) {
-	var buf bytes.Buffer
-	var response Response
-
-	payload := map[string]interface{}{
-		"key": "config.GlobalCfg.License",
-		"metadata": map[string]string{
+Uyà
+$$jj
 			"hwid": "",
 		},
 		"signature": "",
