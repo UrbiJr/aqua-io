@@ -59,6 +59,20 @@ func (app *Config) profilesTab() *fyne.Container {
 	return profilesTabContainer
 }
 
+func (app *Config) getAllProfilesTitles() ([]string, error) {
+	profiles, err := app.DB.AllProfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	var titles []string
+	for _, p := range profiles {
+		titles = append(titles, p.Title)
+	}
+	
+	return titles, nil
+}
+
 func (app *Config) addProfileDialog() dialog.Dialog {
 
 	title := widget.NewEntry()

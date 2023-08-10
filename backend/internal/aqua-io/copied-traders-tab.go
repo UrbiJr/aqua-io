@@ -34,26 +34,12 @@ type CopiedTradersTab struct {
 }
 
 func (app *Config) copiedTradersTab() *fyne.Container {
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
 	app.positionsSlice = app.getPositionsSlice()
 	split := app.getCopiedTradersTab()
 
 	max := container.NewMax(split)
 
 	return max
-}
-
-func (app *Config) formatCopiedTradersList() []string {
-	var names []string
-	for _, t := range app.User.CopiedTradersManager.CopiedTraders {
-		p := app.User.ProfileManager.GetProfileByID(t.ProfileID)
-		if p != nil {
-			names = append(names, fmt.Sprintf("%s\n%s", p.Title, t.NickName))
-		} else {
-			names = append(names, fmt.Sprintf("%s\n%s", "Unknown Profile", t.NickName))
-		}
-	}
-	return names
 }
 
 func (app *Config) getCopiedTradersTab() *container.Split {
@@ -355,7 +341,8 @@ func (app *Config) getOrders(profile *user.Profile) {
 }
 
 func (app *Config) updateOrderHistoryContent() {
-	for _, profile := range app.User.Profiles {
+	profiles, _ := app.DB.AllProfiles()
+	for _, profile := range profiles {
 		go func() {
 			app.getOrders(&profile)
 			app.limitMarketOrdersSlice = app.getLimitMarketOrdersSlice()
@@ -370,7 +357,8 @@ func (app *Config) getPositionsSlice() [][]any {
 	var slice [][]any
 	slice = append(slice, []any{"Side", "Symbol", "Size", "Entry Price", "Market Price", "Liq. Price", "PNL", "Actions"})
 
-	for _, _ = range app.User.Profiles {
+	profiles, _ := app.DB.AllProfiles()
+	for _, _ = range profiles {
 		var currentRow []any
 		var positionInfoArr []user.PositionInfo
 		// TODO: fetch opened positions using wss api
@@ -497,11 +485,6 @@ func (app *Config) getPositionsTable() *widget.Table {
 	return t
 }
 
-func (app *Config) refreshCopiedTradersList() {
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
-	app.CopiedTradersList.Refresh()
-}
-
 func (app *Config) refreshPositionsTable() {
 	app.positionsSlice = app.getPositionsSlice()
 	app.positionsTable.Refresh()
@@ -526,19 +509,9 @@ func (app *Config) refreshCopiedTradersTab() {
 	app.updateOrderHistoryContent()
 	app.refreshPositionsTable()
 
-	app.CopiedTradersTab.profilesWithTrader = app.formatCopiedTradersList()
 	// set default height for each list item
 	for i := range app.CopiedTradersTab.profilesWithTrader {
 		app.CopiedTradersList.SetItemHeight(i, 50)
 	}
 	app.CopiedTradersList.Refresh()
-}
-
-func (app *Config) getCopiedTraders() {
-	copiedTraders, err := app.DB.AllCopiedTraders()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.CopiedTradersManager.CopiedTraders = copiedTraders
 }

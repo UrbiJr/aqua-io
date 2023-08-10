@@ -17,6 +17,7 @@ type Repository interface {
 	InsertCopiedTrader(t user.Trader) (*user.Trader, error)
 	InsertUser(u user.User) (*user.User, error)
 	AllProfiles() ([]user.Profile, error)
+	GetProfileByTitle(title string) (*user.Profile, error)
 	AllStrategies() ([]user.Strategy, error)
 	AllCopiedTraders() ([]user.Trader, error)
 	AllUsers() ([]user.User, error)

@@ -63,8 +63,7 @@ func init() {
 func main() {
 
 	//utils.Info("Booting up...")
-
-	var app aqua_io.Config
+	app := aqua_io.App
 
 	// create needed directories if don't exist
 	path := "downloads"

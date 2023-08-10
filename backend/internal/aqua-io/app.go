@@ -25,6 +25,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+var App Config
+
 // Config is the container of the main app, it contains the main attributes
 type Config struct {
 	App  fyne.App
@@ -164,7 +166,9 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 		}
 		index := 0
 		// get the window which will show the form
-		createOrderWindow := app.App.NewWindow(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
+		// TODO: fetch trader nickname using binance api
+		nickname := "unknown"
+		createOrderWindow := app.App.NewWindow(fmt.Sprintf("Copying %s's positions (%d/%d)", nickname, index+1, len(forms)))
 		content := container.NewVBox()
 		// add the first form to window content
 		content.Add(forms[index])
@@ -185,7 +189,9 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 					index++
 					// update window content based on current form index
 					content.Objects[0] = forms[index]
-					createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", trader.NickName, index+1, len(forms)))
+					// TODO: fetch trader nickname using binance api
+					nickname := "unknown"
+					createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", nickname, index+1, len(forms)))
 					content.Refresh()
 				} else {
 					// all forms have been showed, we can close the window
@@ -207,11 +213,9 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 	}
 
 	// add copied trader to DB
-	inserted, err := app.DB.InsertCopiedTrader(trader)
+	_, err := app.DB.InsertCopiedTrader(trader)
 	if err != nil {
 		app.Logger.Error(err)
-	} else {
-		app.User.CopiedTradersManager.CopiedTraders = append(app.User.CopiedTradersManager.CopiedTraders, *inserted)
 	}
 
 	// refresh affected widgets
@@ -226,13 +230,4 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 func (app *Config) stopCopyingTrader(trader user.Trader, traderID string) error {
 	// TODO
 	return nil
-}
-
-func (app *Config) getProfiles() {
-	profiles, err := app.DB.AllProfiles()
-	if err != nil {
-		app.Logger.Error(err)
-		app.Quit()
-	}
-	app.User.ProfileManager.Profiles = profiles
 }

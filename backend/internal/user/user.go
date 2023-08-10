@@ -14,8 +14,6 @@ type User struct {
 	PersistentLogin           bool    `json:"persistent_login"`
 	Theme                     string  `json:"theme"`
 	CloseAllTradesWhenClosing bool    `json:"close_all_trades_when_closing"`
-	*ProfileManager
-	*CopiedTradersManager
 }
 
 // NewUser creates an instance of the User class
@@ -30,7 +28,5 @@ func NewUser(email, discordID, username, profilePictureURL, licenseKey, manageMe
 		LicenseKey:           licenseKey,
 		ExpiresAt:            expiresAt,
 		PersistentLogin:      persistentLogin,
-		ProfileManager:       &ProfileManager{},
-		CopiedTradersManager: &CopiedTradersManager{},
 	}
 }

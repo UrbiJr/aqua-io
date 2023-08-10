@@ -36,6 +36,13 @@ type LeaderboardTab struct {
 	CardsContainer       *fyne.Container
 }
 
+// remember mf
+func (app *Config) fetchBinanceTraderUsingFuckingWss() {
+	// here your shitty code
+
+	reutrn some shit
+}
+
 func (app *Config) leaderboardTab() *fyne.Container {
 
 	grid := container.NewAdaptiveGrid(4)
@@ -50,8 +57,12 @@ func (app *Config) leaderboardTab() *fyne.Container {
 	vScroll := container.NewVScroll(grid)
 
 	// get the profile selector
-	app.LeaderboardTab.ProfileSelector = widget.NewSelect(app.User.ProfileManager.GetAllTitles(), func(s string) {
-		app.LeaderboardTab.SelectedProfile = app.User.ProfileManager.GetProfileByTitle(s)
+	titles, _ := app.getAllProfilesTitles()
+	app.LeaderboardTab.ProfileSelector = widget.NewSelect(titles, func(s string) {
+		selectedProfile, err := app.DB.GetProfileByTitle(s)
+		if err == nil {
+			app.LeaderboardTab.SelectedProfile = selectedProfile
+		}
 		app.RefreshLeaderboardWithoutFetch()
 	})
 

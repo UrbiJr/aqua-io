@@ -5,20 +5,6 @@ type Trader struct {
 	ID                                int64    `json:"id"`
 	ProfileID                         int64    `json:"profile_id"` // used to retrieve exchange settings
 	EncryptedUid                      string   `json:"encrypted_uid"`
-	FutureUid                         any      `json:"future_uid"`
-	NickName                          string   `json:"nickName"`
-	UserPhotoUrl                      string   `json:"userPhotoUrl"`
-	Rank                              int64    `json:"rank"`
-	Pnl                               float64  `json:"pnl"`
-	Roi                               float64  `json:"roi"`
-	PositionShared                    bool     `json:"positionShared"`
-	TwitterUrl                        any      `json:"twitterUrl"`
-	UpdateTime                        int64    `json:"updateTime"`
-	FollowerCount                     int64    `json:"followerCount"`
-	TwShared                          string   `json:"-"`
-	IsTwTrader                        bool     `json:"isTwTrader"`
-	OpenId                            any      `json:"openId"`
-	PortfolioId                       any      `json:"portfolioId"`
 	TradeMode                         string   `json:"trade_mode"`
 	Leverage                          float64  `json:"leverage"`
 	MaxOpenPositions                  int      `json:"max_open_positions"`
@@ -108,17 +94,4 @@ type PositionInfo struct {
 	CreatedTime    int64   `json:"createdTime"`
 	UpdatedTime    int64   `json:"updatedTime"`
 	PositionStatus string  `json:"positionStatus"`
-}
-
-type CopiedTradersManager struct {
-	CopiedTraders []Trader
-}
-
-func (ctm *CopiedTradersManager) GetCopiedTraderByID(ID int64) *Trader {
-	for _, t := range ctm.CopiedTraders {
-		if t.ID == ID {
-			return &t
-		}
-	}
-	return nil
 }

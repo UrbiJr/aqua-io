@@ -301,6 +301,44 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 	return all, nil
 }
 
+func (repo *SQLiteRepository) GetProfileByTitle(title string) (*user.Profile, error) {
+	query := "select * from profiles where title = ? limit 1"
+
+	rows, err := repo.Conn.Query(query, title)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var p *user.Profile
+	for rows.Next() {
+		var testMode int
+		err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Exchange,
+			&p.AccountName,
+			&p.PublicAPI,
+			&p.SecretAPI,
+			&p.Passphrase,
+			&p.StopIfFallUnder,
+			&testMode,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if testMode == 0 {
+			p.TestMode = false
+		} else {
+			p.TestMode = true
+		}
+	}
+
+	return p, nil
+}
+
 func (repo *SQLiteRepository) AllStrategies() ([]user.Strategy, error) {
 	query := `
 		select id,

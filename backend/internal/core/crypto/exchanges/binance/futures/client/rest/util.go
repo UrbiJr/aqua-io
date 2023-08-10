@@ -1,12 +1,14 @@
 package rest
 
 import (
-	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
-	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/exchanges/binance/futures/client/util"
-	http "github.com/bogdanfinn/fhttp"
 	"net/url"
 	"strconv"
 	"time"
+
+	aqua_io "github.com/UrbiJr/aqua-io/backend/internal/aqua-io"
+	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
+	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/exchanges/binance/futures/client/util"
+	http "github.com/bogdanfinn/fhttp"
 )
 
 const (
@@ -37,22 +39,26 @@ func (b *Binance) Do(method string, params url.Values, pathURI string) (*http.Re
 	return b.Misc.Client.Do(&req)
 }
 
+// this shit does shit
 func (b *Binance) assert() {
 	var accountName string
-	for index, traders := range config.CopyTradingCfg.Traders {
-		for _, trader := range traders.Traders {
-			if trader == b.Info.TraderID {
-				accountName = traders.Account
-				b.Misc.Index = index
-				b.Info.TradeMode = config.CopyTradingCfg.Traders[index].TradeMode
-				b.Info.TradeSettings.MaxOpenPositions = config.CopyTradingCfg.Traders[index].MaxOpenPositions
-				b.Info.TradeSettings.MaxCoinAllocation = config.CopyTradingCfg.Traders[index].MaxCoinAllocation
-				b.Info.Leverage = config.CopyTradingCfg.Traders[index].Leverage
-				b.Info.TradeSettings.BlockPositionAdds = config.CopyTradingCfg.Traders[index].BlockPositionAdds
-				b.Info.TradeSettings.StopControl = config.CopyTradingCfg.Traders[index].StopControl
-				b.Info.TradeSettings.MaxPriceDifferenceBetweenExchange = config.CopyTradingCfg.Traders[index].MaxPriceDifferenceBetweenExchange
-				break
-			}
+	traders, err := aqua_io.App.DB.AllCopiedTraders()
+	if err != nil {
+		// handle err
+	}
+
+	for index, trader := range traders {
+		if trader.EncryptedUid == b.Info.TraderID {
+			accountName = traders.Account
+			b.Misc.Index = index
+			b.Info.TradeMode = config.CopyTradingCfg.Traders[index].TradeMode
+			b.Info.TradeSettings.MaxOpenPositions = config.CopyTradingCfg.Traders[index].MaxOpenPositions
+			b.Info.TradeSettings.MaxCoinAllocation = config.CopyTradingCfg.Traders[index].MaxCoinAllocation
+			b.Info.Leverage = config.CopyTradingCfg.Traders[index].Leverage
+			b.Info.TradeSettings.BlockPositionAdds = config.CopyTradingCfg.Traders[index].BlockPositionAdds
+			b.Info.TradeSettings.StopControl = config.CopyTradingCfg.Traders[index].StopControl
+			b.Info.TradeSettings.MaxPriceDifferenceBetweenExchange = config.CopyTradingCfg.Traders[index].MaxPriceDifferenceBetweenExchange
+			break
 		}
 	}
 	for _, binance := range config.CopyTradingCfg.Binance {
