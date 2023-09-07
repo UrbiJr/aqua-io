@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 	user "github.com/UrbiJr/aqua-io/backend/internal/user"
 
 	"fyne.io/fyne/v2"

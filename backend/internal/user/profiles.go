@@ -1,6 +1,6 @@
 package user
 
-import "github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
+import "github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 
 // Profile contains information specific to a configuration for a trader
 type Profile struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/UrbiJr/aqua-io/backend/internal/resources"
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
 	"github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
 	"github.com/UrbiJr/aqua-io/backend/pkg/database"
 	"github.com/UrbiJr/aqua-io/backend/pkg/logger"
@@ -158,9 +159,9 @@ func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
 		for _, p := range positions {
 			if p.Amount < 0 {
 				// get the open position form for each position
-				forms = append(forms, app.openPositionForm(profile, &trader, utils.SHORT_POSITION, p.Symbol, p.MarkPrice))
+				forms = append(forms, app.openPositionForm(profile, &trader, constants.SHORT_POSITION, p.Symbol, p.MarkPrice))
 			} else {
-				forms = append(forms, app.openPositionForm(profile, &trader, utils.LONG_POSITION, p.Symbol, p.MarkPrice))
+				forms = append(forms, app.openPositionForm(profile, &trader, constants.LONG_POSITION, p.Symbol, p.MarkPrice))
 			}
 
 		}

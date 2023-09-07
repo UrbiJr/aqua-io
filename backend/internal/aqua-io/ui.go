@@ -43,8 +43,6 @@ type UI struct {
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
 func (app *Config) MakeDesktopUI() {
-	
-	app.UI = &UI{}
 
 	// TODO: add emojis to these strings when supported starting from fyne v2.4.0
 	greetings := []string{
@@ -68,10 +66,6 @@ func (app *Config) MakeDesktopUI() {
 	app.AnalyticsTab = &AnalyticsTab{}
 	app.ProfilesTab = &ProfilesTab{}
 
-	// load profiles
-	app.getProfiles()
-	// load copied traders
-	app.getCopiedTraders()
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.copiedTradersTab()
@@ -297,7 +291,7 @@ func (app *Config) getAccountIcon() (fyne.Resource, *x_widget.AnimatedGif) {
 }
 
 // ShowExchangeSelector shows a view to select an exchange and set it globally for the application.
-// selected exchange is used f.e. to show leaderboard, 
+// selected exchange is used f.e. to show leaderboard,
 func (app *Config) ShowExchangeSelector() {
 	// TODO
 }

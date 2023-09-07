@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"image/color"
 	"math"
-	"net/url"
-	"path/filepath"
 
-	"github.com/UrbiJr/aqua-io/backend/internal/resources"
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
-	utils2 "github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	x_widget "fyne.io/x/fyne/widget"
@@ -40,7 +37,8 @@ type LeaderboardTab struct {
 func (app *Config) fetchBinanceTraderUsingFuckingWss() {
 	// here your shitty code
 
-	reutrn some shit
+	// reutrn some shit
+
 }
 
 func (app *Config) leaderboardTab() *fyne.Container {
@@ -84,24 +82,13 @@ func (app *Config) leaderboardTab() *fyne.Container {
 					if len(searchResults.Items) > 5 {
 						break
 					}
-					n := trader.NickName
-					photoUrl := trader.UserPhotoUrl
+					n := "trader.NickName"
 					uid := trader.EncryptedUid
-					followers := trader.FollowerCount
-					twitterUrl := trader.TwitterUrl
-					pnl := trader.Pnl
-					roi := trader.Roi
 					searchResults.Items = append(searchResults.Items, fyne.NewMenuItem(n, func() {
 						app.Logger.Debug("Selected trader " + n)
 						go func() {
 							app.traderDialog(user.Trader{
-								NickName:      n,
-								UserPhotoUrl:  photoUrl,
-								EncryptedUid:  uid,
-								FollowerCount: followers,
-								TwitterUrl:    twitterUrl,
-								Pnl:           pnl,
-								Roi:           roi,
+								EncryptedUid: uid,
 							}, "")
 						}()
 
@@ -312,7 +299,7 @@ func (app *Config) copyTraderDialog(t user.Trader) dialog.Dialog {
 		"Copy?",
 		"Confirm",
 		"Cancel",
-		widget.NewLabelWithStyle(fmt.Sprintf("Copy %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle(fmt.Sprintf("Copy %s positions?", "TRADER NICKNAME GOES HERE"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		func(b bool) {
 			if b {
 				app.copyTrader(t, app.LeaderboardTab.SelectedProfile)
@@ -329,7 +316,7 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 		"Stop Copying?",
 		"Confirm",
 		"Cancel",
-		widget.NewLabelWithStyle(fmt.Sprintf("Stop Copying %s positions?", t.NickName), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
+		widget.NewLabelWithStyle(fmt.Sprintf("Stop Copying %s positions?", "TRADER NICKNAME GOES HERE"), fyne.TextAlignCenter, fyne.TextStyle{Bold: true}),
 		func(b bool) {
 			if b {
 				app.stopCopyingTrader(t, "")
@@ -342,7 +329,7 @@ func (app *Config) stopCopyingTraderDialog(t user.Trader) dialog.Dialog {
 	return d
 }
 
-func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction utils2.PositionDirection, symbol string, price float64) *fyne.Container {
+func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction constants.PositionDirection, symbol string, price float64) *fyne.Container {
 	// TODO: add trader config as input fields
 
 	var orderError error
@@ -352,7 +339,7 @@ func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction u
 	errorText := widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{})
 	amount := widget.NewEntry()
 	amount.SetPlaceHolder("0")
-	amount.Validator = utils2.IsFloat
+	amount.Validator = utils.IsFloat
 
 	takeProfit := widget.NewEntry()
 	stopLoss := widget.NewEntry()
@@ -383,9 +370,9 @@ func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction u
 
 		if orderError == nil {
 			switch direction {
-			case utils2.LONG_POSITION:
+			case constants.LONG_POSITION:
 				// TODO: call wss api
-			case utils2.SHORT_POSITION:
+			case constants.SHORT_POSITION:
 				// TODO: call wss api
 			}
 
@@ -405,7 +392,7 @@ func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction u
 			errMsg := fmt.Sprintf("failed to open position: %s", orderError.Error())
 			app.Logger.Error(errMsg)
 			form.SubmitText = "Retry"
-			errorText.Text = utils2.AddNewLine(errMsg, 56)
+			errorText.Text = utils.AddNewLine(errMsg, 56)
 			errorText.Refresh()
 			errorText.Show()
 			form.Enable()
@@ -428,92 +415,97 @@ func (app *Config) openPositionForm(p *user.Profile, t *user.Trader, direction u
 // getTraderCard returns a card widget containing information about the trader and relative actions,
 // it eventually also returns a pointer to a GIF widget if the trader image is a GIF (as this cannot be displayed in the card)
 func (app *Config) getTraderCard(trader user.Trader, showImage bool, showPopUpButton bool) (*widget.Card, *x_widget.AnimatedGif) {
-	var twitterLink, binanceLink fyne.CanvasObject
-	var canvasImage *canvas.Image
-	var btn *widget.Button
-
-	if app.User.CopiedTradersManager.GetCopiedTraderByID(trader.ID) != nil {
-		btn = widget.NewButton("Stop Copying", func() {
-			app.stopCopyingTraderDialog(trader)
-		})
-	} else {
-		btn = widget.NewButton("Copy", func() {
-			if app.LeaderboardTab.SelectedProfile == nil {
-				app.noProfileSelectedDialog()
-				return
-			}
-			app.copyTraderDialog(trader)
-		})
-	}
-
-	btn.Importance = widget.HighImportance
-
-	if trader.TwitterUrl == nil {
-		twitterLink = widget.NewLabel("")
-	} else {
-		twitterUrl, _ := url.Parse(trader.TwitterUrl.(string))
-		twitterLink = widget.NewHyperlink("Twitter", twitterUrl)
-	}
-
-	if trader.EncryptedUid == "" {
-		binanceLink = widget.NewLabel("")
-	} else {
-		binanceUrl, _ := url.Parse("https://www.binance.com/en/futures-activity/leaderboard/user/um?encryptedUid=" + trader.EncryptedUid)
-		binanceLink = widget.NewHyperlink("Binance", binanceUrl)
-	}
-
 	var card *widget.Card
-	if showPopUpButton {
-		card = widget.NewCard(
-			trader.NickName,
-			fmt.Sprintf("%d Followers", trader.FollowerCount),
-			container.NewGridWithColumns(2,
-				widget.NewButtonWithIcon("View Positions", theme.VisibilityIcon(), func() {
-					go func() {
-						app.traderDialog(trader, "")
-					}()
-				}), widget.NewLabel(""),
-				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-				container.NewHBox(binanceLink, twitterLink), btn))
-	} else {
-		card = widget.NewCard(
-			trader.NickName,
-			fmt.Sprintf("%d Followers", trader.FollowerCount),
-			container.NewGridWithColumns(2,
-				widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
-				container.NewHBox(binanceLink, twitterLink), btn))
-	}
 
-	if showImage {
-		ext := filepath.Ext(trader.UserPhotoUrl)
-		if !utils2.DoesFileExist(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)) {
-			// image not stored locally, download it
-			err := app.downloadFile(trader.UserPhotoUrl, trader.EncryptedUid, ext)
-			if err != nil {
-				// return bundled error image
-				canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
+	/*
+		var twitterLink, binanceLink fyne.CanvasObject
+		var canvasImage *canvas.Image
+		var btn *widget.Button
+
+		if app.User.CopiedTradersManager.GetCopiedTraderByID(trader.ID) != nil {
+			btn = widget.NewButton("Stop Copying", func() {
+				app.stopCopyingTraderDialog(trader)
+			})
+		} else {
+			btn = widget.NewButton("Copy", func() {
+				if app.LeaderboardTab.SelectedProfile == nil {
+					app.noProfileSelectedDialog()
+					return
+				}
+				app.copyTraderDialog(trader)
+			})
+		}
+
+		btn.Importance = widget.HighImportance
+
+		if trader.TwitterUrl == nil {
+			twitterLink = widget.NewLabel("")
+		} else {
+			twitterUrl, _ := url.Parse(trader.TwitterUrl.(string))
+			twitterLink = widget.NewHyperlink("Twitter", twitterUrl)
+		}
+
+		if trader.EncryptedUid == "" {
+			binanceLink = widget.NewLabel("")
+		} else {
+			binanceUrl, _ := url.Parse("https://www.binance.com/en/futures-activity/leaderboard/user/um?encryptedUid=" + trader.EncryptedUid)
+			binanceLink = widget.NewHyperlink("Binance", binanceUrl)
+		}
+
+
+		if showPopUpButton {
+			card = widget.NewCard(
+				trader.NickName,
+				fmt.Sprintf("%d Followers", trader.FollowerCount),
+				container.NewGridWithColumns(2,
+					widget.NewButtonWithIcon("View Positions", theme.VisibilityIcon(), func() {
+						go func() {
+							app.traderDialog(trader, "")
+						}()
+					}), widget.NewLabel(""),
+					widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
+					container.NewHBox(binanceLink, twitterLink), btn))
+		} else {
+			card = widget.NewCard(
+				trader.NickName,
+				fmt.Sprintf("%d Followers", trader.FollowerCount),
+				container.NewGridWithColumns(2,
+					widget.NewLabel(fmt.Sprintf("ROI: %.2f%%", trader.Roi*100)), widget.NewLabel(fmt.Sprintf("PNL (USD): %.2f", trader.Pnl)),
+					container.NewHBox(binanceLink, twitterLink), btn))
+		}
+
+		if showImage {
+			ext := filepath.Ext(trader.UserPhotoUrl)
+			if !utils.DoesFileExist(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)) {
+				// image not stored locally, download it
+				err := app.downloadFile(trader.UserPhotoUrl, trader.EncryptedUid, ext)
+				if err != nil {
+					// return bundled error image
+					canvasImage = canvas.NewImageFromResource(resources.ResourceNoImageAvailablePng)
+					canvasImage.SetMinSize(fyne.NewSize(25, 25))
+					canvasImage.FillMode = canvas.ImageFillContain
+					card.SetImage(canvasImage)
+					return card, nil
+				}
+			}
+			switch ext {
+			case ".jpg", ".png":
+				canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext))
 				canvasImage.SetMinSize(fyne.NewSize(25, 25))
 				canvasImage.FillMode = canvas.ImageFillContain
 				card.SetImage(canvasImage)
-				return card, nil
+			case ".gif":
+				gif, err := x_widget.NewAnimatedGif(storage.NewFileURI(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)))
+				if err != nil {
+					app.Logger.Error(err)
+				} else {
+					return card, gif
+				}
 			}
-		}
-		switch ext {
-		case ".jpg", ".png":
-			canvasImage = canvas.NewImageFromFile(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext))
-			canvasImage.SetMinSize(fyne.NewSize(25, 25))
-			canvasImage.FillMode = canvas.ImageFillContain
-			card.SetImage(canvasImage)
-		case ".gif":
-			gif, err := x_widget.NewAnimatedGif(storage.NewFileURI(fmt.Sprintf("downloads/%s%s", trader.EncryptedUid, ext)))
-			if err != nil {
-				app.Logger.Error(err)
-			} else {
-				return card, gif
-			}
+
 		}
 
-	}
+	*/
 
 	return card, nil
 }

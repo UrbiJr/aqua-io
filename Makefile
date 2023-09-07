@@ -30,17 +30,17 @@ cross-windows-amd64:
 ## run: builds and runs the application
 run:
 ifeq ($(OS),Windows_NT)
-	set DB_PATH=./sql.db && go run .
+	set DB_PATH=./sql.db && go run .\backend\internal\.
 else
-	env DB_PATH="./sql.db" go run .
+	env DB_PATH="./sql.db" go run .\backend\internal\.
 endif
 
 ## debug: builds and runs the application in debug mode
 debug:
 ifeq ($(OS),Windows_NT)
-	set DB_PATH=./sql.db && go run . -debug
+	set DB_PATH=./sql.db && go run .\backend\internal\. -debug
 else
-	env DB_PATH="./sql.db" go run . -debug
+	env DB_PATH="./sql.db" go run .\backend\internal\. -debug
 endif
 
 ## clean: runs go clean and deletes binaries

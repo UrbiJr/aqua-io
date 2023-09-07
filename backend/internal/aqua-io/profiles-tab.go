@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/UrbiJr/aqua-io/backend/internal/core/crypto/constants"
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
 	"github.com/UrbiJr/aqua-io/backend/internal/utils"
+	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -69,7 +69,7 @@ func (app *Config) getAllProfilesTitles() ([]string, error) {
 	for _, p := range profiles {
 		titles = append(titles, p.Title)
 	}
-	
+
 	return titles, nil
 }
 
@@ -79,7 +79,8 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 	title.SetPlaceHolder("My Profile")
 	title.Validator = func(s string) error {
 		s = strings.TrimSpace(s)
-		if app.User.ProfileManager.GetProfileByTitle(s) != nil {
+		p, _ := app.DB.GetProfileByTitle(s)
+		if p != nil {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
@@ -171,12 +172,10 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				}
 				p.StopIfFallUnder, _ = strconv.ParseFloat(stopIfFallUnder.Text, 64)
 
-				inserted, err := app.DB.InsertProfile(p)
+				_, err := app.DB.InsertProfile(p)
 
 				if err != nil {
 					app.Logger.Error(err)
-				} else {
-					app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 				}
 				app.refreshProfilesTab()
 				app.RefreshProfileSelector()
@@ -198,7 +197,8 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	title.SetText(pf.Title)
 	title.Validator = func(s string) error {
 		s = strings.TrimSpace(s)
-		if s != pf.Title && app.User.ProfileManager.GetProfileByTitle(s) != nil {
+		p, _ := app.DB.GetProfileByTitle(s)
+		if s != pf.Title && p != nil {
 			return fmt.Errorf("a profile named %s already exists", s)
 		} else if len(s) <= 0 {
 			return errors.New("please insert a title")
@@ -295,8 +295,6 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 				if err != nil {
 					app.Logger.Error(err)
-				} else {
-					app.User.ProfileManager.UpdateProfile(pf.ID, p)
 				}
 				app.refreshProfilesTab()
 				app.RefreshProfileSelector()
@@ -318,8 +316,9 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
 	slice = append(slice, []any{"Profile Title", "Exchange", "Public API", "Stop If Fall Under", "Test", "Actions"})
+	allProfiles, _ := app.DB.AllProfiles()
 
-	for _, x := range app.User.ProfileManager.Profiles {
+	for _, x := range allProfiles {
 		var currentRow []any
 
 		if len(x.Title) > 30 {
@@ -371,14 +370,12 @@ func (app *Config) getProfilesTable() *widget.Table {
 
 				if len(toolbar.Items) == 0 {
 					toolbar.Append(widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
-							inserted, err := app.DB.InsertProfile(*pf)
+							_, err := app.DB.InsertProfile(*pf)
 							if err != nil {
 								app.Logger.Error(err)
-							} else {
-								app.User.ProfileManager.Profiles = append(app.User.ProfileManager.Profiles, *inserted)
 							}
 							app.refreshProfilesTab()
 							app.RefreshProfileSelector()
@@ -386,13 +383,13 @@ func (app *Config) getProfilesTable() *widget.Table {
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf != nil {
 							app.editProfileDialog(pf)
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-						pf := app.User.ProfileManager.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetProfileByID(app.ProfilesSlice[i.Row][5].(int64))
 						if pf == nil {
 							return
 						}
@@ -402,8 +399,6 @@ func (app *Config) getProfilesTable() *widget.Table {
 								err := app.DB.DeleteProfile(pf.ID)
 								if err != nil {
 									app.Logger.Error(err)
-								} else {
-									app.User.ProfileManager.DeleteProfile(pf.ID)
 								}
 							}
 							app.refreshProfilesTab()
@@ -450,21 +445,21 @@ func (app *Config) refreshProfilesTable() {
 
 func (app *Config) refreshProfilesBottomContent() {
 
+	allProfiles, _ := app.DB.AllProfiles()
+
 	btnAdd := widget.NewButtonWithIcon("Add Profile", theme.ContentAddIcon(), func() {
 		app.addProfileDialog()
 	})
 	btnClear := widget.NewButtonWithIcon("Clear Profiles", theme.ContentRemoveIcon(), func() {
 		dialog.ShowConfirm(
 			"Delete all profiles?",
-			fmt.Sprintf("Do you really want to delete %d profiles?", len(app.User.ProfileManager.Profiles)),
+			fmt.Sprintf("Do you really want to delete %d profiles?", len(allProfiles)),
 			func(deleted bool) {
 				if deleted {
-					for _, p := range app.User.ProfileManager.Profiles {
+					for _, p := range allProfiles {
 						err := app.DB.DeleteProfile(p.ID)
 						if err != nil {
 							app.Logger.Error(err)
-						} else {
-							app.User.ProfileManager.DeleteProfile(p.ID)
 						}
 					}
 					app.refreshProfilesTab()
@@ -486,7 +481,9 @@ func (app *Config) refreshProfilesBottomContent() {
 
 func (app *Config) refreshProfilesTopContent() {
 
-	txt := widget.NewRichTextFromMarkdown(`## ` + strconv.Itoa(len(app.User.ProfileManager.Profiles)) + ` Profiles Loaded`)
+	allProfiles, _ := app.DB.AllProfiles()
+
+	txt := widget.NewRichTextFromMarkdown(`## ` + strconv.Itoa(len(allProfiles)) + ` Profiles Loaded`)
 	app.Top.Objects = []fyne.CanvasObject{
 		txt,
 	}
