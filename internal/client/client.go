@@ -3,6 +3,7 @@ package client
 import (
 	"github.com/UrbiJr/aqua-io/internal/captcha"
 	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 )
 
 // TLSClient is used to make requests with custom TLS profiles.
@@ -16,7 +17,7 @@ type ClientOptions struct {
 	AllowRedirects   bool
 	CharlesProxy     bool
 	Proxy            string
-	TlsClientProfile tls_client.ClientProfile
+	TlsClientProfile profiles.ClientProfile
 }
 
 func NewTLSClient(captchaOptions *captcha.SolverOptions, clientOptions *ClientOptions) (*TLSClient, error) {

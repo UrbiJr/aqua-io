@@ -28,7 +28,7 @@ import (
 	"github.com/UrbiJr/aqua-io/internal/utils"
 	"github.com/UrbiJr/aqua-io/internal/whop"
 
-	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 
 	_ "github.com/glebarez/go-sqlite"
 )
@@ -81,7 +81,7 @@ func main() {
 
 	clientOptions := &client.ClientOptions{
 		Timeout:          30,
-		TlsClientProfile: tls_client.Chrome_110,
+		TlsClientProfile: profiles.Chrome_133,
 	}
 	if utils.DebugEnabled {
 		// enable charles proxy for tls client

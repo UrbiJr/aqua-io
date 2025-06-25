@@ -37,7 +37,7 @@ func NewCaptchaSolver(options base.SolverOptions) *CaptchaSolver {
 
 func (solver *CaptchaSolver) SubmitRequest(request api2captcha.Request) (string, error) {
 
-	code, err := solver.Client.Solve(request)
+	code, _, err := solver.Client.Solve(request)
 
 	if err != nil {
 		if err == api2captcha.ErrTimeout {
