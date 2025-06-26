@@ -11,19 +11,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/UrbiJr/aqua-io/backend/internal/resources"
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
 	"github.com/UrbiJr/aqua-io/backend/internal/utils"
-	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 	"github.com/UrbiJr/aqua-io/backend/pkg/auth"
 	"github.com/UrbiJr/aqua-io/backend/pkg/database"
 	"github.com/UrbiJr/aqua-io/backend/pkg/logger"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/widget"
 )
 
 var App Config
@@ -146,89 +140,5 @@ func (app *Config) downloadFile(URL, fileName, ext string) error {
 		return err
 	}
 
-	return nil
-}
-
-// copyTrader creates an order for each trader's position
-func (app *Config) copyTrader(trader user.Trader, profile *user.Profile) error {
-	// TODO: call websocket api to fetch trader's position
-	var positions []user.Position
-
-	if len(positions) > 0 {
-		var forms []*fyne.Container
-		for _, p := range positions {
-			if p.Amount < 0 {
-				// get the open position form for each position
-				forms = append(forms, app.openPositionForm(profile, &trader, constants.SHORT_POSITION, p.Symbol, p.MarkPrice))
-			} else {
-				forms = append(forms, app.openPositionForm(profile, &trader, constants.LONG_POSITION, p.Symbol, p.MarkPrice))
-			}
-
-		}
-		index := 0
-		// get the window which will show the form
-		// TODO: fetch trader nickname using binance api
-		nickname := "unknown"
-		createOrderWindow := app.App.NewWindow(fmt.Sprintf("Copying %s's positions (%d/%d)", nickname, index+1, len(forms)))
-		content := container.NewVBox()
-		// add the first form to window content
-		content.Add(forms[index])
-		var btn *widget.Button
-		if len(forms) == 1 {
-			btn = widget.NewButtonWithIcon("Close", theme.CancelIcon(), func() {
-				createOrderWindow.Close()
-			})
-		} else {
-			btn = widget.NewButtonWithIcon("Next", theme.NavigateNextIcon(), nil)
-			btn.OnTapped = func() {
-				if index+1 < len(forms) {
-					// second-last element
-					if index+1 == len(forms)-1 {
-						btn.SetIcon(theme.CancelIcon())
-						btn.SetText("Close")
-					}
-					index++
-					// update window content based on current form index
-					content.Objects[0] = forms[index]
-					// TODO: fetch trader nickname using binance api
-					nickname := "unknown"
-					createOrderWindow.SetTitle(fmt.Sprintf("Copying %s's positions (%d/%d)", nickname, index+1, len(forms)))
-					content.Refresh()
-				} else {
-					// all forms have been showed, we can close the window
-					createOrderWindow.Close()
-				}
-			}
-		}
-
-		createOrderWindow.SetContent(container.NewVBox(
-			content,
-			layout.NewSpacer(),
-			btn,
-		))
-		content.Refresh()
-		createOrderWindow.Resize(fyne.NewSize(520, 460))
-		createOrderWindow.SetFixedSize(true)
-		createOrderWindow.SetIcon(resources.ResourceIconPng)
-		createOrderWindow.Show()
-	}
-
-	// add copied trader to DB
-	_, err := app.DB.InsertCopiedTrader(trader)
-	if err != nil {
-		app.Logger.Error(err)
-	}
-
-	// refresh affected widgets
-	app.CopiedTradersList.Refresh()
-	app.RefreshLeaderboardWithoutFetch()
-	app.refreshCopiedTradersTab()
-	app.refreshProfilesTab()
-
-	return nil
-}
-
-func (app *Config) stopCopyingTrader(trader user.Trader, traderID string) error {
-	// TODO
 	return nil
 }

@@ -7,4 +7,5 @@ type Task struct {
 	ProxyListID int64  `json:"proxy_list_id"`
 	Module      string `json:"module"`
 	PaymentMode string `json:"payment_mode"`
+	Running     bool   `json:"running"`
 }

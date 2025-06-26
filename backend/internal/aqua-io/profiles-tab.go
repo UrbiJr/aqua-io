@@ -8,7 +8,6 @@ import (
 
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
 	"github.com/UrbiJr/aqua-io/backend/internal/utils"
-	"github.com/UrbiJr/aqua-io/backend/internal/utils/constants"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -91,53 +90,57 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 		}
 	}
 
-	exchange := widget.NewSelect([]string{
-		constants.ByBit,
-		constants.OKX,
-		constants.Binance,
-		constants.Phemex,
-		constants.Bitget,
-	}, nil)
-	exchange.ClearSelected()
+	var addressesIDs []string
 
-	accountName := widget.NewEntry()
-	accountName.SetPlaceHolder("")
-	accountName.Validator = utils.IsStringEmpty
+	addresses, err := app.DB.AllAddresses()
+	if err != nil {
+		app.Logger.Error(err)
+	} else {
+		for _, a := range addresses {
+			addressesIDs = append(addressesIDs, strconv.Itoa(int(a.ID)))
+		}
+	}
 
-	publicAPI := widget.NewEntry()
-	publicAPI.SetPlaceHolder("XXXX")
-	publicAPI.Validator = utils.IsStringEmpty
+	billingAddressSelect := widget.NewSelect(addressesIDs, nil)
+	billingAddressSelect.ClearSelected()
 
-	secretAPI := widget.NewPasswordEntry()
-	secretAPI.SetPlaceHolder("bybit api secret")
-	secretAPI.Validator = utils.IsStringEmpty
+	shippingAddressSelect := widget.NewSelect(addressesIDs, nil)
+	shippingAddressSelect.ClearSelected()
 
-	passphrase := widget.NewPasswordEntry()
-	passphrase.SetPlaceHolder("passphrase")
-	passphrase.Validator = utils.IsStringEmpty
+	cardNumber := widget.NewEntry()
+	cardNumber.SetPlaceHolder("XXXX XXXX XXXX XX34")
+	cardNumber.Validator = utils.IsStringEmpty
 
-	stopIfFallUnder := widget.NewEntry()
-	stopIfFallUnder.SetPlaceHolder("0")
-	stopIfFallUnder.Validator = utils.IsFloat
+	cardMonth := widget.NewEntry()
+	cardMonth.SetPlaceHolder("12")
+	cardMonth.Validator = utils.IsStringEmpty
+
+	cardYear := widget.NewEntry()
+	cardYear.SetPlaceHolder("29")
+	cardYear.Validator = utils.IsStringEmpty
+
+	cardCvv := widget.NewEntry()
+	cardCvv.SetPlaceHolder("123")
+	cardCvv.Validator = utils.IsStringEmpty
 
 	testMode := widget.NewCheck("", func(b bool) {})
 
 	vBox := container.NewVBox(
 		widget.NewLabel("Title"),
 		title,
-		widget.NewLabel("Exchange"),
-		exchange,
-		widget.NewLabel("Account Name"),
-		accountName,
-		widget.NewLabel("Public API Key"),
-		publicAPI,
-		widget.NewLabel("Secret API Key"),
-		secretAPI,
-		widget.NewLabel("Passphrase"),
-		passphrase,
-		widget.NewLabel("Stop If Fall Under"),
-		stopIfFallUnder,
-		widget.NewLabel("Test Mode"),
+		widget.NewLabel("Billing Address"),
+		billingAddressSelect,
+		widget.NewLabel("Shipping Address"),
+		shippingAddressSelect,
+		widget.NewLabel("Card Number"),
+		cardNumber,
+		widget.NewLabel("Card Month"),
+		cardMonth,
+		widget.NewLabel("Card Year"),
+		cardYear,
+		widget.NewLabel("CVV"),
+		cardCvv,
+		widget.NewLabel("Test"),
 		testMode,
 	)
 	scrollContent := container.NewVScroll(vBox)
@@ -160,17 +163,20 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				}
 			}
 
+			billingAddressID, _ := strconv.Atoi(billingAddressSelect.Selected)
+			shippingAddressID, _ := strconv.Atoi(shippingAddressSelect.Selected)
+
 			if valid {
 				p := user.Profile{
-					Title:       title.Text,
-					Exchange:    constants.Exchange(exchange.Selected),
-					AccountName: accountName.Text,
-					PublicAPI:   publicAPI.Text,
-					SecretAPI:   secretAPI.Text,
-					Passphrase:  passphrase.Text,
-					TestMode:    testMode.Checked,
+					Title:             title.Text,
+					BillingAddressID:  int64(billingAddressID),
+					ShippingAddressID: int64(shippingAddressID),
+					CardNumber:        cardNumber.Text,
+					CardMonth:         cardMonth.Text,
+					CardYear:          cardYear.Text,
+					CardCvv:           cardCvv.Text,
+					TestMode:          testMode.Checked,
 				}
-				p.StopIfFallUnder, _ = strconv.ParseFloat(stopIfFallUnder.Text, 64)
 
 				_, err := app.DB.InsertProfile(p)
 
@@ -178,8 +184,6 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 					app.Logger.Error(err)
 				}
 				app.refreshProfilesTab()
-				app.RefreshProfileSelector()
-				app.RefreshLeaderboardWithoutFetch()
 			}
 		},
 		app.MainWindow,
@@ -209,34 +213,38 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 		}
 	}
 
-	exchange := widget.NewSelect([]string{
-		constants.ByBit,
-		constants.OKX,
-		constants.Binance,
-		constants.Phemex,
-		constants.Bitget,
-	}, nil)
-	exchange.SetSelected(string(pf.Exchange))
+	var addressesIDs []string
 
-	accountName := widget.NewEntry()
-	accountName.SetText(pf.AccountName)
-	accountName.Validator = utils.IsStringEmpty
+	addresses, err := app.DB.AllAddresses()
+	if err != nil {
+		app.Logger.Error(err)
+	} else {
+		for _, a := range addresses {
+			addressesIDs = append(addressesIDs, strconv.Itoa(int(a.ID)))
+		}
+	}
 
-	publicAPI := widget.NewEntry()
-	publicAPI.SetText(pf.PublicAPI)
-	publicAPI.Validator = utils.IsStringEmpty
+	billingAddressSelect := widget.NewSelect(addressesIDs, nil)
+	billingAddressSelect.SetSelected(string(pf.BillingAddressID))
 
-	secretAPI := widget.NewPasswordEntry()
-	secretAPI.SetText(pf.SecretAPI)
-	secretAPI.Validator = utils.IsStringEmpty
+	shippingAddressSelect := widget.NewSelect(addressesIDs, nil)
+	shippingAddressSelect.SetSelected(string(pf.ShippingAddressID))
 
-	passphrase := widget.NewPasswordEntry()
-	passphrase.SetText(pf.Passphrase)
-	passphrase.Validator = utils.IsStringEmpty
+	cardNumber := widget.NewEntry()
+	cardNumber.SetText(pf.CardNumber)
+	cardNumber.Validator = utils.IsStringEmpty
 
-	stopIfFallUnder := widget.NewEntry()
-	stopIfFallUnder.SetText(fmt.Sprintf("%f", pf.StopIfFallUnder))
-	stopIfFallUnder.Validator = utils.IsFloat
+	cardMonth := widget.NewEntry()
+	cardMonth.SetText(pf.CardMonth)
+	cardMonth.Validator = utils.IsStringEmpty
+
+	cardYear := widget.NewEntry()
+	cardYear.SetText(pf.CardYear)
+	cardYear.Validator = utils.IsStringEmpty
+
+	cardCvv := widget.NewEntry()
+	cardCvv.SetText(pf.CardCvv)
+	cardCvv.Validator = utils.IsStringEmpty
 
 	testMode := widget.NewCheck("", func(b bool) {})
 	testMode.SetChecked(pf.TestMode)
@@ -244,19 +252,19 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 	vBox := container.NewVBox(
 		widget.NewLabel("Title"),
 		title,
-		widget.NewLabel("Exchange"),
-		exchange,
-		widget.NewLabel("Account Name"),
-		accountName,
-		widget.NewLabel("Public API Key"),
-		publicAPI,
-		widget.NewLabel("Secret API Key"),
-		secretAPI,
-		widget.NewLabel("Passphrase"),
-		passphrase,
-		widget.NewLabel("Stop If Fall Under"),
-		stopIfFallUnder,
-		widget.NewLabel("Test Mode"),
+		widget.NewLabel("Billing Address"),
+		billingAddressSelect,
+		widget.NewLabel("Shipping Address"),
+		shippingAddressSelect,
+		widget.NewLabel("Card Number"),
+		cardNumber,
+		widget.NewLabel("Card Month"),
+		cardMonth,
+		widget.NewLabel("Card Year"),
+		cardYear,
+		widget.NewLabel("CVV"),
+		cardCvv,
+		widget.NewLabel("Test"),
 		testMode,
 	)
 	scrollContent := container.NewVScroll(vBox)
@@ -279,17 +287,20 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 				}
 			}
 
+			billingAddressID, _ := strconv.Atoi(billingAddressSelect.Selected)
+			shippingAddressID, _ := strconv.Atoi(shippingAddressSelect.Selected)
+
 			if valid {
 				p := user.Profile{
-					Title:       title.Text,
-					Exchange:    constants.Exchange(exchange.Selected),
-					AccountName: accountName.Text,
-					PublicAPI:   publicAPI.Text,
-					SecretAPI:   secretAPI.Text,
-					Passphrase:  passphrase.Text,
-					TestMode:    testMode.Checked,
+					Title:             title.Text,
+					BillingAddressID:  int64(billingAddressID),
+					ShippingAddressID: int64(shippingAddressID),
+					CardNumber:        cardNumber.Text,
+					CardMonth:         cardMonth.Text,
+					CardYear:          cardYear.Text,
+					CardCvv:           cardCvv.Text,
+					TestMode:          testMode.Checked,
 				}
-				p.StopIfFallUnder, _ = strconv.ParseFloat(stopIfFallUnder.Text, 64)
 
 				err := app.DB.UpdateProfile(pf.ID, p)
 
@@ -297,9 +308,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 					app.Logger.Error(err)
 				}
 				app.refreshProfilesTab()
-				app.RefreshProfileSelector()
-				app.RefreshLeaderboardWithoutFetch()
-				app.refreshCopiedTradersTab()
+				app.refreshTasksTab()
 			}
 		},
 		app.MainWindow,
@@ -315,7 +324,7 @@ func (app *Config) editProfileDialog(pf *user.Profile) dialog.Dialog {
 
 func (app *Config) getProfilesSlice() [][]any {
 	var slice [][]any
-	slice = append(slice, []any{"Profile Title", "Exchange", "Public API", "Stop If Fall Under", "Test", "Actions"})
+	slice = append(slice, []any{"Title", "Billing Address", "Shipping Address", "Card Number", "Test", "Actions"})
 	allProfiles, _ := app.DB.AllProfiles()
 
 	for _, x := range allProfiles {
@@ -327,15 +336,27 @@ func (app *Config) getProfilesSlice() [][]any {
 			currentRow = append(currentRow, x.Title)
 		}
 
-		currentRow = append(currentRow, x.Exchange)
-
-		if len(x.PublicAPI) > 5 {
-			currentRow = append(currentRow, fmt.Sprintf("%s****", x.PublicAPI[0:4]))
+		billingAddress, err := app.DB.GetAddressByID(x.BillingAddressID)
+		if err != nil {
+			continue
+		}
+		if len(billingAddress.FirstName+" "+billingAddress.LastName) > 45 {
+			currentRow = append(currentRow, (billingAddress.FirstName + " " + billingAddress.LastName)[:44]+"...")
 		} else {
-			currentRow = append(currentRow, x.PublicAPI)
+			currentRow = append(currentRow, billingAddress.FirstName+" "+billingAddress.LastName)
 		}
 
-		currentRow = append(currentRow, fmt.Sprintf("%.2f", x.StopIfFallUnder))
+		shippingAddress, err := app.DB.GetAddressByID(x.ShippingAddressID)
+		if err != nil {
+			continue
+		}
+		if len(shippingAddress.FirstName+" "+shippingAddress.LastName) > 45 {
+			currentRow = append(currentRow, (shippingAddress.FirstName + " " + shippingAddress.LastName)[:44]+"...")
+		} else {
+			currentRow = append(currentRow, shippingAddress.FirstName+" "+shippingAddress.LastName)
+		}
+
+		currentRow = append(currentRow, x.CardNumber[:12]+"XXXX")
 
 		currentRow = append(currentRow, x.TestMode)
 
@@ -378,8 +399,6 @@ func (app *Config) getProfilesTable() *widget.Table {
 								app.Logger.Error(err)
 							}
 							app.refreshProfilesTab()
-							app.RefreshProfileSelector()
-							app.RefreshLeaderboardWithoutFetch()
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
@@ -402,8 +421,6 @@ func (app *Config) getProfilesTable() *widget.Table {
 								}
 							}
 							app.refreshProfilesTab()
-							app.RefreshProfileSelector()
-							app.RefreshLeaderboardWithoutFetch()
 						}, app.MainWindow)
 
 					}))
@@ -463,8 +480,6 @@ func (app *Config) refreshProfilesBottomContent() {
 						}
 					}
 					app.refreshProfilesTab()
-					app.RefreshProfileSelector()
-					app.RefreshLeaderboardWithoutFetch()
 				}
 			}, app.MainWindow)
 	})
@@ -494,5 +509,4 @@ func (app *Config) refreshProfilesTopContent() {
 func (app *Config) refreshProfilesTab() {
 	app.refreshProfilesTopContent()
 	app.refreshProfilesTable()
-	app.RefreshProfileSelector()
 }

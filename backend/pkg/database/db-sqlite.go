@@ -74,6 +74,7 @@ func (repo *SQLiteRepository) Migrate() error {
 			proxy_list_id integer null,
 			module text null,
 			payment_mode text null,
+			running bool null,
 			FOREIGN KEY(profile_id) REFERENCES profiles(id),
 			FOREIGN KEY(proxy_list_id) REFERENCES proxy_lists(id));
 	`
@@ -161,7 +162,7 @@ func (repo *SQLiteRepository) InsertAddress(p user.Address) (*user.Address, erro
 	return &p, nil
 }
 
-func (repo *SQLiteRepository) InserProxyList(s user.ProxyList) (*user.ProxyList, error) {
+func (repo *SQLiteRepository) InsertProxyList(s user.ProxyList) (*user.ProxyList, error) {
 	stmt := `
 		insert into proxy_lists (
 			title,
@@ -186,20 +187,29 @@ func (repo *SQLiteRepository) InserProxyList(s user.ProxyList) (*user.ProxyList,
 	return &s, nil
 }
 
-func (repo *SQLiteRepository) InserTask(t user.Task) (*user.Task, error) {
+func (repo *SQLiteRepository) InsertTask(t user.Task) (*user.Task, error) {
+	var running int
+	if t.Running {
+		running = 1
+	} else {
+		running = 0
+	}
+
 	stmt := `
 		insert into tasks (
 		profile_id,
 		proxy_list_id,
 		module, 
-		payment_mode
-	) values (?, ?, ?, ?)
+		payment_mode,
+		running
+	) values (?, ?, ?, ?, ?)
 	`
 	res, err := repo.Conn.Exec(stmt,
 		t.ProfileID,
 		t.ProxyListID,
 		t.Module,
 		t.PaymentMode,
+		running,
 	)
 	if err != nil {
 		return nil, err
@@ -413,6 +423,73 @@ func (repo *SQLiteRepository) GetProfileByID(ID int64) (*user.Profile, error) {
 	return p, nil
 }
 
+func (repo *SQLiteRepository) GetTaskByID(ID int64) (*user.Task, error) {
+	query := "select * from tasks where id = ? limit 1"
+
+	rows, err := repo.Conn.Query(query, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var p *user.Task
+	for rows.Next() {
+		var running int
+		err := rows.Scan(
+			&p.ID,
+			&p.ProfileID,
+			&p.ProxyListID,
+			&p.Module,
+			&p.PaymentMode,
+			&running,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if running == 0 {
+			p.Running = false
+		} else {
+			p.Running = true
+		}
+	}
+
+	return p, nil
+}
+
+func (repo *SQLiteRepository) GetAddressByID(ID int64) (*user.Address, error) {
+	query := "select * from addresses where id = ? limit 1"
+
+	rows, err := repo.Conn.Query(query, ID)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var p *user.Address
+	for rows.Next() {
+		err := rows.Scan(
+			&p.ID,
+			&p.FirstName,
+			&p.LastName,
+			&p.Phone,
+			&p.AddressLine1,
+			&p.AddressLine2,
+			&p.ZipCode,
+			&p.Province,
+			&p.CountryCode,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return p, nil
+}
+
 func (repo *SQLiteRepository) AllProxyLists() ([]user.ProxyList, error) {
 	query := `
 		select id,
@@ -453,7 +530,8 @@ func (repo *SQLiteRepository) AllTasks() ([]user.Task, error) {
 		profile_id,
 		proxy_list_id,
 		module, 
-		payment_mode
+		payment_mode,
+		running
 	 	from tasks order by id
 	 `
 
@@ -467,6 +545,7 @@ func (repo *SQLiteRepository) AllTasks() ([]user.Task, error) {
 	var all []user.Task
 	for rows.Next() {
 		var t user.Task
+		var running int
 
 		err := rows.Scan(
 			&t.ID,
@@ -474,9 +553,16 @@ func (repo *SQLiteRepository) AllTasks() ([]user.Task, error) {
 			&t.ProxyListID,
 			&t.Module,
 			&t.PaymentMode,
+			&running,
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		if running == 0 {
+			t.Running = false
+		} else {
+			t.Running = true
 		}
 
 		all = append(all, t)
@@ -697,6 +783,14 @@ func (repo *SQLiteRepository) UpdateTask(ID int64, updated user.Task) error {
 		return errors.New("invalid updated id")
 	}
 
+	var running int
+
+	if updated.Running {
+		running = 1
+	} else {
+		running = 0
+	}
+
 	stmt := `
 		update copied_traders set
 		profile_id = ?, 
@@ -710,6 +804,7 @@ func (repo *SQLiteRepository) UpdateTask(ID int64, updated user.Task) error {
 		updated.ProxyListID,
 		updated.Module,
 		updated.PaymentMode,
+		running,
 		ID,
 	)
 	if err != nil {

@@ -20,6 +20,8 @@ type Repository interface {
 	AllProfiles() ([]user.Profile, error)
 	GetProfileByTitle(title string) (*user.Profile, error)
 	GetProfileByID(ID int64) (*user.Profile, error)
+	GetAddressByID(ID int64) (*user.Address, error)
+	GetTaskByID(ID int64) (*user.Task, error)
 	AllAddresses() ([]user.Address, error)
 	AllProxyLists() ([]user.ProxyList, error)
 	AllTasks() ([]user.Task, error)

@@ -35,8 +35,7 @@ type UI struct {
 	AccountMenu     *fyne.Container
 	GlobalContent   *fyne.Container
 	*HomeTab
-	*CopiedTradersTab
-	*LeaderboardTab
+	*TasksTab
 	*AnalyticsTab
 	*ProfilesTab
 }
@@ -61,27 +60,23 @@ func (app *Config) MakeDesktopUI() {
 
 	// get app tabs content
 	app.HomeTab = &HomeTab{}
-	app.CopiedTradersTab = &CopiedTradersTab{}
-	app.LeaderboardTab = &LeaderboardTab{}
+	app.TasksTab = &TasksTab{}
 	app.AnalyticsTab = &AnalyticsTab{}
 	app.ProfilesTab = &ProfilesTab{}
 
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
-	copiedTradersTabContent := app.copiedTradersTab()
-	leaderboardContent := app.leaderboardTab()
+	copiedTradersTabContent := app.tasksTab()
 
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
-	app.CopiedTradersTab.TabItem = container.NewTabItemWithIcon("Copy Trading", theme.GridIcon(), copiedTradersTabContent)
-	app.LeaderboardTab.TabItem = container.NewTabItemWithIcon("Leaderboard", theme.ListIcon(), leaderboardContent)
+	app.TasksTab.TabItem = container.NewTabItemWithIcon("Copy Trading", theme.GridIcon(), copiedTradersTabContent)
 	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
 	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources2.IconNameCreditCard), profilesTabContent)
 
 	// add application tabs (home, tasks, proxies, profiles, settings)
 	tabs := container.NewAppTabs(
 		app.HomeTab.TabItem,
-		app.CopiedTradersTab.TabItem,
-		app.LeaderboardTab.TabItem,
+		app.TasksTab.TabItem,
 		app.AnalyticsTab.TabItem,
 		app.ProfilesTab.TabItem,
 	)
@@ -356,9 +351,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.DB.UpdateUser(app.User.ID, *app.User)
 		app.App.Settings().SetTheme(&resources2.DarkTheme{})
 		app.HomeTab.Content.Refresh()
-		app.CopiedTradersTab.Content.Refresh()
-		app.RefreshLeaderboardWithoutFetch()
-		app.LeaderboardTab.Content.Refresh()
+		app.TasksTab.Content.Refresh()
 		app.AnalyticsTab.Content.Refresh()
 		app.ProfilesTab.Content.Refresh()
 		app.refreshGlobalContent()
@@ -369,9 +362,7 @@ func (app *Config) MakeMenu() *fyne.MainMenu {
 		app.DB.UpdateUser(app.User.ID, *app.User)
 		app.App.Settings().SetTheme(&resources2.LightTheme{})
 		app.HomeTab.Content.Refresh()
-		app.CopiedTradersTab.Content.Refresh()
-		app.RefreshLeaderboardWithoutFetch()
-		app.LeaderboardTab.Content.Refresh()
+		app.TasksTab.Content.Refresh()
 		app.AnalyticsTab.Content.Refresh()
 		app.ProfilesTab.Content.Refresh()
 		app.refreshGlobalContent()
@@ -454,13 +445,13 @@ func (app *Config) Copy(obj fyne.CanvasObject) func() {
 	return func() {
 		switch o := obj.(type) {
 		case *widget.Entry:
-			app.MainWindow.Clipboard().SetContent(o.Text)
+			app.App.Clipboard().SetContent(o.Text)
 		case *widget.Button:
-			app.MainWindow.Clipboard().SetContent(o.Text)
+			app.App.Clipboard().SetContent(o.Text)
 		case *widget.Label:
-			app.MainWindow.Clipboard().SetContent(o.Text)
+			app.App.Clipboard().SetContent(o.Text)
 		case *widget.RichText:
-			app.MainWindow.Clipboard().SetContent(o.String())
+			app.App.Clipboard().SetContent(o.String())
 		}
 	}
 }
