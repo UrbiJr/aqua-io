@@ -58,6 +58,7 @@ func (app *Config) MakeLoginWindow() {
 			}
 			errorText.Refresh()
 		} else {
+
 			// get logged user
 			discordID := ""
 			username := strings.Split(authResult.Email, "@")[0]
@@ -92,6 +93,7 @@ func (app *Config) MakeLoginWindow() {
 			app.MakeDesktopUI()
 			app.MainWindow.Show()
 			app.LoginWindow.Hide()
+
 		}
 
 		connecting.Hide()

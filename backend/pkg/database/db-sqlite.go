@@ -24,13 +24,15 @@ func (repo *SQLiteRepository) Migrate() error {
 		create table if not exists profiles(
 			id integer primary key autoincrement,
 			title text not null,
-			exchange text null,
-			account_name text null,
-			public_api text null,
-			secret_api text null,
-			passphrase text null,
-			stop_if_fall_under real null,
-			test_mode boolean null);
+			billing_address_id integer null,
+			shipping_address_id integer null,
+			card_number text null,
+			card_month text null,
+			card_year text null,
+			card_cvv text null,
+			test_mode boolean null,
+			FOREIGN KEY(billing_address_id) REFERENCES addresses(id),
+			FOREIGN KEY(shipping_address_id) REFERENCES addresses(id));
 	`
 	_, err := repo.Conn.Exec(query)
 	if err != nil {
@@ -38,10 +40,16 @@ func (repo *SQLiteRepository) Migrate() error {
 	}
 
 	query = `
-		create table if not exists strategies(
+		create table if not exists addresses(
 			id integer primary key autoincrement,
-			position_size real null,
-			percentage real null);
+			first_name text null,
+			last_name text null,
+			phone text null,
+			address_line_1 text null,
+			address_line_2 text null,
+			zip_code text null,
+			province text null,
+			country_code text null);
 	`
 	_, err = repo.Conn.Exec(query)
 	if err != nil {
@@ -49,27 +57,25 @@ func (repo *SQLiteRepository) Migrate() error {
 	}
 
 	query = `
-		create table if not exists copied_traders(
+		create table if not exists proxy_lists(
+			id integer primary key autoincrement,
+			title text not null,
+			proxies text null);
+	`
+	_, err = repo.Conn.Exec(query)
+	if err != nil {
+		return err
+	}
+
+	query = `
+		create table if not exists tasks(
 			id string primary key,
 			profile_id integer null,
-			encrypted_uid text null,
-			trade_mode text null,
-			leverage real null,
-			max_open_positions integer null,
-			max_coin_percentage_position integer null,
-			price_difference_between_exchanges real null,
-			open_delay_between_positions integer null,
-			block_position_adds boolean null,
-			auto_take_profit_strategy integer null,
-			auto_stop_loss_strategy integer null,
-			max_coin_allocation real null,
-			max_add_multiplier real null,
-			add_prevention_percent real null,
-			blacklisted_coins text null,
-			stop_control boolean null,
+			proxy_list_id integer null,
+			module text null,
+			payment_mode text null,
 			FOREIGN KEY(profile_id) REFERENCES profiles(id),
-			FOREIGN KEY(auto_take_profit_strategy) REFERENCES strategies(id),
-			FOREIGN KEY(auto_stop_loss_strategy) REFERENCES strategies(id));
+			FOREIGN KEY(proxy_list_id) REFERENCES proxy_lists(id));
 	`
 	_, err = repo.Conn.Exec(query)
 	if err != nil {
@@ -82,8 +88,7 @@ func (repo *SQLiteRepository) Migrate() error {
 			profile_picture_path text null,
 			license_key text not null,
 			persistent_login boolean null,
-			theme text null,
-			close_all_trades_when_closing boolean null);
+			theme text null);
 	`
 	_, err = repo.Conn.Exec(query)
 	if err != nil {
@@ -97,12 +102,12 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 	stmt := `
 		insert into profiles (
 			title,
-			exchange,
-			account_name,
-			public_api,
-			secret_api,
-			passphrase,
-			stop_if_fall_under,
+			billing_address_id,
+			shipping_address_id,
+			card_number,
+			card_month,
+			card_year,
+			card_cvv,
 			test_mode
 		) values (?, ?, ?, ?, ?, ?, ?, ?)
 	`
@@ -114,7 +119,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 		testMode = 0
 	}
 
-	res, err := repo.Conn.Exec(stmt, p.Title, p.Exchange, p.AccountName, p.PublicAPI, p.SecretAPI, p.Passphrase, p.StopIfFallUnder, testMode)
+	res, err := repo.Conn.Exec(stmt, p.Title, p.BillingAddressID, p.ShippingAddressID, p.CardNumber, p.CardMonth, p.CardYear, p.CardCvv, testMode)
 	if err != nil {
 		return nil, err
 	}
@@ -128,15 +133,46 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 	return &p, nil
 }
 
-func (repo *SQLiteRepository) InsertStrategy(s user.Strategy) (*user.Strategy, error) {
+func (repo *SQLiteRepository) InsertAddress(p user.Address) (*user.Address, error) {
 	stmt := `
-		insert into strategies (
-			position_size,
-			percentage,
+		insert into addresses (
+			first_name,
+			last_name,
+			phone,
+			address_line_1,
+			address_line_2,
+			zip_code,
+			province,
+			country_code
+		) values (?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	res, err := repo.Conn.Exec(stmt, p.FirstName, p.LastName, p.Phone, p.AddressLine1, p.AddressLine2, p.ZipCode, p.Province, p.CountryCode)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	p.ID = id
+	return &p, nil
+}
+
+func (repo *SQLiteRepository) InserProxyList(s user.ProxyList) (*user.ProxyList, error) {
+	stmt := `
+		insert into proxy_lists (
+			title,
+			proxies
 		) values (?, ?)
 	`
 
-	res, err := repo.Conn.Exec(stmt, s.PositionSize, s.Percentage)
+	var proxies string
+	proxies = strings.Join(s.Proxies, ",")
+
+	res, err := repo.Conn.Exec(stmt, s.Title, proxies)
 	if err != nil {
 		return nil, err
 	}
@@ -150,60 +186,20 @@ func (repo *SQLiteRepository) InsertStrategy(s user.Strategy) (*user.Strategy, e
 	return &s, nil
 }
 
-func (repo *SQLiteRepository) InsertCopiedTrader(t user.Trader) (*user.Trader, error) {
+func (repo *SQLiteRepository) InserTask(t user.Task) (*user.Task, error) {
 	stmt := `
-		insert into copied_traders (
+		insert into tasks (
 		profile_id,
-		encrypted_uid,
-		trade_mode, 
-		leverage, 
-		max_open_positions, 
-		max_coin_percentage_position, 
-		price_difference_between_exchanges, 
-		open_delay_between_positions, 
-		block_position_adds, 
-		auto_take_profit_strategy, 
-		auto_stop_loss_strategy, 
-		max_coin_allocation, 
-		max_add_multiplier, 
-		add_prevention_percent, 
-		blacklisted_coins, 
-		stop_control
-	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		proxy_list_id,
+		module, 
+		payment_mode
+	) values (?, ?, ?, ?)
 	`
-	var blackListCoins string
-	var blockPositionAdds, stopControl int
-
-	if t.BlockPositionAdds {
-		blockPositionAdds = 1
-	} else {
-		blockPositionAdds = 0
-	}
-
-	if t.StopControl {
-		stopControl = 1
-	} else {
-		stopControl = 0
-	}
-
-	blackListCoins = strings.Join(t.BlackListedCoins, ",")
-
 	res, err := repo.Conn.Exec(stmt,
 		t.ProfileID,
-		t.TradeMode,
-		t.Leverage,
-		t.MaxOpenPositions,
-		t.MaxCoinPercentagePosition,
-		t.MaxPriceDifferenceBetweenExchange,
-		t.OpenDelayBetweenPositions,
-		blockPositionAdds,
-		t.AutoTakeProfit.ID,
-		t.AutoStopLoss.ID,
-		t.MaxCoinAllocation,
-		t.MaxAddMultiplier,
-		t.AddPreventionPercent,
-		blackListCoins,
-		stopControl,
+		t.ProxyListID,
+		t.Module,
+		t.PaymentMode,
 	)
 	if err != nil {
 		return nil, err
@@ -219,19 +215,13 @@ func (repo *SQLiteRepository) InsertCopiedTrader(t user.Trader) (*user.Trader, e
 }
 
 func (repo *SQLiteRepository) InsertUser(u user.User) (*user.User, error) {
-	stmt := "insert into users (profile_picture_path, license_key, persistent_login, theme, close_all_trades_when_closing) values (?, ?, ?, ?, ?)"
+	stmt := "insert into users (profile_picture_path, license_key, persistent_login, theme) values (?, ?, ?, ?)"
 	var persistent, closeAllTradesWhenClosing int
 
 	if u.PersistentLogin {
 		persistent = 1
 	} else {
 		persistent = 0
-	}
-
-	if u.CloseAllTradesWhenClosing {
-		closeAllTradesWhenClosing = 1
-	} else {
-		closeAllTradesWhenClosing = 0
 	}
 
 	res, err := repo.Conn.Exec(stmt, u.ProfilePicturePath, u.LicenseKey, persistent, u.Theme, closeAllTradesWhenClosing)
@@ -252,12 +242,12 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 	query := `
 		select id,
 		title,
-		exchange,
-		account_name,
-		public_api,
-		secret_api,
-		passphrase,
-		stop_if_fall_under,
+		billing_address_id,
+		shipping_address_id,
+		card_number,
+		card_month,
+		card_year,
+		card_cvv,
 		test_mode
 	 	from profiles order by title
 	`
@@ -277,12 +267,12 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 		err := rows.Scan(
 			&p.ID,
 			&p.Title,
-			&p.Exchange,
-			&p.AccountName,
-			&p.PublicAPI,
-			&p.SecretAPI,
-			&p.Passphrase,
-			&p.StopIfFallUnder,
+			&p.BillingAddressID,
+			&p.ShippingAddressID,
+			&p.CardNumber,
+			&p.CardMonth,
+			&p.CardYear,
+			&p.CardCvv,
 			&testMode,
 		)
 		if err != nil {
@@ -293,6 +283,52 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 			p.TestMode = false
 		} else {
 			p.TestMode = true
+		}
+
+		all = append(all, p)
+	}
+
+	return all, nil
+}
+
+func (repo *SQLiteRepository) AllAddresses() ([]user.Address, error) {
+	query := `
+		select id,
+		first_name,
+		last_name,
+		phone,
+		address_line_1,
+		address_line_2,
+		zip_code,
+		province,
+		country_code
+	 	from addresses order by title
+	`
+
+	rows, err := repo.Conn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var all []user.Address
+	for rows.Next() {
+		var p user.Address
+
+		err := rows.Scan(
+			&p.ID,
+			&p.FirstName,
+			&p.LastName,
+			&p.Phone,
+			&p.AddressLine1,
+			&p.AddressLine2,
+			&p.ZipCode,
+			&p.Province,
+			&p.CountryCode,
+		)
+		if err != nil {
+			return nil, err
 		}
 
 		all = append(all, p)
@@ -317,12 +353,12 @@ func (repo *SQLiteRepository) GetProfileByTitle(title string) (*user.Profile, er
 		err := rows.Scan(
 			&p.ID,
 			&p.Title,
-			&p.Exchange,
-			&p.AccountName,
-			&p.PublicAPI,
-			&p.SecretAPI,
-			&p.Passphrase,
-			&p.StopIfFallUnder,
+			&p.BillingAddressID,
+			&p.ShippingAddressID,
+			&p.CardNumber,
+			&p.CardMonth,
+			&p.CardYear,
+			&p.CardCvv,
 			&testMode,
 		)
 		if err != nil {
@@ -355,12 +391,12 @@ func (repo *SQLiteRepository) GetProfileByID(ID int64) (*user.Profile, error) {
 		err := rows.Scan(
 			&p.ID,
 			&p.Title,
-			&p.Exchange,
-			&p.AccountName,
-			&p.PublicAPI,
-			&p.SecretAPI,
-			&p.Passphrase,
-			&p.StopIfFallUnder,
+			&p.BillingAddressID,
+			&p.ShippingAddressID,
+			&p.CardNumber,
+			&p.CardMonth,
+			&p.CardYear,
+			&p.CardCvv,
 			&testMode,
 		)
 		if err != nil {
@@ -377,12 +413,12 @@ func (repo *SQLiteRepository) GetProfileByID(ID int64) (*user.Profile, error) {
 	return p, nil
 }
 
-func (repo *SQLiteRepository) AllStrategies() ([]user.Strategy, error) {
+func (repo *SQLiteRepository) AllProxyLists() ([]user.ProxyList, error) {
 	query := `
 		select id,
-		position_size,
-		percentage,
-	 	from strategies
+		title,
+		proxies
+	 	from proxy_lists
 	`
 
 	rows, err := repo.Conn.Query(query)
@@ -392,14 +428,14 @@ func (repo *SQLiteRepository) AllStrategies() ([]user.Strategy, error) {
 
 	defer rows.Close()
 
-	var all []user.Strategy
+	var all []user.ProxyList
 	for rows.Next() {
-		var s user.Strategy
+		var s user.ProxyList
 
 		err := rows.Scan(
 			&s.ID,
-			&s.PositionSize,
-			&s.Percentage,
+			&s.Title,
+			&s.Proxies,
 		)
 		if err != nil {
 			return nil, err
@@ -411,26 +447,14 @@ func (repo *SQLiteRepository) AllStrategies() ([]user.Strategy, error) {
 	return all, nil
 }
 
-func (repo *SQLiteRepository) AllCopiedTraders() ([]user.Trader, error) {
+func (repo *SQLiteRepository) AllTasks() ([]user.Task, error) {
 	query := `
 		select id,
 		profile_id,
-		encrypted_uid,
-		trade_mode, 
-		leverage, 
-		max_open_positions, 
-		max_coin_percentage_position, 
-		price_difference_between_exchanges, 
-		open_delay_between_positions, 
-		block_position_adds, 
-		auto_take_profit_strategy, 
-		auto_stop_loss_strategy, 
-		max_coin_allocation, 
-		max_add_multiplier, 
-		add_prevention_percent, 
-		blacklisted_coins, 
-		stop_control
-	 	from copied_traders order by profile_id
+		proxy_list_id,
+		module, 
+		payment_mode
+	 	from tasks order by id
 	 `
 
 	rows, err := repo.Conn.Query(query)
@@ -440,59 +464,19 @@ func (repo *SQLiteRepository) AllCopiedTraders() ([]user.Trader, error) {
 
 	defer rows.Close()
 
-	var all []user.Trader
+	var all []user.Task
 	for rows.Next() {
-		var t user.Trader
-		var blackListCoins string
-		var blockPositionAdds, stopControl int
+		var t user.Task
 
 		err := rows.Scan(
 			&t.ID,
 			&t.ProfileID,
-			&t.TradeMode,
-			&t.Leverage,
-			&t.MaxOpenPositions,
-			&t.MaxCoinPercentagePosition,
-			&t.MaxPriceDifferenceBetweenExchange,
-			&t.OpenDelayBetweenPositions,
-			&blockPositionAdds,
-			&t.AutoTakeProfit.ID,
-			&t.AutoStopLoss.ID,
-			&t.MaxCoinAllocation,
-			&t.MaxAddMultiplier,
-			&t.AddPreventionPercent,
-			&blackListCoins,
-			&stopControl,
+			&t.ProxyListID,
+			&t.Module,
+			&t.PaymentMode,
 		)
 		if err != nil {
 			return nil, err
-		}
-
-		if stopControl == 0 {
-			t.StopControl = false
-		} else {
-			t.StopControl = true
-		}
-		if blockPositionAdds == 0 {
-			t.BlockPositionAdds = false
-		} else {
-			t.BlockPositionAdds = true
-		}
-
-		t.BlackListedCoins = strings.Split(blackListCoins, ",")
-
-		s, err := repo.GetStrategy(t.AutoTakeProfit.ID)
-		if err != nil {
-			t.AutoTakeProfit = user.Strategy{}
-		} else {
-			t.AutoTakeProfit = *s
-		}
-
-		s, err = repo.GetStrategy(t.AutoStopLoss.ID)
-		if err != nil {
-			t.AutoStopLoss = user.Strategy{}
-		} else {
-			t.AutoStopLoss = *s
 		}
 
 		all = append(all, t)
@@ -502,7 +486,7 @@ func (repo *SQLiteRepository) AllCopiedTraders() ([]user.Trader, error) {
 }
 
 func (repo *SQLiteRepository) AllUsers() ([]user.User, error) {
-	query := "select id, profile_picture_path, license_key, persistent_login, theme, close_all_trades_when_closing from users"
+	query := "select id, profile_picture_path, license_key, persistent_login, theme from users"
 	rows, err := repo.Conn.Query(query)
 	if err != nil {
 		return nil, err
@@ -513,7 +497,7 @@ func (repo *SQLiteRepository) AllUsers() ([]user.User, error) {
 	var all []user.User
 	for rows.Next() {
 		var u user.User
-		var persistent, closeAllTradesWhenClosing int
+		var persistent int
 
 		err := rows.Scan(
 			&u.ID,
@@ -521,7 +505,6 @@ func (repo *SQLiteRepository) AllUsers() ([]user.User, error) {
 			&u.LicenseKey,
 			&persistent,
 			&u.Theme,
-			&closeAllTradesWhenClosing,
 		)
 		if err != nil {
 			return nil, err
@@ -533,12 +516,6 @@ func (repo *SQLiteRepository) AllUsers() ([]user.User, error) {
 			u.PersistentLogin = true
 		}
 
-		if closeAllTradesWhenClosing == 0 {
-			u.CloseAllTradesWhenClosing = false
-		} else {
-			u.CloseAllTradesWhenClosing = true
-		}
-
 		all = append(all, u)
 	}
 
@@ -546,7 +523,7 @@ func (repo *SQLiteRepository) AllUsers() ([]user.User, error) {
 }
 
 func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
-	query := "select id, profile_picture_path, license_key, persistent_login, theme, close_all_trades_when_closing from users where id = ?"
+	query := "select id, profile_picture_path, license_key, persistent_login, theme from users where id = ?"
 
 	rows, err := repo.Conn.Query(query, ID)
 	if err != nil {
@@ -557,7 +534,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 
 	var u *user.User
 	for rows.Next() {
-		var persistent, closeAllTradesWhenClosing int
+		var persistent int
 
 		err := rows.Scan(
 			&u.ID,
@@ -565,7 +542,6 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 			&u.LicenseKey,
 			&persistent,
 			&u.Theme,
-			&closeAllTradesWhenClosing,
 		)
 		if err != nil {
 			return nil, err
@@ -577,18 +553,13 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 			u.PersistentLogin = true
 		}
 
-		if closeAllTradesWhenClosing == 0 {
-			u.CloseAllTradesWhenClosing = false
-		} else {
-			u.CloseAllTradesWhenClosing = true
-		}
 	}
 
 	return u, nil
 }
 
-func (repo *SQLiteRepository) GetStrategy(ID int64) (*user.Strategy, error) {
-	query := "select id, position_size, percentage from strategies where id = ?"
+func (repo *SQLiteRepository) GetProxyList(ID int64) (*user.ProxyList, error) {
+	query := "select id, title, proxies from proxy_lists where id = ?"
 
 	rows, err := repo.Conn.Query(query, ID)
 	if err != nil {
@@ -597,12 +568,12 @@ func (repo *SQLiteRepository) GetStrategy(ID int64) (*user.Strategy, error) {
 
 	defer rows.Close()
 
-	var s *user.Strategy
+	var s *user.ProxyList
 	for rows.Next() {
 		err := rows.Scan(
 			&s.ID,
-			&s.PositionSize,
-			&s.Percentage,
+			&s.Title,
+			&s.Proxies,
 		)
 		if err != nil {
 			return nil, err
@@ -628,16 +599,16 @@ func (repo *SQLiteRepository) UpdateProfile(ID int64, updated user.Profile) erro
 	stmt := `
 		update profiles set
 			title = ?,
-			exchange = ?,
-			account_name = ?,
-			public_api = ?,
-			secret_api = ?,
-			passphrase = ?,
-			stop_if_fall_under = ?,
+			billing_address_id = ?,
+			shipping_address_id = ?,
+			card_number = ?,
+			card_month = ?,
+			card_year = ?,
+			card_cvv = ?,
 			test_mode = ?
 		where id = ?
 	`
-	res, err := repo.Conn.Exec(stmt, updated.Title, updated.Exchange, updated.AccountName, updated.PublicAPI, updated.SecretAPI, updated.Passphrase, updated.StopIfFallUnder, testMode, ID)
+	res, err := repo.Conn.Exec(stmt, updated.Title, updated.BillingAddressID, updated.ShippingAddressID, updated.CardNumber, updated.CardMonth, updated.CardYear, updated.CardCvv, testMode, ID)
 	if err != nil {
 		return err
 	}
@@ -654,19 +625,24 @@ func (repo *SQLiteRepository) UpdateProfile(ID int64, updated user.Profile) erro
 	return nil
 }
 
-func (repo *SQLiteRepository) UpdateStrategy(ID int64, updated user.Strategy) error {
+func (repo *SQLiteRepository) UpdateAddress(ID int64, updated user.Address) error {
 	if ID <= 0 {
 		return errors.New("invalid updated id")
 	}
 
 	stmt := `
-		update strategies set
-			position_size = ?,
-			percentage = ?,
+		update addresses set
+			first_name = ?,
+			last_name = ?,
+			phone = ?,
+			address_line_1 = ?,
+			address_line_2 = ?,
+			zip_code = ?,
+			province = ?,
+			country_code = ?,
 		where id = ?
 	`
-
-	res, err := repo.Conn.Exec(stmt, updated.PositionSize, updated.Percentage, ID)
+	res, err := repo.Conn.Exec(stmt, updated.FirstName, updated.LastName, updated.Phone, updated.AddressLine1, updated.AddressLine2, updated.ZipCode, updated.Province, updated.CountryCode, ID)
 	if err != nil {
 		return err
 	}
@@ -683,7 +659,40 @@ func (repo *SQLiteRepository) UpdateStrategy(ID int64, updated user.Strategy) er
 	return nil
 }
 
-func (repo *SQLiteRepository) UpdateCopiedTrader(ID int64, updated user.Trader) error {
+func (repo *SQLiteRepository) UpdateProxyList(ID int64, updated user.ProxyList) error {
+	if ID <= 0 {
+		return errors.New("invalid updated id")
+	}
+
+	stmt := `
+		update proxy_lists set
+			title = ?,
+			proxies = ?,
+		where id = ?
+	`
+
+	var proxies string
+
+	proxies = strings.Join(updated.Proxies, ",")
+
+	res, err := repo.Conn.Exec(stmt, updated.Title, proxies, ID)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errUpdateFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) UpdateTask(ID int64, updated user.Task) error {
 	if ID <= 0 {
 		return errors.New("invalid updated id")
 	}
@@ -691,57 +700,16 @@ func (repo *SQLiteRepository) UpdateCopiedTrader(ID int64, updated user.Trader) 
 	stmt := `
 		update copied_traders set
 		profile_id = ?, 
-		encrypted_uid = ?,
-		trade_mode = ?, 
-		leverage = ?, 
-		max_open_positions = ?, 
-		max_coin_percentage_position = ?, 
-		price_difference_between_exchanges = ?, 
-		open_delay_between_positions = ?, 
-		block_position_adds = ?, 
-		auto_take_profit_strategy = ?, 
-		auto_stop_loss_strategy = ?, 
-		max_coin_allocation = ?, 
-		max_add_multiplier = ?, 
-		add_prevention_percent = ?, 
-		blacklisted_coins = ?, 
-		stop_control = ?
+		proxy_list_id = ?,
+		module = ?, 
+		payment_mode = ? 
 	where id  = ?
 	`
-	var blackListCoins string
-	var blockPositionAdds, stopControl int
-
-	if updated.BlockPositionAdds {
-		blockPositionAdds = 1
-	} else {
-		blockPositionAdds = 0
-	}
-
-	if updated.StopControl {
-		stopControl = 1
-	} else {
-		stopControl = 0
-	}
-
-	blackListCoins = strings.Join(updated.BlackListedCoins, ",")
-
 	res, err := repo.Conn.Exec(stmt,
 		updated.ProfileID,
-		updated.EncryptedUid,
-		updated.TradeMode,
-		updated.Leverage,
-		updated.MaxOpenPositions,
-		updated.MaxCoinPercentagePosition,
-		updated.MaxPriceDifferenceBetweenExchange,
-		updated.OpenDelayBetweenPositions,
-		blockPositionAdds,
-		updated.AutoTakeProfit.ID,
-		updated.AutoStopLoss.ID,
-		updated.MaxCoinAllocation,
-		updated.MaxAddMultiplier,
-		updated.AddPreventionPercent,
-		blackListCoins,
-		stopControl,
+		updated.ProxyListID,
+		updated.Module,
+		updated.PaymentMode,
 		ID,
 	)
 	if err != nil {
@@ -765,7 +733,7 @@ func (repo *SQLiteRepository) UpdateUser(ID int64, updated user.User) error {
 		return errors.New("invalid updated id")
 	}
 
-	var persistent, closeAllTradesWhenClosing int
+	var persistent int
 
 	if updated.PersistentLogin {
 		persistent = 1
@@ -773,14 +741,8 @@ func (repo *SQLiteRepository) UpdateUser(ID int64, updated user.User) error {
 		persistent = 0
 	}
 
-	if updated.CloseAllTradesWhenClosing {
-		closeAllTradesWhenClosing = 1
-	} else {
-		closeAllTradesWhenClosing = 0
-	}
-
-	stmt := "update users set profile_picture_path = ?, license_key = ?,  persistent_login = ?, theme = ?, close_all_trades_when_closing = ?, where id = ?"
-	res, err := repo.Conn.Exec(stmt, updated.ProfilePicturePath, updated.LicenseKey, persistent, updated.Theme, closeAllTradesWhenClosing, ID)
+	stmt := "update users set profile_picture_path = ?, license_key = ?,  persistent_login = ?, theme = ?, where id = ?"
+	res, err := repo.Conn.Exec(stmt, updated.ProfilePicturePath, updated.LicenseKey, persistent, updated.Theme, ID)
 	if err != nil {
 		return err
 	}
@@ -815,8 +777,8 @@ func (repo *SQLiteRepository) DeleteProfile(ID int64) error {
 	return nil
 }
 
-func (repo *SQLiteRepository) DeleteStrategy(ID int64) error {
-	res, err := repo.Conn.Exec("delete from strategies where id = ?", ID)
+func (repo *SQLiteRepository) DeleteAddress(ID int64) error {
+	res, err := repo.Conn.Exec("delete from addresses where id = ?", ID)
 	if err != nil {
 		return err
 	}
@@ -833,8 +795,26 @@ func (repo *SQLiteRepository) DeleteStrategy(ID int64) error {
 	return nil
 }
 
-func (repo *SQLiteRepository) DeleteCopiedTrader(ID int64) error {
-	res, err := repo.Conn.Exec("delete from copied_traders where id = ?", ID)
+func (repo *SQLiteRepository) DeleteProxyList(ID int64) error {
+	res, err := repo.Conn.Exec("delete from proxy_lists where id = ?", ID)
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeleteTask(ID int64) error {
+	res, err := repo.Conn.Exec("delete from tasks where id = ?", ID)
 	if err != nil {
 		return err
 	}
@@ -887,8 +867,8 @@ func (repo *SQLiteRepository) DeleteAllProfiles() error {
 	return nil
 }
 
-func (repo *SQLiteRepository) DeleteAllStrategies() error {
-	res, err := repo.Conn.Exec("delete from strategies where 1 = 1")
+func (repo *SQLiteRepository) DeleteAllAddresses() error {
+	res, err := repo.Conn.Exec("delete from addresses where 1 = 1")
 	if err != nil {
 		return err
 	}
@@ -905,8 +885,26 @@ func (repo *SQLiteRepository) DeleteAllStrategies() error {
 	return nil
 }
 
-func (repo *SQLiteRepository) DeleteAllCopiedTraders() error {
-	res, err := repo.Conn.Exec("delete from copied_traders where 1 = 1")
+func (repo *SQLiteRepository) DeleteAllProxyLists() error {
+	res, err := repo.Conn.Exec("delete from proxy_lists where 1 = 1")
+	if err != nil {
+		return err
+	}
+
+	affectedRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if affectedRows <= 0 {
+		return errDeleteFailed
+	}
+
+	return nil
+}
+
+func (repo *SQLiteRepository) DeleteAllTasks() error {
+	res, err := repo.Conn.Exec("delete from tasks where 1 = 1")
 	if err != nil {
 		return err
 	}

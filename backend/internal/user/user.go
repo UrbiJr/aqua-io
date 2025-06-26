@@ -13,7 +13,6 @@ type User struct {
 	ExpiresAt                 float64 `json:"-"`
 	PersistentLogin           bool    `json:"persistent_login"`
 	Theme                     string  `json:"theme"`
-	CloseAllTradesWhenClosing bool    `json:"close_all_trades_when_closing"`
 }
 
 // NewUser creates an instance of the User class

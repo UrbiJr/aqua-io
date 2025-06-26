@@ -13,27 +13,32 @@ var (
 type Repository interface {
 	Migrate() error
 	InsertProfile(p user.Profile) (*user.Profile, error)
-	InsertStrategy(s user.Strategy) (*user.Strategy, error)
-	InsertCopiedTrader(t user.Trader) (*user.Trader, error)
+	InsertAddress(p user.Address) (*user.Address, error)
+	InsertProxyList(s user.ProxyList) (*user.ProxyList, error)
+	InsertTask(t user.Task) (*user.Task, error)
 	InsertUser(u user.User) (*user.User, error)
 	AllProfiles() ([]user.Profile, error)
 	GetProfileByTitle(title string) (*user.Profile, error)
 	GetProfileByID(ID int64) (*user.Profile, error)
-	AllStrategies() ([]user.Strategy, error)
-	AllCopiedTraders() ([]user.Trader, error)
+	AllAddresses() ([]user.Address, error)
+	AllProxyLists() ([]user.ProxyList, error)
+	AllTasks() ([]user.Task, error)
 	AllUsers() ([]user.User, error)
 	GetUser(ID int64) (*user.User, error)
-	GetStrategy(ID int64) (*user.Strategy, error)
+	GetProxyList(ID int64) (*user.ProxyList, error)
 	UpdateProfile(ID int64, updated user.Profile) error
-	UpdateStrategy(ID int64, updated user.Strategy) error
-	UpdateCopiedTrader(ID int64, updated user.Trader) error
+	UpdateAddress(ID int64, updated user.Address) error
+	UpdateProxyList(ID int64, updated user.ProxyList) error
+	UpdateTask(ID int64, updated user.Task) error
 	UpdateUser(ID int64, updated user.User) error
+	DeleteAddress(ID int64) error
 	DeleteProfile(ID int64) error
-	DeleteStrategy(ID int64) error
-	DeleteCopiedTrader(ID int64) error
+	DeleteProxyList(ID int64) error
+	DeleteTask(ID int64) error
 	DeleteUser(ID int64) error
+	DeleteAllAddresses() error
 	DeleteAllProfiles() error
-	DeleteAllStrategies() error
-	DeleteAllCopiedTraders() error
+	DeleteAllProxyLists() error
+	DeleteAllTasks() error
 	DeleteAllUsers() error
 }

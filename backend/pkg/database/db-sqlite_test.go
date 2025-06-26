@@ -14,16 +14,50 @@ func TestSQLiteRepository_Migrate(t *testing.T) {
 }
 
 func TestSQLiteRepository_InsertProfile(t *testing.T) {
+	bAddress, err := testRepo.InsertAddress(
+		user.Address{
+			FirstName:    "Federico",
+			LastName:     "Urbinelli",
+			Phone:        "1112221212",
+			AddressLine1: "Piazza Roma 1",
+			AddressLine2: "",
+			ZipCode:      "48015",
+			Province:     "RA",
+			CountryCode:  "IT",
+		})
+	if err != nil {
+		t.Error("insert billing address failed:", err)
+	}
+
+	sAddress, err := testRepo.InsertAddress(
+		user.Address{
+			FirstName:    "Federico",
+			LastName:     "Urbinelli",
+			Phone:        "1112221212",
+			AddressLine1: "Via Molveno 6",
+			AddressLine2: "Netrising s.r.l.",
+			ZipCode:      "48015",
+			Province:     "RA",
+			CountryCode:  "IT",
+		})
+	if err != nil {
+		t.Error("insert shipping address failed:", err)
+	}
+
 	p := user.Profile{
-		Title:       "jack_ford",
-		Exchange:    "Binance",
-		AccountName: "jack1",
-		TestMode:    true,
+		Title:             "federico 1",
+		BillingAddressID:  bAddress.ID,
+		ShippingAddressID: sAddress.ID,
+		CardNumber:        "",
+		CardMonth:         "",
+		CardYear:          "",
+		CardCvv:           "",
+		TestMode:          true,
 	}
 
 	result, err := testRepo.InsertProfile(p)
 	if err != nil {
-		t.Error("insert failed:", err)
+		t.Error("insert profile failed:", err)
 	}
 
 	if result.ID <= 0 {
@@ -49,7 +83,7 @@ func TestSQLiteRepository_UpdateProfile(t *testing.T) {
 		t.Error("get all failed:", err)
 	}
 
-	p[0].Exchange = "ByBit"
+	p[0].Title = "Personal 1"
 	id := p[0].ID
 	err = testRepo.UpdateProfile(id, p[0])
 	if err != nil {
@@ -65,8 +99,8 @@ func TestSQLiteRepository_UpdateProfile(t *testing.T) {
 	for _, p := range p {
 		if p.ID == id {
 			found = true
-			if p.Exchange != "ByBit" {
-				t.Errorf("updated failed, expected exchange ByBit, got: %s", p.Exchange)
+			if p.Title != "Personal 1" {
+				t.Errorf("updated failed, expected title 'Personal 1', got: %s", p.Title)
 			}
 		}
 	}

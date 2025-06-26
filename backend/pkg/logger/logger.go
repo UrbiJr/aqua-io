@@ -78,6 +78,8 @@ func setLogFile() (*os.File, error) {
 		return nil, err
 	}
 
+	fmt.Printf("Log file path: %v\n", LOG_FILE)
+
 	return logFile, nil
 }
 

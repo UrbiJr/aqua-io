@@ -22,19 +22,23 @@ func (repo *TestRepository) AllProfiles() ([]user.Profile, error) {
 	var all []user.Profile
 
 	p := user.Profile{
-		Title:           "john_red",
-		StopIfFallUnder: 1000,
-		AccountName:     "johnny1",
-		TestMode:        true,
+		Title:      "giocop",
+		CardNumber: "111111111111111",
+		CardMonth:  "12",
+		CardYear:   "28",
+		CardCvv:    "1234",
+		TestMode:   true,
 	}
 
 	all = append(all, p)
 
 	p = user.Profile{
-		Title:           "james_green",
-		StopIfFallUnder: 2000,
-		AccountName:     "james-1",
-		TestMode:        true,
+		Title:           "lorenzo",
+		CardNumber: "2222222222222222",
+		CardMonth:  "6",
+		CardYear:   "25",
+		CardCvv:    "5678",
+		TestMode:   true,
 	}
 
 	all = append(all, p)
