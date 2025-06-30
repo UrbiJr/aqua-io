@@ -137,6 +137,7 @@ func (repo *SQLiteRepository) InsertProfile(p user.Profile) (*user.Profile, erro
 func (repo *SQLiteRepository) InsertAddress(p user.Address) (*user.Address, error) {
 	stmt := `
 		insert into addresses (
+			title,
 			first_name,
 			last_name,
 			phone,
@@ -145,7 +146,7 @@ func (repo *SQLiteRepository) InsertAddress(p user.Address) (*user.Address, erro
 			zip_code,
 			province,
 			country_code
-		) values (?, ?, ?, ?, ?, ?, ?, ?)
+		) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	res, err := repo.Conn.Exec(stmt, p.FirstName, p.LastName, p.Phone, p.AddressLine1, p.AddressLine2, p.ZipCode, p.Province, p.CountryCode)
@@ -304,6 +305,7 @@ func (repo *SQLiteRepository) AllProfiles() ([]user.Profile, error) {
 func (repo *SQLiteRepository) AllAddresses() ([]user.Address, error) {
 	query := `
 		select id,
+		title,
 		first_name,
 		last_name,
 		phone,
@@ -328,6 +330,7 @@ func (repo *SQLiteRepository) AllAddresses() ([]user.Address, error) {
 
 		err := rows.Scan(
 			&p.ID,
+			&p.Title,
 			&p.FirstName,
 			&p.LastName,
 			&p.Phone,
@@ -382,6 +385,61 @@ func (repo *SQLiteRepository) GetProfileByTitle(title string) (*user.Profile, er
 		}
 	}
 
+	return p, nil
+}
+
+func (repo *SQLiteRepository) GetProxyListByTitle(title string) (*user.ProxyList, error) {
+	query := "select * from proxy_lists where title = ? limit 1"
+
+	rows, err := repo.Conn.Query(query, title)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var s *user.ProxyList
+	for rows.Next() {
+		err := rows.Scan(
+			&s.ID,
+			&s.Title,
+			&s.Proxies,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+func (repo *SQLiteRepository) GetAddressByTitle(title string) (*user.Address, error) {
+	query := "select * from addresses where title = ? limit 1"
+
+	rows, err := repo.Conn.Query(query, title)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var p *user.Address
+	for rows.Next() {
+		err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.FirstName,
+			&p.LastName,
+			&p.Phone,
+			&p.AddressLine1,
+			&p.AddressLine2,
+			&p.ZipCode,
+			&p.Province,
+			&p.CountryCode,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return p, nil
 }
 
@@ -472,6 +530,7 @@ func (repo *SQLiteRepository) GetAddressByID(ID int64) (*user.Address, error) {
 	for rows.Next() {
 		err := rows.Scan(
 			&p.ID,
+			&p.Title,
 			&p.FirstName,
 			&p.LastName,
 			&p.Phone,
@@ -718,6 +777,7 @@ func (repo *SQLiteRepository) UpdateAddress(ID int64, updated user.Address) erro
 
 	stmt := `
 		update addresses set
+			title = ?,
 			first_name = ?,
 			last_name = ?,
 			phone = ?,
@@ -728,7 +788,7 @@ func (repo *SQLiteRepository) UpdateAddress(ID int64, updated user.Address) erro
 			country_code = ?,
 		where id = ?
 	`
-	res, err := repo.Conn.Exec(stmt, updated.FirstName, updated.LastName, updated.Phone, updated.AddressLine1, updated.AddressLine2, updated.ZipCode, updated.Province, updated.CountryCode, ID)
+	res, err := repo.Conn.Exec(stmt, updated.Title, updated.FirstName, updated.LastName, updated.Phone, updated.AddressLine1, updated.AddressLine2, updated.ZipCode, updated.Province, updated.CountryCode, ID)
 	if err != nil {
 		return err
 	}

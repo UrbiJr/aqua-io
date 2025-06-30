@@ -1,12 +1,11 @@
 module github.com/UrbiJr/aqua-io
 
-go 1.24.1
-
-toolchain go1.24.4
+go 1.24.4
 
 require (
 	fyne.io/fyne/v2 v2.6.1
 	fyne.io/x/fyne v0.0.0-20250418202416-58a230ad1acb
+	github.com/UrbiJr/aqua-io/backend/pkg/bot v0.0.0-00010101000000-000000000000
 	github.com/bogdanfinn/tls-client v1.10.0
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/glebarez/go-sqlite v1.22.0
@@ -35,7 +34,6 @@ require (
 	github.com/go-text/typesetting v0.3.0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hack-pad/go-indexeddb v0.3.2 // indirect
 	github.com/hack-pad/safejs v0.1.1 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20250612000132-0ef82f21eade // indirect
@@ -52,19 +50,18 @@ require (
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/tam7t/hpkp v0.0.0-20160821193359-2b70b4024ed5 // indirect
-	github.com/tevino/abool v1.2.0 // indirect
 	github.com/yuin/goldmark v1.7.12 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/image v0.28.0 // indirect
-	golang.org/x/mobile v0.0.0-20250606033058-a2a15c67f36f // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	honnef.co/go/js/dom v0.0.0-20250304181735-b5e52f05e89d // indirect
 	modernc.org/libc v1.66.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 	modernc.org/sqlite v1.38.0 // indirect
 )
+
+replace github.com/UrbiJr/aqua-io/backend/pkg/bot => ./backend/pkg/bot

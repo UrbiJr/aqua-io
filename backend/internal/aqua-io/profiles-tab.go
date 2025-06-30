@@ -19,17 +19,17 @@ import (
 
 type ProfilesTab struct {
 	*container.TabItem
-	Top           *fyne.Container
+	ProfileTop           *fyne.Container
 	ProfilesTable *widget.Table
 	ProfilesSlice [][]any
-	Bottom        *fyne.Container
+	ProfileBottom        *fyne.Container
 }
 
 // NewProfilesView returns a view for the profiles management
 func (app *Config) profilesTab() *fyne.Container {
 	// define profilesTab
-	app.ProfilesTab.Top = container.NewMax()
-	app.ProfilesTab.Bottom = container.NewHBox()
+	app.ProfilesTab.ProfileTop = container.NewStack()
+	app.ProfilesTab.ProfileBottom = container.NewHBox()
 
 	app.ProfilesSlice = app.getProfilesSlice()
 
@@ -44,16 +44,16 @@ func (app *Config) profilesTab() *fyne.Container {
 	vScroll := container.NewScroll(app.ProfilesTable)
 
 	// define the profilesTab container
-	profilesTabContainer := container.NewWithoutLayout(app.Top, vScroll, app.Bottom)
+	profilesTabContainer := container.NewWithoutLayout(app.ProfileTop, vScroll, app.ProfileBottom)
 
-	app.Top.Move(fyne.NewPos(10, 10))
-	app.Top.Resize(fyne.NewSize(1280, 40))
+	app.ProfileTop.Move(fyne.NewPos(10, 10))
+	app.ProfileTop.Resize(fyne.NewSize(1280, 40))
 
 	vScroll.Move(fyne.NewPos(10, 60))
 	vScroll.Resize(fyne.NewSize(1280, 500))
 
-	app.Bottom.Move(fyne.NewPos(300, 580))
-	app.Bottom.Resize(fyne.NewSize(900, 50))
+	app.ProfileBottom.Move(fyne.NewPos(300, 580))
+	app.ProfileBottom.Resize(fyne.NewSize(900, 50))
 
 	return profilesTabContainer
 }
@@ -97,7 +97,7 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 		app.Logger.Error(err)
 	} else {
 		for _, a := range addresses {
-			addressesIDs = append(addressesIDs, strconv.Itoa(int(a.ID)))
+			addressesIDs = append(addressesIDs, a.Title)
 		}
 	}
 
@@ -163,14 +163,14 @@ func (app *Config) addProfileDialog() dialog.Dialog {
 				}
 			}
 
-			billingAddressID, _ := strconv.Atoi(billingAddressSelect.Selected)
-			shippingAddressID, _ := strconv.Atoi(shippingAddressSelect.Selected)
+			billingAddress, _ := app.DB.GetAddressByTitle(billingAddressSelect.Selected)
+			shippingAddress, _ := app.DB.GetAddressByTitle(shippingAddressSelect.Selected)
 
 			if valid {
 				p := user.Profile{
 					Title:             title.Text,
-					BillingAddressID:  int64(billingAddressID),
-					ShippingAddressID: int64(shippingAddressID),
+					BillingAddressID:  billingAddress.ID,
+					ShippingAddressID: shippingAddress.ID,
 					CardNumber:        cardNumber.Text,
 					CardMonth:         cardMonth.Text,
 					CardYear:          cardYear.Text,
@@ -340,20 +340,20 @@ func (app *Config) getProfilesSlice() [][]any {
 		if err != nil {
 			continue
 		}
-		if len(billingAddress.FirstName+" "+billingAddress.LastName) > 45 {
-			currentRow = append(currentRow, (billingAddress.FirstName + " " + billingAddress.LastName)[:44]+"...")
+		if len(billingAddress.Title) > 30 {
+			currentRow = append(currentRow, billingAddress.Title[:29]+"...")
 		} else {
-			currentRow = append(currentRow, billingAddress.FirstName+" "+billingAddress.LastName)
+			currentRow = append(currentRow, billingAddress.Title)
 		}
 
 		shippingAddress, err := app.DB.GetAddressByID(x.ShippingAddressID)
 		if err != nil {
 			continue
 		}
-		if len(shippingAddress.FirstName+" "+shippingAddress.LastName) > 45 {
-			currentRow = append(currentRow, (shippingAddress.FirstName + " " + shippingAddress.LastName)[:44]+"...")
+		if len(shippingAddress.Title) > 30 {
+			currentRow = append(currentRow, shippingAddress.Title[:29]+"...")
 		} else {
-			currentRow = append(currentRow, shippingAddress.FirstName+" "+shippingAddress.LastName)
+			currentRow = append(currentRow, shippingAddress.Title)
 		}
 
 		currentRow = append(currentRow, x.CardNumber[:12]+"XXXX")
@@ -378,7 +378,7 @@ func (app *Config) getProfilesTable() *widget.Table {
 			lbl := widget.NewLabel("")
 			toolbar := widget.NewToolbar()
 			toolbar.Hide()
-			return container.NewMax(lbl, toolbar)
+			return container.NewStack(lbl, toolbar)
 		},
 		func(i widget.TableCellID, o fyne.CanvasObject) {
 			container := o.(*fyne.Container)
@@ -485,13 +485,13 @@ func (app *Config) refreshProfilesBottomContent() {
 	})
 	btnClear.Importance = widget.DangerImportance
 
-	app.Bottom.Objects = []fyne.CanvasObject{
+	app.ProfileBottom.Objects = []fyne.CanvasObject{
 		layout.NewSpacer(),
 		btnAdd,
 		btnClear,
 	}
 
-	app.Bottom.Refresh()
+	app.ProfileBottom.Refresh()
 }
 
 func (app *Config) refreshProfilesTopContent() {
@@ -499,11 +499,11 @@ func (app *Config) refreshProfilesTopContent() {
 	allProfiles, _ := app.DB.AllProfiles()
 
 	txt := widget.NewRichTextFromMarkdown(`## ` + strconv.Itoa(len(allProfiles)) + ` Profiles Loaded`)
-	app.Top.Objects = []fyne.CanvasObject{
+	app.ProfileTop.Objects = []fyne.CanvasObject{
 		txt,
 	}
 
-	app.Top.Refresh()
+	app.ProfileTop.Refresh()
 }
 
 func (app *Config) refreshProfilesTab() {

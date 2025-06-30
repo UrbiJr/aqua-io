@@ -38,6 +38,7 @@ type UI struct {
 	*TasksTab
 	*AnalyticsTab
 	*ProfilesTab
+	*AddressesTab
 }
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
@@ -60,25 +61,31 @@ func (app *Config) MakeDesktopUI() {
 
 	// get app tabs content
 	app.HomeTab = &HomeTab{}
+	app.ProfilesTab = &ProfilesTab{}
+	app.AddressesTab = &AddressesTab{}
 	app.TasksTab = &TasksTab{}
 	app.AnalyticsTab = &AnalyticsTab{}
-	app.ProfilesTab = &ProfilesTab{}
 
+
+	addressesTabContent := app.addressesTab()
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.tasksTab()
 
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
-	app.TasksTab.TabItem = container.NewTabItemWithIcon("Copy Trading", theme.GridIcon(), copiedTradersTabContent)
-	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
+	app.AddressesTab.TabItem = container.NewTabItemWithIcon("Addresses", theme.FolderOpenIcon(), addressesTabContent)
 	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources2.IconNameCreditCard), profilesTabContent)
+	app.TasksTab.TabItem = container.NewTabItemWithIcon("Tasks", theme.GridIcon(), copiedTradersTabContent)
+	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
+
 
 	// add application tabs (home, tasks, proxies, profiles, settings)
 	tabs := container.NewAppTabs(
 		app.HomeTab.TabItem,
+		app.AddressesTab.TabItem,
+		app.ProfilesTab.TabItem,
 		app.TasksTab.TabItem,
 		app.AnalyticsTab.TabItem,
-		app.ProfilesTab.TabItem,
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 
