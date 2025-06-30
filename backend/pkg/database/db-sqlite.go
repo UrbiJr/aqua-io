@@ -42,6 +42,7 @@ func (repo *SQLiteRepository) Migrate() error {
 	query = `
 		create table if not exists addresses(
 			id integer primary key autoincrement,
+			title text null,
 			first_name text null,
 			last_name text null,
 			phone text null,
@@ -149,7 +150,7 @@ func (repo *SQLiteRepository) InsertAddress(p user.Address) (*user.Address, erro
 		) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	res, err := repo.Conn.Exec(stmt, p.FirstName, p.LastName, p.Phone, p.AddressLine1, p.AddressLine2, p.ZipCode, p.Province, p.CountryCode)
+	res, err := repo.Conn.Exec(stmt, p.Title, p.FirstName, p.LastName, p.Phone, p.AddressLine1, p.AddressLine2, p.ZipCode, p.Province, p.CountryCode)
 	if err != nil {
 		return nil, err
 	}

@@ -304,14 +304,14 @@ func (app *Config) editAddressDialog(pf *user.Address) dialog.Dialog {
 
 func (app *Config) getAddressesSlice() [][]any {
 	var slice [][]any
-	slice = append(slice, []any{"Title", "First Name", "Last Name", "Phone", "Address", "Zip Code", "Province", "Country Code"})
+	slice = append(slice, []any{"Title", "First Name", "Last Name", "Phone", "Address", "Zip Code", "Province", "Country", "Actions"})
 	allAddresses, _ := app.DB.AllAddresses()
 
 	for _, x := range allAddresses {
 		var currentRow []any
 
-		if len(x.Title) > 30 {
-			currentRow = append(currentRow, x.Title[:29]+"...")
+		if len(x.Title) > 20 {
+			currentRow = append(currentRow, x.Title[:19]+"...")
 		} else {
 			currentRow = append(currentRow, x.Title)
 		}
@@ -322,8 +322,8 @@ func (app *Config) getAddressesSlice() [][]any {
 
 		currentRow = append(currentRow, x.Phone)
 
-		if len(x.AddressLine1) > 30 {
-			currentRow = append(currentRow, x.AddressLine1[:79]+"...")
+		if len(x.AddressLine1) > 40 {
+			currentRow = append(currentRow, x.AddressLine1[:39]+"...")
 		} else {
 			currentRow = append(currentRow, x.AddressLine1)
 		}
@@ -359,7 +359,7 @@ func (app *Config) getAddressesTable() *widget.Table {
 			lbl := container.Objects[0].(*widget.Label)
 			toolbar := container.Objects[1].(*widget.Toolbar)
 
-			if i.Row != 0 && i.Col == 5 {
+			if i.Col == (len(app.AddressesSlice[0])-1) && i.Row != 0 {
 				lbl.Hide()
 				toolbar.Hidden = false
 
@@ -401,14 +401,6 @@ func (app *Config) getAddressesTable() *widget.Table {
 
 					}))
 				}
-			} else if i.Col == 4 && i.Row != 0 {
-				toolbar.Hide()
-				lbl.Hidden = false
-				if app.AddressesSlice[i.Row][i.Col].(bool) == true {
-					lbl.SetText("Yes")
-				} else {
-					lbl.SetText("No")
-				}
 			} else {
 				toolbar.Hide()
 				lbl.Hidden = false
@@ -418,7 +410,7 @@ func (app *Config) getAddressesTable() *widget.Table {
 			}
 		})
 
-	colWidths := []float32{100, 100, 100, 100, 220, 100, 100, 40}
+	colWidths := []float32{120, 100, 100, 100, 220, 100, 100, 100, 40}
 	for i, w := range colWidths {
 		t.SetColumnWidth(i, w)
 	}
@@ -430,7 +422,7 @@ func (app *Config) refreshAddressesTable() {
 	app.AddressesSlice = app.getAddressesSlice()
 	app.AddressesTable.Refresh()
 
-	colWidths := []float32{100, 100, 100, 100, 220, 100, 100, 40}
+	colWidths := []float32{120, 100, 100, 100, 220, 100, 100, 100, 40}
 	for i, w := range colWidths {
 		app.AddressesTable.SetColumnWidth(i, w)
 	}
