@@ -145,8 +145,13 @@ func (app *Config) addProxyListDialog() dialog.Dialog {
 }
 
 func (app *Config) editProxyListDialog(pf *user.ProxyList) dialog.Dialog {
+	titleLabel := widget.NewLabel("Title")
+	titleLabel.Move(fyne.NewPos(10, 10))
+
 	title := widget.NewEntry()
 	title.SetText(pf.Title)
+	title.Resize(fyne.NewSize(400, 40))
+	title.Move(fyne.NewPos(10, 50))
 	title.Validator = func(s string) error {
 		s = strings.TrimSpace(s)
 		p, _ := app.DB.GetProxyListByTitle(s)
@@ -161,14 +166,20 @@ func (app *Config) editProxyListDialog(pf *user.ProxyList) dialog.Dialog {
 		}
 	}
 
+	proxiesLabel := widget.NewLabel("Proxies (ip:port:user:pass)")
+	proxiesLabel.Move(fyne.NewPos(10, 100))
+
 	proxies := widget.NewMultiLineEntry()
+	proxies.Resize(fyne.NewSize(400, 300))
+	proxies.Move(fyne.NewPos(10, 140))
+	proxies.SetPlaceHolder("IP:PORT:USERNAME:PASSWORD")
 	proxies.SetText(strings.Join(pf.Proxies, "\n"))
 	proxies.Validator = utils.IsStringEmpty
 
-	vBox := container.NewVBox(
-		widget.NewLabel("Title"),
+	vBox := container.NewWithoutLayout(
+		titleLabel,
 		title,
-		widget.NewLabel("Proxies (ip:port:user:pass)"),
+		proxiesLabel,
 		proxies,
 	)
 	scrollContent := container.NewVScroll(vBox)
