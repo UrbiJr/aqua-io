@@ -39,6 +39,7 @@ type UI struct {
 	*AnalyticsTab
 	*ProfilesTab
 	*AddressesTab
+	*ProxyListsTab
 }
 
 // MakeMobileUI instantiates all the needed pages and makes the UI layout, but does not display it yet.
@@ -63,11 +64,13 @@ func (app *Config) MakeDesktopUI() {
 	app.HomeTab = &HomeTab{}
 	app.ProfilesTab = &ProfilesTab{}
 	app.AddressesTab = &AddressesTab{}
+	app.ProxyListsTab = &ProxyListsTab{}
 	app.TasksTab = &TasksTab{}
 	app.AnalyticsTab = &AnalyticsTab{}
 
 
 	addressesTabContent := app.addressesTab()
+	proxyListsTabContent := app.proxyListsTab()
 	profilesTabContent := app.profilesTab()
 	homeTabContent := app.homeTab(msg)
 	copiedTradersTabContent := app.tasksTab()
@@ -75,7 +78,8 @@ func (app *Config) MakeDesktopUI() {
 	app.HomeTab.TabItem = container.NewTabItemWithIcon("Home", theme.HomeIcon(), homeTabContent)
 	app.AddressesTab.TabItem = container.NewTabItemWithIcon("Addresses", theme.FolderOpenIcon(), addressesTabContent)
 	app.ProfilesTab.TabItem = container.NewTabItemWithIcon("Profiles", app.App.Settings().Theme().Icon(resources2.IconNameCreditCard), profilesTabContent)
-	app.TasksTab.TabItem = container.NewTabItemWithIcon("Tasks", theme.GridIcon(), copiedTradersTabContent)
+	app.ProxyListsTab.TabItem = container.NewTabItemWithIcon("Proxy Lists", theme.DocumentIcon(), proxyListsTabContent)
+	app.TasksTab.TabItem = container.NewTabItemWithIcon("Tasks", theme.HistoryIcon(), copiedTradersTabContent)
 	app.AnalyticsTab.TabItem = container.NewTabItemWithIcon("Analytics", theme.ComputerIcon(), canvas.NewText("Analytics content goes here", nil))
 
 
@@ -84,6 +88,7 @@ func (app *Config) MakeDesktopUI() {
 		app.HomeTab.TabItem,
 		app.AddressesTab.TabItem,
 		app.ProfilesTab.TabItem,
+		app.ProxyListsTab.TabItem,
 		app.TasksTab.TabItem,
 		app.AnalyticsTab.TabItem,
 	)

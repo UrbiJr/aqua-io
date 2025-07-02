@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"reflect"
 	"strings"
 
 	"github.com/UrbiJr/aqua-io/backend/internal/user"
@@ -361,7 +362,7 @@ func (repo *SQLiteRepository) GetProfileByTitle(title string) (*user.Profile, er
 
 	defer rows.Close()
 
-	var p *user.Profile
+	var p *user.Profile = &user.Profile{}
 	for rows.Next() {
 		var testMode int
 		err := rows.Scan(
@@ -386,6 +387,10 @@ func (repo *SQLiteRepository) GetProfileByTitle(title string) (*user.Profile, er
 		}
 	}
 
+	if reflect.ValueOf(*p).IsZero() {
+		return nil, nil
+	}
+
 	return p, nil
 }
 
@@ -399,18 +404,28 @@ func (repo *SQLiteRepository) GetProxyListByTitle(title string) (*user.ProxyList
 
 	defer rows.Close()
 
-	var s *user.ProxyList
+	var s *user.ProxyList = &user.ProxyList{}
 	for rows.Next() {
+		var proxies string
+
 		err := rows.Scan(
 			&s.ID,
 			&s.Title,
-			&s.Proxies,
+			&proxies,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		s.Proxies = strings.Split(proxies, ",")
 	}
+
+	if reflect.ValueOf(*s).IsZero() {
+		return nil, nil
+	}
+
 	return s, nil
+
 }
 
 func (repo *SQLiteRepository) GetAddressByTitle(title string) (*user.Address, error) {
@@ -423,7 +438,7 @@ func (repo *SQLiteRepository) GetAddressByTitle(title string) (*user.Address, er
 
 	defer rows.Close()
 
-	var p *user.Address
+	var p *user.Address = &user.Address{}
 	for rows.Next() {
 		err := rows.Scan(
 			&p.ID,
@@ -441,6 +456,10 @@ func (repo *SQLiteRepository) GetAddressByTitle(title string) (*user.Address, er
 			return nil, err
 		}
 	}
+	if reflect.ValueOf(*p).IsZero() {
+		return nil, nil
+	}
+
 	return p, nil
 }
 
@@ -527,7 +546,7 @@ func (repo *SQLiteRepository) GetAddressByID(ID int64) (*user.Address, error) {
 
 	defer rows.Close()
 
-	var p *user.Address
+	var p *user.Address = &user.Address{}
 	for rows.Next() {
 		err := rows.Scan(
 			&p.ID,
@@ -545,6 +564,10 @@ func (repo *SQLiteRepository) GetAddressByID(ID int64) (*user.Address, error) {
 			return nil, err
 		}
 
+	}
+
+	if reflect.ValueOf(*p).IsZero() {
+		return nil, nil
 	}
 
 	return p, nil
@@ -567,16 +590,19 @@ func (repo *SQLiteRepository) AllProxyLists() ([]user.ProxyList, error) {
 
 	var all []user.ProxyList
 	for rows.Next() {
+		var proxies string
 		var s user.ProxyList
 
 		err := rows.Scan(
 			&s.ID,
 			&s.Title,
-			&s.Proxies,
+			&proxies,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		s.Proxies = strings.Split(proxies, ",")
 
 		all = append(all, s)
 	}
@@ -678,7 +704,7 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 
 	defer rows.Close()
 
-	var u *user.User
+	var u *user.User = &user.User{}
 	for rows.Next() {
 		var persistent int
 
@@ -701,6 +727,10 @@ func (repo *SQLiteRepository) GetUser(ID int64) (*user.User, error) {
 
 	}
 
+	if reflect.ValueOf(*u).IsZero() {
+		return nil, nil
+	}
+
 	return u, nil
 }
 
@@ -714,16 +744,24 @@ func (repo *SQLiteRepository) GetProxyList(ID int64) (*user.ProxyList, error) {
 
 	defer rows.Close()
 
-	var s *user.ProxyList
+	var s *user.ProxyList = &user.ProxyList{}
 	for rows.Next() {
+		var proxies string
+
 		err := rows.Scan(
 			&s.ID,
 			&s.Title,
-			&s.Proxies,
+			&proxies,
 		)
 		if err != nil {
 			return nil, err
 		}
+
+		s.Proxies = strings.Split(proxies, ",")
+	}
+
+	if reflect.ValueOf(*s).IsZero() {
+		return nil, nil
 	}
 
 	return s, nil
@@ -786,7 +824,7 @@ func (repo *SQLiteRepository) UpdateAddress(ID int64, updated user.Address) erro
 			address_line_2 = ?,
 			zip_code = ?,
 			province = ?,
-			country_code = ?,
+			country_code = ?
 		where id = ?
 	`
 	res, err := repo.Conn.Exec(stmt, updated.Title, updated.FirstName, updated.LastName, updated.Phone, updated.AddressLine1, updated.AddressLine2, updated.ZipCode, updated.Province, updated.CountryCode, ID)
@@ -814,13 +852,11 @@ func (repo *SQLiteRepository) UpdateProxyList(ID int64, updated user.ProxyList) 
 	stmt := `
 		update proxy_lists set
 			title = ?,
-			proxies = ?,
+			proxies = ?
 		where id = ?
 	`
 
-	var proxies string
-
-	proxies = strings.Join(updated.Proxies, ",")
+	proxies := strings.Join(updated.Proxies, ",")
 
 	res, err := repo.Conn.Exec(stmt, updated.Title, proxies, ID)
 	if err != nil {
@@ -897,7 +933,7 @@ func (repo *SQLiteRepository) UpdateUser(ID int64, updated user.User) error {
 		persistent = 0
 	}
 
-	stmt := "update users set profile_picture_path = ?, license_key = ?,  persistent_login = ?, theme = ?, where id = ?"
+	stmt := "update users set profile_picture_path = ?, license_key = ?,  persistent_login = ?, theme = ? where id = ?"
 	res, err := repo.Conn.Exec(stmt, updated.ProfilePicturePath, updated.LicenseKey, persistent, updated.Theme, ID)
 	if err != nil {
 		return err

@@ -365,7 +365,7 @@ func (app *Config) getAddressesTable() *widget.Table {
 
 				if len(toolbar.Items) == 0 {
 					toolbar.Append(widget.NewToolbarAction(theme.ContentCopyIcon(), func() {
-						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][len(app.AddressesSlice[0])-1].(int64))
 						if pf != nil {
 							pf.Title = pf.Title + " - Copy"
 							_, err := app.DB.InsertAddress(*pf)
@@ -377,13 +377,13 @@ func (app *Config) getAddressesTable() *widget.Table {
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DocumentCreateIcon(), func() {
-						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][len(app.AddressesSlice[0])-1].(int64))
 						if pf != nil {
 							app.editAddressDialog(pf)
 						}
 					}))
 					toolbar.Append(widget.NewToolbarAction(theme.DeleteIcon(), func() {
-						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][5].(int64))
+						pf, _ := app.DB.GetAddressByID(app.AddressesSlice[i.Row][len(app.AddressesSlice[0])-1].(int64))
 						if pf == nil {
 							return
 						}
